@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full w-full overflow-hidden;
+  }
+
+  body {
+    @apply bg-cyber-bg text-cyan-100 antialiased;
+    background-color: #020617;
+    background-image:
+      linear-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+      radial-gradient(ellipse at 50% 0%, rgba(14, 165, 233, 0.12) 0%, transparent 60%);
+    background-size: 48px 48px, 48px 48px, 100% 100%;
+    background-position: center center;
+  }
+}
+
+@layer components {
+  .hud-panel {
+    @apply relative border border-cyan-500/30 bg-slate-950/60 backdrop-blur-sm;
+    box-shadow:
+      0 0 20px rgba(56, 189, 248, 0.08),
+      inset 0 0 30px rgba(56, 189, 248, 0.03);
+  }
+
+  .hud-panel::before,
+  .hud-panel::after {
+    content: '';
+    @apply absolute h-3 w-3 border-cyan-400;
+  }
+
+  .hud-panel::before {
+    @apply left-0 top-0 border-l-2 border-t-2;
+  }
+
+  .hud-panel::after {
+    @apply bottom-0 right-0 border-b-2 border-r-2;
+  }
+
+  .metric-label {
+    @apply font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-500/70;
+  }
+
+  .metric-value {
+    @apply font-display text-xl font-medium tracking-wide text-cyan-100;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+  }
+
+  .scan-line {
+    @apply pointer-events-none absolute inset-0 overflow-hidden;
+  }
+
+  .scan-line::after {
+    content: '';
+    @apply absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent;
+    animation: scan 4s linear infinite;
+  }
+}
