@@ -1,8 +1,7 @@
 import React, { Suspense, useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, useGLTF } from '@react-three/drei';
+import { OrbitControls, Grid, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const ANALYSIS_VIEWS = {
   alignment: 'Alignment Analysis',
@@ -11,7 +10,6 @@ const ANALYSIS_VIEWS = {
   athlete: 'Athlete Analysis',
 };
 
-const MODEL_PATH = '/models/athletic.glb';
 const MORPH_DURATION = 3.5;
 const MESH_FADE_DURATION = 1.0;
 const PARTICLE_COUNT = 10000;
@@ -20,62 +18,42 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-function prepareAthleticModel(scene) {
-  const model = scene.clone(true);
-  const box = new THREE.Box3().setFromObject(model);
-  const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  const scale = 2.4 / Math.max(size.x, size.y, size.z);
-
-  model.position.set(-center.x * scale, -center.y * scale + 1.0, -center.z * scale);
-  model.scale.setScalar(scale);
-  model.updateMatrixWorld(true);
-
-  model.traverse((child) => {
-    if (child.isSkinnedMesh) {
-      child.skeleton.pose();
-    }
-  });
-
-  return model;
-}
-
-function sampleVertexTargets(model, count) {
-  const candidates = [];
-  const vertex = new THREE.Vector3();
-
-  model.traverse((child) => {
-    if (!(child.isMesh || child.isSkinnedMesh) || !child.geometry?.attributes?.position) {
-      return;
-    }
-
-    const positions = child.geometry.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-      vertex.fromBufferAttribute(positions, i);
-      if (child.isSkinnedMesh) {
-        child.applyBoneTransform(i, vertex);
-      }
-      vertex.applyMatrix4(child.matrixWorld);
-      candidates.push(vertex.x, vertex.y, vertex.z);
-    }
-  });
-
+function generateSilhouetteTargets(count) {
   const targets = new Float32Array(count * 3);
-  if (candidates.length === 0) {
-    return targets;
-  }
-
-  const vertexTotal = candidates.length / 3;
   for (let i = 0; i < count; i++) {
-    const sourceIndex = Math.floor((i / count) * vertexTotal) % vertexTotal;
-    targets[i * 3] = candidates[sourceIndex * 3];
-    targets[i * 3 + 1] = candidates[sourceIndex * 3 + 1];
-    targets[i * 3 + 2] = candidates[sourceIndex * 3 + 2];
-  }
+    const segment = Math.floor(i / (count / 5));
+    let x = 0, y = 0, z = 0;
 
+    if (segment === 0) { // Spinal Core Alignment
+      x = (Math.random() - 0.5) * 0.25;
+      y = -1.2 + Math.random() * 2.4;
+      z = (Math.random() - 0.5) * 0.15;
+    } else if (segment === 1) { // Left Lateral Vectors
+      x = -0.1 - Math.random() * 0.75;
+      y = -1.4 + Math.random() * 2.2;
+      z = (Math.random() - 0.5) * 0.15;
+    } else if (segment === 2) { // Right Lateral Vectors
+      x = 0.1 + Math.random() * 0.75;
+      y = -1.4 + Math.random() * 2.2;
+      z = (Math.random() - 0.5) * 0.15;
+    } else if (segment === 3) { // Cranial Trackers
+      const theta = Math.random() * Math.PI * 2;
+      const r = Math.random() * 0.35;
+      x = Math.cos(theta) * r;
+      y = 1.1 + Math.random() * 0.5;
+      z = Math.sin(theta) * r;
+    } else { // Pelvic Ground
+      x = (Math.random() - 0.5) * 0.65;
+      y = -0.3 + (Math.random() - 0.5) * 0.3;
+      z = (Math.random() - 0.5) * 0.2;
+    }
+
+    targets[i * 3] = x;
+    targets[i * 3 + 1] = y + 0.3;
+    targets[i * 3 + 2] = z;
+  }
   return targets;
 }
-
 function ParticleMorphDust({ targets, particleCount, startTimeRef }) {
   const pointsRef = useRef();
   const swirlRef = useRef();
@@ -125,9 +103,7 @@ function ParticleMorphDust({ targets, particleCount, startTimeRef }) {
       const angle = angleOffset + time * speed;
 
       const vortexX = Math.cos(angle) * radiusBase * (0.35 + swirlStrength * 0.65);
-      const vortexY =
-        yBase +
-        swirlStrength * (0.4 + Math.sin(time * 2.2 + i * 0.015) * 0.35 + Math.min(elapsed, 2.5) * 0.55);
+      const vortexY = yBase + swirlStrength * (0.4 + Math.sin(time * 2.2 + i * 0.015) * 0.35 + Math.min(elapsed, 2.5) * 0.55);
       const vortexZ = Math.sin(angle) * radiusBase * (0.35 + swirlStrength * 0.65);
 
       const targetX = targets[i * 3];
@@ -155,316 +131,243 @@ function ParticleMorphDust({ targets, particleCount, startTimeRef }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={particleCount} array={positions} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial
-        size={0.04}
-        color="#00f2fe"
-        transparent
-        opacity={1}
-        sizeAttenuation
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
+      <pointsMaterial size={0.04} color="#00f2fe" transparent opacity={1} sizeAttenuation blending={THREE.AdditiveBlending} depthWrite={false} />
     </points>
   );
 }
 
-function AssessmentMorphScene() {
-  const { scene, animations } = useGLTF(MODEL_PATH);
+function AssessmentMorphScene({ clientImagePath }) {
+  const clientTexture = useTexture(clientImagePath);
   const startTimeRef = useRef(null);
-  const mixerRef = useRef();
+  const imageMeshRef = useRef();
 
-  const prepared = useMemo(() => {
-    const model = prepareAthleticModel(scene);
-    const targets = sampleVertexTargets(model, PARTICLE_COUNT);
-
-    const wireframe = cloneSkinned(model);
-    wireframe.traverse((child) => {
-      if (child.isMesh) {
-        child.material = new THREE.MeshBasicMaterial({
-          color: 0x00f2fe,
-          wireframe: true,
-          transparent: true,
-          opacity: 0,
-          depthWrite: false,
-        });
-      }
-    });
-
-    model.traverse((child) => {
-      if (child.isMesh) {
-        child.material = new THREE.MeshStandardMaterial({
-          color: 0x0a1628,
-          emissive: 0x004466,
-          emissiveIntensity: 0.5,
-          metalness: 0.65,
-          roughness: 0.3,
-          transparent: true,
-          opacity: 0,
-        });
-      }
-    });
-
-    return { model, wireframe, targets };
-  }, [scene]);
+  const targets = useMemo(() => generateSilhouetteTargets(PARTICLE_COUNT), []);
 
   useEffect(() => {
-    const mixer = new THREE.AnimationMixer(prepared.model);
-    if (animations.length > 0) {
-      const action = mixer.clipAction(animations[0]);
-      action.setLoop(THREE.LoopRepeat);
-      action.play();
-    }
-    mixerRef.current = mixer;
+    startTimeRef.current = null;
+  }, [clientImagePath]);
 
-    return () => {
-      mixer.stopAllAction();
-    };
-  }, [prepared.model, animations]);
-
-  useFrame((state, delta) => {
-    mixerRef.current?.update(delta);
-
+  useFrame((state) => {
     if (startTimeRef.current === null) {
       startTimeRef.current = state.clock.elapsedTime;
     }
-
     const elapsed = state.clock.elapsedTime - startTimeRef.current;
-    const meshOpacity =
-      elapsed > MORPH_DURATION ? Math.min(1, (elapsed - MORPH_DURATION) / MESH_FADE_DURATION) : 0;
-
-    prepared.model.traverse((child) => {
-      if (child.isMesh && child.material) {
-        child.material.opacity = meshOpacity * 0.85;
-      }
-    });
-
-    prepared.wireframe.traverse((child) => {
-      if (child.isMesh && child.material) {
-        child.material.opacity = meshOpacity * 0.7;
-      }
-    });
+    if (imageMeshRef.current) {
+      imageMeshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.4) * 0.15;
+    }
+    const meshOpacity = elapsed > MORPH_DURATION ? Math.min(0.9, (elapsed - MORPH_DURATION) / MESH_FADE_DURATION) : 0;
+    if (imageMeshRef.current && imageMeshRef.current.material) {
+      imageMeshRef.current.material.opacity = meshOpacity;
+    }
   });
 
   return (
     <group>
-      <ParticleMorphDust
-        targets={prepared.targets}
-        particleCount={PARTICLE_COUNT}
-        startTimeRef={startTimeRef}
-      />
-      <primitive object={prepared.model} />
-      <primitive object={prepared.wireframe} />
+      <ParticleMorphDust targets={targets} particleCount={PARTICLE_COUNT} startTimeRef={startTimeRef} />
+      <mesh ref={imageMeshRef} position={[0, 0.4, 0]}>
+        <planeGeometry args={[2.2, 2.8]} />
+        <meshBasicMaterial map={clientTexture} transparent={true} opacity={0} side={THREE.DoubleSide} blending={THREE.NormalBlending} depthWrite={true} />
+      </mesh>
     </group>
   );
 }
 
-useGLTF.preload(MODEL_PATH);
-
-function CustomHologramMesh({ size = 2.5 }) {
+// Your Original Core Crystal Matrix Mesh (Scale 2.5)
+function CustomHologramMesh() {
   const meshRef = useRef();
-
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.y = state.clock.getElapsedTime() * 0.15;
       meshRef.current.rotation.x = state.clock.getElapsedTime() * 0.05;
     }
   });
-
   return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[size, 12, 12]} />
+    <mesh ref={meshRef} position={[0, -0.2, 0]}>
+      <sphereGeometry args={[2.5, 12, 12]} />
       <meshBasicMaterial color="#00f2fe" wireframe={true} transparent opacity={0.65} />
     </mesh>
   );
 }
 
-function HeaderHologramGem() {
-  return (
-    <div className="h-14 w-14 shrink-0 pointer-events-none">
-      <Canvas camera={{ position: [0, 0, 2.2], fov: 45 }} gl={{ alpha: true }}>
-        <ambientLight intensity={2.5} />
-        <CustomHologramMesh size={0.55} />
-      </Canvas>
-    </div>
-  );
-}
-
-function AnalysisSubView({ title, viewKey, onReturn }) {
-  return (
-    <div className="relative flex-1 min-h-0 h-full pointer-events-auto overflow-hidden rounded-xl border border-cyan-500/20 shadow-[inset_0_0_60px_rgba(0,242,254,0.04)]">
-      <button
-        type="button"
-        onClick={onReturn}
-        className="absolute top-4 left-4 z-30 px-6 py-2.5 border border-cyan-500/50 bg-slate-950/90 backdrop-blur-md text-cyan-400 font-bold uppercase tracking-widest text-xs rounded-lg cursor-pointer transition-all hover:bg-cyan-500/25 hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:scale-105 active:scale-95 pointer-events-auto"
-      >
-        ← RETURN TO CORE DASHBOARD
-      </button>
-
-      <h2 className="absolute top-4 left-1/2 -translate-x-1/2 z-30 text-sm md:text-base font-black tracking-widest text-cyan-400/80 pointer-events-none">
-        {title}
-      </h2>
-
-      <Canvas
-        key={viewKey}
-        className="!absolute inset-0"
-        camera={{ position: [0, 1.2, 4.8], fov: 45 }}
-        gl={{ antialias: true, alpha: true }}
-      >
-        <color attach="background" args={['#020617']} />
-        <ambientLight intensity={0.55} />
-        <pointLight position={[3, 4, 2]} intensity={1.4} color="#00f2fe" />
-        <pointLight position={[-3, 2, -2]} intensity={0.6} color="#0ea5e9" />
-
-        <Suspense fallback={null}>
-          <AssessmentMorphScene />
-        </Suspense>
-
-        <OrbitControls enablePan enableZoom minDistance={2.5} maxDistance={11} target={[0, 0.9, 0]} />
-        <Grid
-          position={[0, -0.05, 0]}
-          args={[24, 24]}
-          cellSize={0.5}
-          cellThickness={0.6}
-          cellColor="#1e293b"
-          sectionSize={2}
-          sectionColor="#0891b2"
-          sectionThickness={1}
-          fadeDistance={22}
-        />
-      </Canvas>
-    </div>
-  );
-}
-
+useTexture.preload('/client1.png');
+useTexture.preload('/client2.png');
+useTexture.preload('/client3.png');
 export default function App() {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const clientList = ['/client1.png', '/client2.png', '/client3.png'];
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [viewState, setViewState] = useState('landing'); 
+  const [selectedAnalysis, setSelectedAnalysis] = useState('');
+  const [bootProgress, setBootProgress] = useState(0);
 
-  return (
-    <div className="relative w-screen h-screen bg-[#020617] text-white font-mono overflow-hidden select-none">
-      <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-8 bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.1)_0%,rgba(2,6,23,0.85)_100%)]">
-        <div className="w-full flex justify-center">
-          <header className="flex items-center justify-center gap-5 border-b border-cyan-500/20 pb-5 bg-slate-950/50 backdrop-blur-md p-6 rounded-lg max-w-4xl w-full relative">
-            <HeaderHologramGem />
-            <div className="flex flex-col items-center text-center">
-              <h1 className="text-3xl font-black tracking-widest text-cyan-400 animate-pulse">
-                LIFE LONGEVITY BLUEPRINT REPORT
-              </h1>
-              <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
-                <span>STATUS: STREAMING RAW CORE TELEMETRY</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
-                <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  CORE CONNECTED
-                </span>
-              </div>
-            </div>
-            <HeaderHologramGem />
-          </header>
+  useEffect(() => {
+    if (viewState !== 'loading') return;
+    const interval = setInterval(() => {
+      setBootProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => setViewState('dashboard'), 600);
+          return 100;
+        }
+        return prev + Math.floor(Math.random() * 12) + 5;
+      });
+    }, 100);
+    return () => clearInterval(interval);
+  }, [viewState]);
+
+  const handleLaunchAnalysis = (key) => {
+    setSelectedAnalysis(ANALYSIS_VIEWS[key] || 'Biometrics Analysis');
+    setBootProgress(0);
+    setViewState('loading');
+  };
+
+  const handleReturnToCore = () => {
+    setViewState('landing');
+    setSelectedAnalysis('');
+    setBootProgress(0);
+  };
+
+  const displayClientName = clientList[currentIdx].replace('/', '').toUpperCase();
+
+  // SYSTEM FRAME A: Home Viewport with Spinning Crystal Mesh Matrix
+  if (viewState === 'landing') {
+    return (
+      <div className="relative w-screen h-screen bg-[#020617] text-white font-mono overflow-hidden select-none">
+        <div className="absolute inset-0 w-full h-full z-0">
+          <Canvas camera={{ position: [0, 1.5, 5], fov: 45 }}>
+            <ambientLight intensity={2.5} />
+            <Suspense fallback={null}>
+              <CustomHologramMesh />
+            </Suspense>
+            <OrbitControls enablePan={true} enableZoom={true} minDistance={2} maxDistance={10} />
+            <Grid position={[0, -1.8, 0]} args={[]} cellSize={0.5} cellThickness={1} cellColor="#1e293b" sectionSize={2} sectionColor="#334155" fadeDistance={25} />
+          </Canvas>
         </div>
 
-        <main className="flex justify-between items-stretch my-auto w-full mt-2 min-h-[420px]">
-          <div className="flex flex-col gap-3 w-64 pointer-events-auto bg-slate-950/70 border border-slate-800 p-4 rounded-xl backdrop-blur-md shadow-2xl text-left self-center">
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-900 pb-1 mb-1 text-left">
-              PRIMARY CORE INDEX
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setCurrentView('alignment')}
-              className="border-l-2 border-cyan-500 pl-2 p-2 rounded-r-lg pointer-events-auto cursor-pointer transition-all hover:bg-slate-900/80 hover:border-cyan-500/50 text-left w-full"
-            >
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Alignment Analysis</div>
-              <div className="text-xl font-black text-cyan-400 tracking-tight mt-0.5">
-                98.4<span className="text-[10px] font-normal text-slate-500"> % BAL</span>
+        <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-8 bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.1)_0%,rgba(2,6,23,0.85)_100%)]">
+          <div className="w-full flex justify-center">
+            <header className="flex flex-col items-center text-center border-b border-cyan-500/20 pb-5 bg-slate-950/50 backdrop-blur-md p-6 rounded-lg max-w-4xl w-full relative">
+              <h1 className="text-3xl font-black tracking-widest text-cyan-400 animate-pulse">LIFE LONGEVITY BLUEPRINT REPORT</h1>
+              <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                <span>STREAMING RAW CORE TELEMETRY</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>CONNECTED
+                </span>
               </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrentView('posture')}
-              className="border-l-2 border-slate-700 pl-2 p-2 rounded-r-lg mt-1 pointer-events-auto cursor-pointer transition-all hover:bg-slate-900/80 hover:border-cyan-500/50 text-left w-full"
-            >
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Posture Analysis</div>
-              <div className="text-xl font-black text-slate-200 tracking-tight mt-0.5">
-                A+<span className="text-[10px] font-normal text-slate-500"> OPTIMAL</span>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrentView('mobility')}
-              className="border-l-2 border-slate-700 pl-2 p-2 rounded-r-lg mt-1 pointer-events-auto cursor-pointer transition-all hover:bg-slate-900/80 hover:border-cyan-500/50 text-left w-full"
-            >
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Mobility Analysis</div>
-              <div className="text-xl font-black text-slate-200 tracking-tight mt-0.5">
-                92.6<span className="text-[10px] font-normal text-slate-500"> EFF</span>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setCurrentView('athlete')}
-              className="border-l-2 border-emerald-500 pl-2 p-2 rounded-r-lg mt-1 pointer-events-auto cursor-pointer transition-all hover:bg-slate-900/80 hover:border-cyan-500/50 text-left w-full"
-            >
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Athlete Analysis</div>
-              <div className="text-sm font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-500/20 px-2 py-0.5 rounded inline-block mt-1 tracking-wider">
-                MATCH VERIFIED
-              </div>
-            </button>
+            </header>
           </div>
 
-          {currentView === 'dashboard' ? (
-            <div className="flex-1" />
-          ) : (
-            <AnalysisSubView
-              key={currentView}
-              viewKey={currentView}
-              title={ANALYSIS_VIEWS[currentView]}
-              onReturn={() => setCurrentView('dashboard')}
-            />
-          )}
-
-          <div
-            className={`flex flex-col gap-3 w-64 pointer-events-auto bg-slate-950/70 border border-slate-800 p-4 rounded-xl backdrop-blur-md shadow-2xl text-right self-center transition-opacity duration-500 ${currentView === 'dashboard' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-          >
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-900 pb-1 mb-1 text-right">
-              METRIC DIAGNOSTICS
+          <main className="flex justify-between items-center my-auto w-full mt-2">
+            {/* Left Operational Box: Now Houses Your High-Tech Launch Hooks */}
+            <div className="flex flex-col gap-2 w-72 pointer-events-auto bg-slate-950/80 border border-cyan-500/20 p-4 rounded-xl backdrop-blur-md shadow-2xl">
+              <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest border-b border-cyan-950/40 pb-1 mb-2 text-left">LAUNCH OPERATIONAL MATRIX</div>
+              {Object.keys(ANALYSIS_VIEWS).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => handleLaunchAnalysis(key)}
+                  className="w-full text-left px-3 py-2.5 bg-slate-900/60 border border-slate-800 hover:border-cyan-400 rounded-lg transition-all duration-200 group active:scale-95"
+                >
+                  <p className="text-[11px] font-bold text-slate-300 group-hover:text-cyan-400 uppercase tracking-wide">› {ANALYSIS_VIEWS[key]}</p>
+                </button>
+              ))}
             </div>
 
-            <div className="border-r-2 border-cyan-500 pr-2">
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Alignment Score</div>
-              <div className="text-xl font-black text-cyan-400 tracking-tight mt-0.5">
-                98.4<span className="text-[10px] font-normal text-slate-500"> % BAL</span>
+            {/* Right Diagnostic Box: Visual Telemetry Anchors */}
+            <div className="flex flex-col gap-3 w-64 pointer-events-auto bg-slate-950/70 border border-slate-800 p-4 rounded-xl backdrop-blur-md shadow-2xl text-right">
+              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-900 pb-1 mb-1 text-right">ASSESSMENT REPORTS</div>
+              <div className="border-r-2 border-cyan-500 pr-2">
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Alignment Score</div>
+                <div className="text-xl font-black text-cyan-400 tracking-tight mt-0.5">98.4<span className="text-[10px] font-normal text-slate-500"> % BAL</span></div>
+              </div>
+              <div className="border-r-2 border-slate-700 pr-2 mt-1">
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Posture Profile</div>
+                <div className="text-xl font-black text-slate-200 tracking-tight mt-0.5">A+<span className="text-[10px] font-normal text-slate-500"> OPTIMAL</span></div>
               </div>
             </div>
+          </main>
 
-            <div className="border-r-2 border-slate-700 pr-2 mt-1">
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Posture Profile</div>
-              <div className="text-xl font-black text-slate-200 tracking-tight mt-0.5">
-                A+<span className="text-[10px] font-normal text-slate-500"> OPTIMAL</span>
+          <footer className="flex justify-between items-center text-xs text-slate-500 border-t border-slate-900 pt-4">
+            <div>DATA CHANNEL: ACTIVE LOCALHOST LINE</div>
+            <div>LENOVO LEGION PRO // RTX 4080 MODE ACTIVE</div>
+          </footer>
+        </div>
+      </div>
+    );
+  }
+  // SYSTEM FRAME B: Telemetry Sync Calibration Bar Loader
+  if (viewState === 'loading') {
+    return (
+      <div className="w-full h-screen bg-[#02050d] text-white flex flex-col items-center justify-center font-mono p-6 select-none relative overflow-hidden">
+        <div className="w-[440px] bg-slate-950/80 border border-cyan-500/20 p-8 rounded-xl shadow-[0_0_60px_rgba(6,182,212,0.05)] backdrop-blur-md">
+          <div className="flex items-center justify-between mb-6 border-b border-cyan-950/60 pb-4">
+            <span className="text-[11px] tracking-widest text-cyan-400 uppercase font-bold">SYSTEM CALIBRATION</span>
+            <span className="text-[9px] text-slate-500 font-bold">LN_V4.8</span>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs tracking-wider text-slate-300 mb-2">
+                <span className="uppercase">COMPILING {selectedAnalysis}...</span>
+                <span className="text-cyan-400 font-bold">{Math.min(bootProgress, 100)}%</span>
               </div>
-            </div>
-
-            <div className="border-r-2 border-slate-700 pr-2 mt-1">
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Mobility Matrix</div>
-              <div className="text-xl font-black text-slate-200 tracking-tight mt-0.5">
-                92.6<span className="text-[10px] font-normal text-slate-500"> EFF</span>
-              </div>
-            </div>
-
-            <div className="border-r-2 border-emerald-500 pr-2 mt-1">
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Athletics Index</div>
-              <div className="text-sm font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-500/20 px-2 py-0.5 rounded inline-block mt-1 tracking-wider">
-                MATCH VERIFIED
+              <div className="w-full h-2 bg-slate-900 border border-cyan-950 rounded-full overflow-hidden p-[2px]">
+                <div className="h-full bg-gradient-to-r from-cyan-500 to-sky-400 rounded-full transition-all duration-100 shadow-[0_0_10px_rgba(6,182,212,0.5)]" style={{ width: `${Math.min(bootProgress, 100)}%` }} />
               </div>
             </div>
           </div>
-        </main>
+        </div>
+      </div>
+    );
+  }
 
-        <footer className="flex justify-between items-center text-xs text-slate-500 border-t border-slate-900 pt-4">
-          <div>DATA CHANNEL: ACTIVE LOCALHOST LINE</div>
-          <div>LENOVO LEGION PRO // RTX 4080 MODE ACTIVE</div>
-        </footer>
+  // SYSTEM FRAME C: High-Art Studio Preview Deck View
+  return (
+    <div className="w-full h-screen bg-[#020813] text-white flex flex-col font-sans select-none overflow-hidden">
+      <div className="border-b border-cyan-900/40 bg-slate-950/80 px-6 py-3 flex items-center justify-between backdrop-blur-md">
+        <span className="text-xs tracking-[0.25em] text-cyan-400 font-bold uppercase">System Active: Longevity Biometrics</span>
+        <span className="text-[10px] tracking-widest text-slate-500 font-mono">ACTIVE LAYERS // {displayClientName}</span>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+          <div className="w-[480px] h-[580px] bg-slate-950/70 border border-cyan-500/20 rounded-2xl p-6 backdrop-blur-xl flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center mb-4 border-b border-slate-900 pb-3">
+              <div>
+                <p className="text-[10px] tracking-widest text-cyan-400 font-mono uppercase">Biomechanical Target</p>
+                <h2 className="text-md font-bold tracking-wider text-slate-200 uppercase">{selectedAnalysis}</h2>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] font-mono block text-slate-500 uppercase tracking-widest">Active Matrix</span>
+                <span className="text-[11px] font-mono text-cyan-400 font-bold">{displayClientName}</span>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full bg-[#030d1e]/90 border border-cyan-950/60 rounded-xl overflow-hidden relative inner-shadow">
+              <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }}>
+                <ambientLight intensity={1.5} />
+                <directionalLight position={[10, 10, 5]} intensity={1} />
+                <Suspense fallback={null}>
+                  <AssessmentMorphScene clientImagePath={clientList[currentIdx]} />
+                </Suspense>
+                <Grid renderOrder={-1} position={[0, -1.35, 0]} args={[10.5, 10.5]} cellSize={0.25} cellThickness={0.7} cellColor="#082f49" sectionSize={1.25} sectionThickness={1.2} sectionColor="#0e7490" fadeDistance={6} />
+                <OrbitControls enableZoom={true} maxPolarAngle={Math.PI / 2 + 0.1} minPolarAngle={Math.PI / 4} />
+              </Canvas>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 pointer-events-auto">
+              <div className="flex gap-2 w-full pointer-events-auto">
+                <a href="/report.pdf" target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 bg-slate-900 border border-cyan-400/60 text-cyan-300 text-[11px] font-mono font-bold tracking-wider rounded-lg uppercase shadow-[0_0_12px_rgba(0,242,254,0.35)] transition-all duration-200 hover:border-cyan-300 hover:text-cyan-100 hover:bg-cyan-950/60 hover:shadow-[0_0_22px_rgba(0,242,254,0.65)] hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Open Report
+                  </button>
+                </a>
+                <button onClick={handleReturnToCore} className="flex-1 px-3 py-2 bg-gradient-to-r from-cyan-950 to-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 text-[11px] font-mono font-bold tracking-wider rounded-lg uppercase">↩ Return To Core</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
