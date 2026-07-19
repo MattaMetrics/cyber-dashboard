@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import BlueprintAssessments from './BlueprintAssessments';
 
-// Secure Coach Client Matrix Database
+// Secure Coach Client Matrix Database (Upgraded with Registration Dates & Matrix Tiers)
 const CLIENT_DATABASE = {
   '1111': {
     name: 'Alex Rivera',
@@ -23,6 +23,8 @@ const CLIENT_DATABASE = {
     phone: '(555) 234-5678',
     avatar: '/client1.png',
     archetype: 'Acrobatics & Hand Balance',
+    joinedDate: '07/14/2026',
+    matrixTier: 'Tensegrity Tier', // Full Body Blueprint
     desc: 'Acrobatic performer experiencing chronic compression profiles during deep overhead extensions. Fascial tension lines require lateral decompression integration.',
     notes:
       'Prioritize multi-plane kinetic tracking during handstand alignment stacks. Focus heavily on thoracic extension limits to shield lumbar load points.',
@@ -35,6 +37,8 @@ const CLIENT_DATABASE = {
     phone: '(555) 876-5432',
     avatar: '/client2.png',
     archetype: 'Jiu-Jitsu / Combat Athlete',
+    joinedDate: '06/02/2026',
+    matrixTier: 'Infinite Matrix Tier', // Ongoing Elite Coaching
     desc: 'Competitive martial artist displaying inward valgus knee patterns during lateral explosive movements and guard transitions.',
     notes:
       'Left ankle structural dorsiflexion restrictions are causing mechanical stress upstream in the knee joint during load capture cycles.',
@@ -47,6 +51,8 @@ const CLIENT_DATABASE = {
     phone: '(555) 432-1098',
     avatar: '/client3.png',
     archetype: 'Advanced Yoga Practitioner',
+    joinedDate: '07/18/2026',
+    matrixTier: 'Vector Tier', // Single Assessment
     desc: 'Exceptional static active flexibility profiles. Displays minor structural instability vectors under rapid dynamic loading cycles.',
     notes:
       'Incorporate low-volume explosive neuromuscular landing mechanics to supplement high-tier static elasticity matrices.',
@@ -279,7 +285,16 @@ export default function App() {
   const [editDesc, setEditDesc] = useState('');
   const [editMetrics, setEditMetrics] = useState({ squat: '', land: '', cmj: '', agility: '' });
 
-  // NEW: Add Client Form States for your onboarding sessions later this week
+  // NEW: Identity & Tier Editing States
+  const [editBirthdate, setEditBirthdate] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editTier, setEditTier] = useState('Vector Tier');
+
+  // Full Screen Focus Window Tracker States
+  const [activeFocusField, setActiveFocusField] = useState(null);
+
+  // Add Client Form States for your onboarding sessions
   const [newClientName, setNewClientName] = useState('');
   const [newClientCode, setNewClientCode] = useState('');
   const [newClientArchetype, setNewClientArchetype] = useState('Acrobatics & Hand Balance');
@@ -296,6 +311,13 @@ export default function App() {
         setEditNotes(client.notes);
         setEditDesc(client.desc);
         setEditMetrics({ ...client.metrics });
+
+        // Load incoming values into form states cleanly
+        setEditBirthdate(client.birthdate);
+        setEditEmail(client.email);
+        setEditPhone(client.phone);
+        setEditTier(client.matrixTier || 'Vector Tier');
+
         setSelectedAnalysis('Client Telemetry Portfolio');
         setBootProgress(0);
         setViewState('loading');
@@ -314,6 +336,13 @@ export default function App() {
     setEditNotes(client.notes);
     setEditDesc(client.desc);
     setEditMetrics({ ...client.metrics });
+
+    // Load incoming values into form states cleanly
+    setEditBirthdate(client.birthdate);
+    setEditEmail(client.email);
+    setEditPhone(client.phone);
+    setEditTier(client.matrixTier || 'Vector Tier');
+
     setViewState('client_profile');
   };
 
@@ -336,6 +365,9 @@ export default function App() {
       phone: '(555) 000-0000',
       avatar: '/client1.png',
       archetype: newClientArchetype,
+      joinedDate: 'NEW_07_2026', // Formats automatically to the current session sequence
+      matrixTier:
+        newClientArchetype === 'Acrobatics & Hand Balance' ? 'Tensegrity Tier' : 'Vector Tier', // Assigns tier based on style hook
       desc: 'Initial video pipeline ready. Complete biomechanical calibration scanning sequence to compile baseline profile metrics.',
       notes:
         'Baseline movement capture scheduled for this week. Focus testing on left/right kinetic shifts.',
@@ -353,17 +385,29 @@ export default function App() {
     alert(`✓ CLIENT PORTAL COMPREHENSIVELY LINKED // PASSCODE IS [ ${newClientCode} ]`);
   };
 
+  // Save changes hook updated to sweep up all panels at once
   const handleSaveProfileChanges = () => {
     if (!accessCode || !localDatabase[accessCode]) return;
+
     const updatedProfile = {
       ...activeClientProfile,
       desc: editDesc,
       notes: editNotes,
+      birthdate: editBirthdate,
+      email: editEmail,
+      phone: editPhone,
+      matrixTier: editTier,
       metrics: { ...editMetrics },
     };
-    setLocalDatabase((prev) => ({ ...prev, [accessCode]: updatedProfile }));
+
+    setLocalDatabase((prev) => ({
+      ...prev,
+      [accessCode]: updatedProfile,
+    }));
+
     setActiveClientProfile(updatedProfile);
     setIsEditMode(false);
+    setActiveFocusField(null);
   };
 
   useEffect(() => {
@@ -471,20 +515,25 @@ export default function App() {
   useEffect(() => {
     if (viewState !== 'mobility' && viewState !== 'client_profile' && viewState !== 'coach_menu') return;
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') handleReturnToCore();
+      if (e.key !== 'Escape') return;
+      if (activeFocusField) {
+        setActiveFocusField(null);
+        return;
+      }
+      handleReturnToCore();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [viewState]);
+  }, [viewState, activeFocusField]);
 
   const displayClientName = clientList[currentIdx].replace('/', '').toUpperCase();
 
   // SYSTEM FRAME D: Premium Biometric Client Profile Portal Hub
   if (viewState === 'client_profile' && activeClientProfile) {
     return (
-      <div className="w-screen min-h-screen bg-[#020617] text-white font-mono p-4 md:p-8 flex items-center justify-center overflow-y-auto select-none">
+      <div className="w-screen min-h-screen bg-[#020617] text-white font-mono p-4 md:p-8 flex items-center justify-center overflow-y-auto select-none relative">
         {/* Main Strategic Card Panel Framework */}
-        <div className="w-full max-w-5xl bg-slate-950/80 border border-cyan-500/20 rounded-2xl backdrop-blur-xl p-6 md:p-8 shadow-2xl relative">
+        <div className="w-full max-w-5xl bg-slate-950/80 border border-cyan-500/20 rounded-2xl backdrop-blur-xl p-6 md:p-8 shadow-2xl relative z-0">
           {/* Header Action Row */}
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-900 pb-5 mb-6 gap-4">
             <div>
@@ -505,30 +554,119 @@ export default function App() {
 
           {/* Grid Separation Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column: Demographics & Core Identity */}
+            {/* Left Column: Demographics, Core Identity & Tier Modifiers */}
             <div className="space-y-4">
               <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl flex flex-col items-center text-center">
+                {/* Profile Placeholder Graphic Circle */}
                 <div className="w-24 h-24 rounded-full bg-slate-950 border border-cyan-500/20 flex items-center justify-center shadow-lg mb-4 text-cyan-400 relative overflow-hidden group">
                   <User className="w-10 h-10 group-hover:scale-105 transition-transform" />
                   <div className="absolute inset-0 bg-cyan-400/5 mix-blend-overlay" />
                 </div>
-                <div className="text-xs font-bold text-cyan-400 uppercase tracking-widest px-2.5 py-0.5 bg-slate-950 rounded-full border border-slate-800">
+
+                <div className="text-xs font-bold text-cyan-400 uppercase tracking-widest px-2.5 py-0.5 bg-slate-950 rounded-full border border-slate-800 mb-3">
                   {activeClientProfile.archetype}
+                </div>
+
+                {/* Matrix Tier Dropdown Selector (Active inside Modify Mode) */}
+                <div className="w-full mt-1 border-t border-slate-900/60 pt-3 text-center">
+                  <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider mb-1">
+                    CURRENT MATRIX SUBSCRIPTION
+                  </span>
+                  {isEditMode ? (
+                    <select
+                      value={editTier}
+                      onChange={(e) => setEditTier(e.target.value)}
+                      className="bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 text-cyan-400 font-mono text-xs rounded px-2 py-1.5 outline-none tracking-wide text-center cursor-pointer transition-colors max-w-full font-bold uppercase shadow-inner"
+                    >
+                      <option value="Vector Tier">Vector Tier</option>
+                      <option value="Tensegrity Tier">Tensegrity Tier</option>
+                      <option value="Infinite Matrix Tier">Infinite Matrix Tier</option>
+                    </select>
+                  ) : (
+                    <span
+                      className={`text-sm font-black tracking-wide uppercase font-mono block mt-0.5
+                      ${activeClientProfile.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.25)]' : ''}
+                      ${activeClientProfile.matrixTier === 'Tensegrity Tier' ? 'text-cyan-400' : ''}
+                      ${activeClientProfile.matrixTier === 'Vector Tier' ? 'text-indigo-400' : ''}
+                    `}
+                    >
+                      {activeClientProfile.matrixTier || 'Vector Tier'}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-3.5 text-xs font-medium text-slate-300">
+              {/* Secure Digital Contact Cards with Form Field Inputs */}
+              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 text-xs font-medium text-slate-300">
                 <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-950 pb-1.5">
                   // IDENTITY SPECIFICATIONS
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="w-4 h-4 text-slate-500" /> <span>DOB: {activeClientProfile.birthdate}</span>
+
+                {/* Date of Birth Field Row */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Calendar className="w-3.5 h-3.5" />{' '}
+                    <span className="text-[9px] font-bold tracking-wider uppercase">Date of Birth</span>
+                  </div>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={editBirthdate}
+                      onChange={(e) => setEditBirthdate(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none shadow-inner"
+                      placeholder="MM/DD/YYYY"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-slate-200 pl-5">{activeClientProfile.birthdate}</div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2.5 truncate">
-                  <Mail className="w-4 h-4 text-slate-500" /> <span>E: {activeClientProfile.email}</span>
+
+                {/* Email Contact Field Row */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Mail className="w-3.5 h-3.5" />{' '}
+                    <span className="text-[9px] font-bold tracking-wider uppercase">Email Contact</span>
+                  </div>
+                  {isEditMode ? (
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none truncate shadow-inner"
+                      placeholder="name@email.com"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-slate-200 pl-5 truncate max-w-full">
+                      {activeClientProfile.email}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <Phone className="w-4 h-4 text-slate-500" /> <span>P: {activeClientProfile.phone}</span>
+
+                {/* Phone Contact Field Row */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Phone className="w-3.5 h-3.5" />{' '}
+                    <span className="text-[9px] font-bold tracking-wider uppercase">Phone Terminal</span>
+                  </div>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none shadow-inner"
+                      placeholder="(555) 000-0000"
+                    />
+                  ) : (
+                    <div className="text-sm font-semibold text-slate-200 pl-5">{activeClientProfile.phone}</div>
+                  )}
+                </div>
+
+                {/* Embedded Access PIN Passcode Row */}
+                <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between text-slate-400">
+                  <span className="font-bold text-[10px] tracking-wider text-slate-500 uppercase">SYS_ACCESS_PIN:</span>
+                  <span className="text-sm font-black text-cyan-400 tracking-widest font-mono bg-slate-950 px-2 py-0.5 border border-slate-900 rounded">
+                    {accessCode}
+                  </span>
                 </div>
               </div>
             </div>
@@ -536,40 +674,52 @@ export default function App() {
             {/* Middle Column: Architectural Movement Notes & Data Descriptions */}
             <div className="space-y-4 lg:col-span-2 flex flex-col justify-between">
               <div className="space-y-4">
-                {/* Movement Vector Log Card / Text Editor (Font Size Increased to text-sm/text-base) */}
-                <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl transition-all">
-                  <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2.5">
-                    <FileText className="w-4 h-4" /> Biomechanical Archetype Vector
+                {/* Movement Vector Log Card / Text Area Trigger */}
+                <div
+                  onClick={() => isEditMode && setActiveFocusField('desc')}
+                  className={`p-5 bg-slate-900/40 border border-slate-900 rounded-xl transition-all duration-200
+                    ${isEditMode ? 'hover:bg-slate-900 hover:border-cyan-500/50 cursor-zoom-in group shadow-lg shadow-cyan-950/20' : ''}
+                  `}
+                >
+                  <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest flex items-center justify-between mb-2.5">
+                    <span className="flex items-center gap-1.5">
+                      <FileText className="w-4 h-4" /> Biomechanical Archetype Vector
+                    </span>
+                    {isEditMode && (
+                      <span className="text-[9px] text-cyan-500 font-black animate-pulse tracking-wider bg-slate-950 px-2 py-0.5 border border-slate-800 rounded">
+                        ⛶ CLICK TO EXPAND WRITING PAD
+                      </span>
+                    )}
                   </div>
-                  {isEditMode ? (
-                    <textarea
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      className="w-full h-24 bg-slate-950 border border-slate-800 rounded-lg p-3 text-base text-slate-200 font-mono focus:outline-none focus:border-cyan-500 font-sans leading-relaxed resize-none shadow-inner"
-                    />
-                  ) : (
-                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
-                      {activeClientProfile.desc}
-                    </p>
-                  )}
+                  <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-4">
+                    {isEditMode
+                      ? editDesc || 'No narrative entered yet. Expand window to write...'
+                      : activeClientProfile.desc}
+                  </p>
                 </div>
 
-                {/* Coach Strategic Directive Log Card / Text Editor */}
-                <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl">
-                  <div className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2.5">
-                    <ClipboardList className="w-4 h-4" /> Kinetic Directives & Case Log
+                {/* Coach Strategic Directive Log Card / Text Area Trigger */}
+                <div
+                  onClick={() => isEditMode && setActiveFocusField('notes')}
+                  className={`p-5 bg-slate-900/40 border border-slate-900 rounded-xl transition-all duration-200
+                    ${isEditMode ? 'hover:bg-slate-900 hover:border-indigo-500/50 cursor-zoom-in group shadow-lg shadow-indigo-950/20' : ''}
+                  `}
+                >
+                  <div className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest flex items-center justify-between mb-2.5">
+                    <span className="flex items-center gap-1.5">
+                      <ClipboardList className="w-4 h-4" /> Kinetic Directives & Case Log
+                    </span>
+                    {isEditMode && (
+                      <span className="text-[9px] text-indigo-500 font-black animate-pulse tracking-wider bg-slate-950 px-2 py-0.5 border border-slate-800 rounded">
+                        ⛶ CLICK TO EXPAND WRITING PAD
+                      </span>
+                    )}
                   </div>
-                  {isEditMode ? (
-                    <textarea
-                      value={editNotes}
-                      onChange={(e) => setEditNotes(e.target.value)}
-                      className="w-full h-24 bg-slate-950 border border-slate-800 rounded-lg p-3 text-base text-slate-200 font-mono focus:outline-none focus:border-indigo-500 font-sans leading-relaxed resize-none shadow-inner"
-                    />
-                  ) : (
-                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
-                      {activeClientProfile.notes}
-                    </p>
-                  )}
+                  <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-4">
+                    {isEditMode
+                      ? editNotes || 'No directives logged yet. Expand window to write...'
+                      : activeClientProfile.notes}
+                  </p>
                 </div>
               </div>
 
@@ -580,17 +730,60 @@ export default function App() {
 
                   {/* Comprehensive Coach Utilities Matrix */}
                   <div className="flex flex-wrap gap-2">
-                    {/* Data Export Button */}
+                    {/* Real Functional Data Export Engine */}
                     <button
-                      onClick={() =>
-                        alert('📤 EXPORT ENGINE COMPILING // SECURE DOCUMENT PDF READY FOR DOWNLOAD')
-                      }
+                      onClick={async () => {
+                        // 1. Gather all active client variables from memory
+                        const reportText = `==================================================
+LONGEVITY BLUEPRINT OBJECTIVE BIOMETRIC REPORT
+==================================================
+ATHLETE DOSSIER: ${activeClientProfile.name.toUpperCase()}
+ARCHETYPE:       ${activeClientProfile.archetype.toUpperCase()}
+PASSCODE KEY:    [ ${accessCode} ]
+RECORDED DOB:    ${activeClientProfile.birthdate}
+CONTACT LINE:    ${activeClientProfile.email}
+--------------------------------------------------
+
+[1] BIOMECHANICAL ARCHETYPE VECTOR LOG:
+${editDesc}
+
+[2] KINETIC DIRECTIVES & CASE COACH NOTES:
+${editNotes}
+
+--------------------------------------------------
+[3] VERIFIED METRIC CALIBRATION RATINGS:
+- Deep Squat Mobility Matrix:    ${editMetrics.squat}
+- Single-Leg Land Stability:     ${editMetrics.land}
+- Kinetic Power Extension (CMJ): ${editMetrics.cmj}
+- Multi-Plane Deceleration (505): ${editMetrics.agility}
+
+==================================================
+SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
+==================================================`;
+
+                        const fileName = `${activeClientProfile.name.replace(/\s+/g, '_')}_Biometric_Blueprint.txt`;
+
+                        try {
+                          // 2. Save directly to Desktop\Temp Client Blueprints via local Vite export API
+                          const response = await fetch('/api/export-blueprint', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fileName, content: reportText }),
+                          });
+                          const result = await response.json();
+                          if (!response.ok || !result.ok) {
+                            throw new Error(result.error || 'Export failed');
+                          }
+                          alert(`✓ BLUEPRINT SECURED // SAVED TO:\n${result.path}`);
+                        } catch (error) {
+                          alert(`EXPORT ENGINE FAULT // ${error.message}`);
+                        }
+                      }}
                       className="px-3 py-1.5 bg-slate-950 text-cyan-400 border border-cyan-500/40 hover:border-cyan-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                     >
                       📥 Export Data
                     </button>
 
-                    {/* New Change Access Pin Code Button */}
                     <button
                       onClick={handleChangeClientCode}
                       className="px-3 py-1.5 bg-slate-950 text-indigo-400 border border-indigo-500/40 hover:border-indigo-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
@@ -598,21 +791,19 @@ export default function App() {
                       🔑 Change Code
                     </button>
 
-                    {/* Live Data Save / Modifier Toggle Button */}
                     <button
                       onClick={() => (isEditMode ? handleSaveProfileChanges() : setIsEditMode(true))}
                       className={`px-3 py-1.5 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95
                         ${
                           isEditMode
                             ? 'bg-emerald-500 text-slate-950 border border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                            : 'bg-slate-950 text-cyan-400 border border-cyan-500/40 hover:border-cyan-400'
+                            : 'bg-slate-950 text-cyan-400 border border-cyan-400/40 hover:border-cyan-400'
                         }
                       `}
                     >
                       {isEditMode ? '✓ Save Changes' : '⚙ Modify Record'}
                     </button>
 
-                    {/* New Core Destructive Delete Client Button */}
                     <button
                       onClick={handleDeleteClientRecord}
                       className="px-3 py-1.5 bg-slate-950/40 text-rose-500 border border-rose-900/50 hover:border-rose-500 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
@@ -622,7 +813,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Quantitative Biometric Input Score Metrics Card Layout Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
                   {Object.entries(editMetrics).map(([key, value], index) => (
                     <div
@@ -665,6 +855,77 @@ export default function App() {
             <div>STATION RECOVERY ENGINE: v4.8_STABLE</div>
           </div>
         </div>
+
+        {/* ========================================================================= */}
+        {/* DYNAMIC FULL-SIZE FOCUS WRITING PAD OVERLAY */}
+        {/* ========================================================================= */}
+        {activeFocusField && (
+          <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-8 animate-fade-in">
+            <div
+              className={`w-full max-w-5xl h-[90vh] bg-slate-950 border rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-2xl transition-all duration-300
+              ${activeFocusField === 'desc' ? 'border-cyan-500/40 shadow-cyan-950/20' : 'border-indigo-500/40 shadow-indigo-950/20'}
+            `}
+            >
+              <div>
+                {/* Modal Title Row */}
+                <div className="flex justify-between items-center border-b border-slate-900 pb-4 mb-5">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase block">
+                      // HIGH-CAPACITY TEXT FOCUS WRITER
+                    </span>
+                    <h3
+                      className={`text-lg font-black tracking-wider uppercase mt-0.5
+                      ${activeFocusField === 'desc' ? 'text-cyan-400' : 'text-indigo-400'}
+                    `}
+                    >
+                      {activeFocusField === 'desc'
+                        ? 'Biomechanical Archetype Editor'
+                        : 'Kinetic Directives Case Logger'}
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setActiveFocusField(null)}
+                    className="px-3.5 py-1.5 border border-slate-800 hover:border-slate-600 rounded-lg text-slate-400 hover:text-white text-xs bg-slate-900 transition-all font-bold tracking-widest uppercase cursor-pointer active:scale-95"
+                  >
+                    ✕ Close Pad [ESC]
+                  </button>
+                </div>
+
+                {/* Giant Full-Screen Text Field Form */}
+                <textarea
+                  autoFocus
+                  value={activeFocusField === 'desc' ? editDesc : editNotes}
+                  onChange={(e) =>
+                    activeFocusField === 'desc' ? setEditDesc(e.target.value) : setEditNotes(e.target.value)
+                  }
+                  placeholder="Initiate diagnostic narrative entry..."
+                  className={`w-full h-[62vh] bg-[#030712] border border-slate-900 rounded-xl p-6 text-base md:text-lg text-slate-200 font-sans leading-relaxed tracking-wide focus:outline-none resize-none shadow-inner
+                    ${activeFocusField === 'desc' ? 'focus:border-cyan-500/60' : 'focus:border-indigo-500/60'}
+                  `}
+                />
+              </div>
+
+              {/* Modal Save/Confirmation Action Footer */}
+              <div className="border-t border-slate-900 pt-4 flex justify-between items-center">
+                <div className="text-[11px] text-slate-600 tracking-wider font-mono">
+                  MATRIX CELL: {activeFocusField.toUpperCase()}_LOG_BUFFER
+                </div>
+                <button
+                  onClick={() => setActiveFocusField(null)}
+                  className={`px-5 py-2.5 rounded-lg text-slate-950 font-bold font-mono text-xs tracking-widest uppercase transition-all shadow-md active:scale-95 cursor-pointer
+                    ${
+                      activeFocusField === 'desc'
+                        ? 'bg-cyan-400 hover:bg-cyan-300 border border-cyan-300 shadow-cyan-950/20'
+                        : 'bg-indigo-400 hover:bg-indigo-300 border border-indigo-300 shadow-indigo-950/20'
+                    }
+                  `}
+                >
+                  ✓ Lock Entry text & Minimize
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -774,11 +1035,31 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <span className="text-[10px] font-mono text-slate-600 block uppercase font-bold tracking-widest">
-                        PIN ACCESS KEY
-                      </span>
-                      <span className="text-sm font-black text-cyan-400 tracking-wider font-mono">[{code}]</span>
+
+                    {/* New Matrix Tier & Enrollment Column Blocks */}
+                    <div className="flex items-center gap-6 text-right font-mono shrink-0 ml-4">
+                      <div className="hidden sm:block">
+                        <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider">
+                          ENROLLED
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">
+                          {client.joinedDate || 'PENDING'}
+                        </span>
+                      </div>
+                      <div className="min-w-[120px]">
+                        <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider">
+                          MATRIX LEVEL
+                        </span>
+                        <span
+                          className={`text-xs font-black tracking-wide uppercase
+                          ${client.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.2)]' : ''}
+                          ${client.matrixTier === 'Tensegrity Tier' ? 'text-cyan-400' : ''}
+                          ${client.matrixTier === 'Vector Tier' ? 'text-indigo-400' : ''}
+                        `}
+                        >
+                          {client.matrixTier || 'Vector Tier'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
