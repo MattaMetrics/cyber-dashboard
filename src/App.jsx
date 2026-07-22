@@ -3,7 +3,6 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Grid, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import {
-  Shield,
   User,
   Mail,
   Phone,
@@ -11,10 +10,13 @@ import {
   ClipboardList,
   FileText,
   CheckSquare,
+  Sparkles,
+  Activity,
+  Anchor,
 } from 'lucide-react';
-import BlueprintAssessments from './BlueprintAssessments';
+import IntroScreen from './IntroScreen';
 
-// Secure Coach Client Matrix Database (Upgraded with Registration Dates & Matrix Tiers)
+// Secure Coach Client Matrix Database (Upgraded with Video Telemetry Paths)
 const CLIENT_DATABASE = {
   '1111': {
     name: 'Alex Rivera',
@@ -22,9 +24,10 @@ const CLIENT_DATABASE = {
     email: 'alex.rivera@kineticmail.com',
     phone: '(555) 234-5678',
     avatar: '/client1.png',
+    videoUrl: 'https://w3schools.com', // Placeholder sample loop file path
     archetype: 'Acrobatics & Hand Balance',
     joinedDate: '07/14/2026',
-    matrixTier: 'Tensegrity Tier', // Full Body Blueprint
+    matrixTier: 'Tensegrity Tier',
     desc: 'Acrobatic performer experiencing chronic compression profiles during deep overhead extensions. Fascial tension lines require lateral decompression integration.',
     notes:
       'Prioritize multi-plane kinetic tracking during handstand alignment stacks. Focus heavily on thoracic extension limits to shield lumbar load points.',
@@ -36,9 +39,10 @@ const CLIENT_DATABASE = {
     email: 'marcus.vance@jiujitsumail.com',
     phone: '(555) 876-5432',
     avatar: '/client2.png',
+    videoUrl: 'https://w3schools.com', // Placeholder sample loop file path
     archetype: 'Jiu-Jitsu / Combat Athlete',
     joinedDate: '06/02/2026',
-    matrixTier: 'Infinite Matrix Tier', // Ongoing Elite Coaching
+    matrixTier: 'Infinite Matrix Tier',
     desc: 'Competitive martial artist displaying inward valgus knee patterns during lateral explosive movements and guard transitions.',
     notes:
       'Left ankle structural dorsiflexion restrictions are causing mechanical stress upstream in the knee joint during load capture cycles.',
@@ -50,21 +54,50 @@ const CLIENT_DATABASE = {
     email: 'elena.r@yogadecompression.com',
     phone: '(555) 432-1098',
     avatar: '/client3.png',
+    videoUrl: 'https://w3schools.com', // Placeholder sample loop file path
     archetype: 'Advanced Yoga Practitioner',
     joinedDate: '07/18/2026',
-    matrixTier: 'Vector Tier', // Single Assessment
+    matrixTier: 'Vector Tier',
     desc: 'Exceptional static active flexibility profiles. Displays minor structural instability vectors under rapid dynamic loading cycles.',
     notes:
       'Incorporate low-volume explosive neuromuscular landing mechanics to supplement high-tier static elasticity matrices.',
     metrics: { squat: '96/100', land: '82/100', cmj: '74/100', agility: '85/100' },
   },
+  // Add Matta's custom terminal profile slot right inside your database
+  '7777': {
+    name: 'MATTA',
+    birthdate: '01/01/2000',
+    email: 'matta.matrix@hyper3d.com',
+    phone: '(555) 777-7777',
+    avatar: '/client1.png',
+    archetype: '3D Hyper-Voxel Archetype',
+    joinedDate: '07/21/2026',
+    matrixTier: 'Infinite Matrix Tier',
+    desc: 'First-generation custom 3D mesh model stream calibrated from Hyper 3D and Blender node telemetry layers.',
+    notes:
+      'Calibrate spinal vector paths against the emission shader wave structures. Mesh stability tracking verified.',
+    metrics: { squat: '99/100', land: '95/100', cmj: '98/100', agility: '97/100' },
+  },
 };
 
+// Upgraded High-Tech Lab Movement Tracks & Hover Descriptions
 const ANALYSIS_VIEWS = {
-  mobility: 'Mobility Analysis',
-  alignment: 'Alignment Analysis',
-  posture: 'Posture Analysis',
-  athlete: 'Athlete Analysis',
+  mobility: {
+    label: 'POSTURE & ERGONOMICS',
+    hoverDesc: 'Corporate & Desk Worker Track — Combating Screen Compression',
+  },
+  alignment: {
+    label: 'ATHLETE PRECISION',
+    hoverDesc: 'Youth Athlete Track — Symmetry & Multi-Plane Kinematics',
+  },
+  posture: {
+    label: 'VITAL FLOW',
+    hoverDesc: 'Acrobatics, Yoga, & Over-40 Active Longevity Blueprints',
+  },
+  athlete: {
+    label: 'KINETIC POWER INTEGRITY',
+    hoverDesc: 'MMA & Jiu-Jitsu Combat Track — Joint Torque & Impact Stability',
+  },
 };
 
 const MORPH_DURATION = 3.5;
@@ -267,25 +300,135 @@ useTexture.preload('/client1.png');
 useTexture.preload('/client2.png');
 useTexture.preload('/client3.png');
 
+function renderThreeColumnCompanionGrid({
+  accent = 'text-cyan-400',
+  focusBorder = 'focus:border-cyan-500/60',
+  emailPlaceholder = 'e.g. fighter.name@combatmail.com',
+  vectors = [
+    { code: '01 // PLUMB', label: 'EAR TO SHOULDER' },
+    { code: '02 // ROUND', label: 'THORACIC EXTENSION' },
+    { code: '03 // SHEAR', label: 'FORWARD METRICS' },
+  ],
+  instructions = 'Stand naturally or sit in your habitual computer workspace stance. Look straight ahead for 3 seconds, then drop your chin to your chest, return to center, and look completely upward.',
+  camera =
+    'Position your phone camera exactly at shoulder height, standing 5-6 feet away directly facing your profile side vector (90-degree lateral profile view).',
+} = {}) {
+  return (
+    // THE RESTRUCTURED THREE-COLUMN COMPANION GRID
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+      {/* COLUMN 1: LEFT VERTICAL DEMO GRAPHICS CONTAINER (3 Slices) */}
+      <div className="md:col-span-3 flex flex-col gap-4">
+        <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">// MOVEMENT_STAGES</div>
+
+        {/* Visual Example Slice 1 */}
+        <div className="flex-1 min-h-[110px] bg-slate-950 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-3 group border-dashed hover:border-cyan-500/40 transition-colors">
+          <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+          <span className={`text-[10px] ${accent} font-black tracking-wider uppercase mb-1`}>01 // INITIAL BASE</span>
+          <p className="text-[8px] font-sans text-slate-500 text-center uppercase tracking-wide leading-normal">
+            Placeholder: Drop your first bodyless skeleton asset here
+          </p>
+        </div>
+
+        {/* Visual Example Slice 2 */}
+        <div className="flex-1 min-h-[110px] bg-slate-950 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-3 group border-dashed hover:border-cyan-500/40 transition-colors">
+          <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+          <span className={`text-[10px] ${accent} font-black tracking-wider uppercase mb-1`}>02 // DYNAMIC APEX</span>
+          <p className="text-[8px] font-sans text-slate-500 text-center uppercase tracking-wide leading-normal">
+            Placeholder: Drop your peak joint angle vector asset here
+          </p>
+        </div>
+
+        {/* Visual Example Slice 3 */}
+        <div className="flex-1 min-h-[110px] bg-slate-950 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-3 group border-dashed hover:border-cyan-500/40 transition-colors">
+          <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+          <span className={`text-[10px] ${accent} font-black tracking-wider uppercase mb-1`}>
+            03 // TERMINAL STABILITY
+          </span>
+          <p className="text-[8px] font-sans text-slate-500 text-center uppercase tracking-wide leading-normal">
+            Placeholder: Drop your load deceleration holding asset here
+          </p>
+        </div>
+      </div>
+
+      {/* COLUMN 2: CENTER WORKSPACE CONSOLE (Inputs & Tri-Vector Telemetry) */}
+      <div className="md:col-span-5 p-5 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col justify-between gap-5">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <div className={`text-[10px] ${accent} font-bold uppercase tracking-widest`}>// FORWARD VIDEO CLOUD LINK</div>
+            <input
+              type="text"
+              placeholder="Paste iCloud, Drive, or YouTube Link..."
+              className={`w-full bg-slate-950 border border-slate-800 ${focusBorder} rounded-lg px-3 py-2 text-xs text-slate-300 outline-none transition-colors`}
+            />
+          </div>
+          <div className="space-y-1.5 pt-1">
+            <div className={`text-[10px] ${accent} font-bold uppercase tracking-widest`}>
+              // REGISTERED CLIENT EMAIL ADDRESS
+            </div>
+            <input
+              type="email"
+              placeholder={emailPlaceholder}
+              className={`w-full bg-slate-950 border border-slate-800 ${focusBorder} rounded-lg px-3 py-2 text-xs text-slate-300 outline-none font-sans`}
+            />
+          </div>
+        </div>
+
+        {/* CORRECTED COMBAT / MODULE TRI-VECTOR LABELS */}
+        <div className="grid grid-cols-3 gap-2.5 font-mono text-[9px] text-slate-500 font-bold">
+          {vectors.map((vector) => (
+            <div
+              key={vector.code}
+              className="p-3 bg-slate-950/80 border border-slate-900 rounded-lg text-center flex flex-col items-center justify-center min-h-[90px]"
+            >
+              <div className={`${accent} font-bold tracking-wider mb-1`}>{vector.code}</div>
+              <div className="text-[8px] font-medium font-sans uppercase">{vector.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* COLUMN 3: RIGHT SYSTEM DIRECTIONS PANEL (Instructions & Camera Alignment) */}
+      <div className="md:col-span-4 flex flex-col gap-4 justify-between">
+        <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl space-y-2 flex-1">
+          <div className={`text-[10px] ${accent} font-bold uppercase tracking-widest mb-1.5`}>
+            🔎 Movement Execution Instructions
+          </div>
+          <p className="text-xs font-sans text-slate-300 leading-relaxed font-normal tracking-wide">{instructions}</p>
+        </div>
+        <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl space-y-2 flex-1">
+          <div className={`text-[10px] ${accent} font-bold uppercase tracking-widest mb-1.5`}>
+            📷 Camera Angle & Telemetry Alignment
+          </div>
+          <p className="text-xs font-sans text-slate-300 leading-relaxed font-normal tracking-wide">{camera}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const clientList = ['/client1.png', '/client2.png', '/client3.png'];
+  const homeGridCanvasRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [viewState, setViewState] = useState('landing');
   const [selectedAnalysis, setSelectedAnalysis] = useState('');
   const [bootProgress, setBootProgress] = useState(0);
   const [accessCode, setAccessCode] = useState('');
 
-  // LIVE DATABASE & SYSTEM ROUTERS
+  // LIVE DATABASE, SYSTEMS ROUTERS & PERMISSION CONTROLS
   const [localDatabase, setLocalDatabase] = useState(CLIENT_DATABASE);
   const [activeClientProfile, setActiveClientProfile] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // NEW: Secure Master Role Gate
+  const [isCoachMode, setIsCoachMode] = useState(false);
 
   // Large Text Form States
   const [editNotes, setEditNotes] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editMetrics, setEditMetrics] = useState({ squat: '', land: '', cmj: '', agility: '' });
 
-  // NEW: Identity & Tier Editing States
+  // Identity & Tier Editing States
   const [editBirthdate, setEditBirthdate] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -294,29 +437,41 @@ export default function App() {
   // Full Screen Focus Window Tracker States
   const [activeFocusField, setActiveFocusField] = useState(null);
 
+  // Vital Flow Suite Video Capture Upload Tracker
+  const [uploadStatus, setUploadStatus] = useState({});
+  // NEW: Active Vital Flow sub-view controller state
+  const [activeVitalModule, setActiveVitalModule] = useState(null);
+  // NEW: Active Athlete Precision sub-view controller state
+  const [activeAthleteModule, setActiveAthleteModule] = useState(null);
+  // NEW: Active Kinetic Power combat sub-view controller state
+  const [activeCombatModule, setActiveCombatModule] = useState(null);
+  // NEW: Active Posture & Ergonomics sub-view controller state
+  const [activePostureModule, setActivePostureModule] = useState(null);
+
   // Add Client Form States for your onboarding sessions
   const [newClientName, setNewClientName] = useState('');
   const [newClientCode, setNewClientCode] = useState('');
   const [newClientArchetype, setNewClientArchetype] = useState('Acrobatics & Hand Balance');
 
-  // Triggered when client logs in with their pin code
+  // Triggered when CLIENT logs in with their pin code from the homepage
   const handleAccessCodeChange = (e) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 4);
     setAccessCode(digits);
 
     if (digits.length === 4) {
+      // Dedicated MATTA 3D matrix scan pathway
+      if (digits === '7777') {
+        setViewState('scanning_matta');
+        return;
+      }
+
       if (localDatabase[digits]) {
         const client = localDatabase[digits];
+        setIsCoachMode(false); // SECURE LOCK: Clients have zero modification authorization
         setActiveClientProfile(client);
         setEditNotes(client.notes);
         setEditDesc(client.desc);
         setEditMetrics({ ...client.metrics });
-
-        // Load incoming values into form states cleanly
-        setEditBirthdate(client.birthdate);
-        setEditEmail(client.email);
-        setEditPhone(client.phone);
-        setEditTier(client.matrixTier || 'Vector Tier');
 
         setSelectedAnalysis('Client Telemetry Portfolio');
         setBootProgress(0);
@@ -328,16 +483,36 @@ export default function App() {
     }
   };
 
-  // Direct row click navigation from your Admin Dashboard Menu
+  const unlockMattaProfile = () => {
+    const client = localDatabase['7777'];
+    if (!client) {
+      alert('ACCESS CODE UNRESOLVED // SECURE ENTRY VIOLATION');
+      return;
+    }
+    setAccessCode('7777');
+    setIsCoachMode(false);
+    setActiveClientProfile(client);
+    setEditNotes(client.notes);
+    setEditDesc(client.desc);
+    setEditMetrics({ ...client.metrics });
+    setEditBirthdate(client.birthdate);
+    setEditEmail(client.email);
+    setEditPhone(client.phone);
+    setEditTier(client.matrixTier || 'Vector Tier');
+    setSelectedAnalysis('Client Telemetry Portfolio');
+    setViewState('client_profile');
+  };
+
+  // Triggered when COACH clicks a row inside the Admin Command Center Menu
   const handleSelectClientFromMenu = (code) => {
     const client = localDatabase[code];
+    setIsCoachMode(true); // AUTHORIZED: Coach access enables administrative modifiers
     setAccessCode(code);
     setActiveClientProfile(client);
     setEditNotes(client.notes);
     setEditDesc(client.desc);
     setEditMetrics({ ...client.metrics });
 
-    // Load incoming values into form states cleanly
     setEditBirthdate(client.birthdate);
     setEditEmail(client.email);
     setEditPhone(client.phone);
@@ -410,6 +585,7 @@ export default function App() {
     setActiveFocusField(null);
   };
 
+  // Keep legacy analysis loading path; client pin login lands on profile after sync
   useEffect(() => {
     if (viewState !== 'loading') return;
     const interval = setInterval(() => {
@@ -417,11 +593,7 @@ export default function App() {
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            if (activeClientProfile) {
-              setViewState('client_profile');
-            } else {
-              setViewState('dashboard');
-            }
+            setViewState(activeClientProfile ? 'client_profile' : 'dashboard');
           }, 600);
           return 100;
         }
@@ -431,10 +603,67 @@ export default function App() {
     return () => clearInterval(interval);
   }, [viewState, activeClientProfile]);
 
+  // THREE.JS PIPELINE FOR HOME SCREEN BASE GRID
+  useEffect(() => {
+    if (viewState !== 'landing' || !homeGridCanvasRef.current) return; // Only run on true main homepage
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2('#020617', 0.12); // Slightly tighter fog to gracefully fade out early
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / (window.innerHeight * 0.35), 0.1, 100);
+    camera.position.set(0, 1.2, 4.0);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: homeGridCanvasRef.current, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight * 0.35); // Lock height to bottom deck slice
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Match your loading screen's strengthened cyber floor precisely
+    const gridGeometry = new THREE.PlaneGeometry(30, 30, 25, 25);
+    const gridMaterial = new THREE.MeshBasicMaterial({
+      color: 0x2563eb,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.35,
+    });
+    const gridMesh = new THREE.Mesh(gridGeometry, gridMaterial);
+    gridMesh.rotation.x = -Math.PI / 2;
+    gridMesh.position.y = -0.5; // Sit cleanly below your sphere UI elements
+    scene.add(gridMesh);
+
+    let animationFrameId;
+    const clock = new THREE.Clock();
+
+    const renderLoop = () => {
+      const elapsedTime = clock.getElapsedTime();
+      gridMesh.position.z = (elapsedTime * 0.15) % 1; // Smooth forward movement vector
+
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(renderLoop);
+    };
+    renderLoop();
+
+    const handleResize = () => {
+      if (!homeGridCanvasRef.current) return;
+      camera.aspect = window.innerWidth / (window.innerHeight * 0.35);
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight * 0.35);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+      gridGeometry.dispose();
+      gridMaterial.dispose();
+    };
+  }, [viewState]);
+
   // Updated Safe Navigation Escape Route
   const handleReturnToCore = () => {
-    // If you came into a profile from the Coach Menu, exit back to Coach Menu!
-    if (viewState === 'client_profile' && accessCode) {
+    // Coach admin return path: drop back into the command center roster
+    if (viewState === 'client_profile' && isCoachMode) {
       setViewState('coach_menu');
       setIsEditMode(false);
       return;
@@ -445,6 +674,42 @@ export default function App() {
     setAccessCode('');
     setActiveClientProfile(null);
     setIsEditMode(false);
+    setIsCoachMode(false);
+    setActiveVitalModule(null);
+    setActiveAthleteModule(null);
+    setActiveCombatModule(null);
+    setActivePostureModule(null);
+  };
+
+  // GLOBAL UTILITY: High-Tech Left-Aligned Uniform System Status & Exit Header Strip
+  const renderSystemHeader = (titleLabel = 'SECURE_OVERRIDE') => {
+    return (
+      <div className="w-full border-b border-slate-900 bg-slate-950/80 px-6 py-4 backdrop-blur-md sticky top-0 z-50 font-mono text-xs select-none shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Left Stacked Control Hub */}
+        <div className="flex flex-col gap-2.5 items-start">
+          {/* Glowing Matrix Telemetry Pulse */}
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+            <span className="tracking-widest text-slate-500 uppercase font-bold">
+              SYS_STATUS // STABILITY_SECURE // {titleLabel}
+            </span>
+          </div>
+
+          {/* New Left-Aligned Unified Terminal Dismiss Toggle Key */}
+          <button
+            onClick={handleReturnToCore}
+            className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white bg-slate-900/40 hover:bg-slate-950 font-bold tracking-wider transition-all uppercase cursor-pointer active:scale-95 shadow-md flex items-center gap-1.5"
+          >
+            ← [ESC] Exit Matrix Home
+          </button>
+        </div>
+
+        {/* Right Corner Area - Intentionally Left Clean & Minimal */}
+        <div className="hidden sm:block text-[10px] text-slate-600 tracking-widest uppercase font-semibold">
+          // SECURE DATA ENVIRONMENT
+        </div>
+      </div>
+    );
   };
 
   // NEW: Dynamic Pin Access Key Update Engine
@@ -500,180 +765,2102 @@ export default function App() {
     setIsEditMode(false);
   };
 
+  // Upgraded Lab Matrix Router Logic
   const handleLaunchAnalysis = (key) => {
     if (key === 'mobility') {
-      setSelectedAnalysis(ANALYSIS_VIEWS.mobility);
+      setSelectedAnalysis(ANALYSIS_VIEWS.mobility.label);
       setViewState('mobility');
       return;
     }
-    setActiveClientProfile(null);
-    setSelectedAnalysis(ANALYSIS_VIEWS[key] || 'Biometrics Analysis');
+    if (key === 'posture') {
+      setSelectedAnalysis(ANALYSIS_VIEWS.posture.label);
+      setViewState('vital_flow');
+      return;
+    }
+    if (key === 'alignment') {
+      setSelectedAnalysis(ANALYSIS_VIEWS.alignment.label);
+      setViewState('athlete_precision');
+      return;
+    }
+    // NEW: Kinetic Power Integrity Combat Track Dedicated Matrix Route Hook
+    if (key === 'athlete') {
+      setSelectedAnalysis(ANALYSIS_VIEWS.athlete.label);
+      setViewState('kinetic_power');
+      return;
+    }
+    setSelectedAnalysis(ANALYSIS_VIEWS[key].label || 'Biometrics Analysis');
     setBootProgress(0);
     setViewState('loading');
   };
 
   useEffect(() => {
-    if (viewState !== 'mobility' && viewState !== 'client_profile' && viewState !== 'coach_menu') return;
+    if (
+      viewState !== 'mobility' &&
+      viewState !== 'vital_flow' &&
+      viewState !== 'athlete_precision' &&
+      viewState !== 'kinetic_power' &&
+      viewState !== 'client_profile' &&
+      viewState !== 'coach_menu'
+    )
+      return;
     const onKeyDown = (e) => {
       if (e.key !== 'Escape') return;
       if (activeFocusField) {
         setActiveFocusField(null);
         return;
       }
+      if (viewState === 'mobility' && activePostureModule) {
+        setActivePostureModule(null);
+        return;
+      }
+      if (viewState === 'vital_flow' && activeVitalModule) {
+        setActiveVitalModule(null);
+        return;
+      }
+      if (viewState === 'athlete_precision' && activeAthleteModule) {
+        setActiveAthleteModule(null);
+        return;
+      }
+      if (viewState === 'kinetic_power' && activeCombatModule) {
+        setActiveCombatModule(null);
+        return;
+      }
       handleReturnToCore();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [viewState, activeFocusField]);
+  }, [
+    viewState,
+    activeFocusField,
+    activePostureModule,
+    activeVitalModule,
+    activeAthleteModule,
+    activeCombatModule,
+  ]);
 
   const displayClientName = clientList[currentIdx].replace('/', '').toUpperCase();
 
-  // SYSTEM FRAME D: Premium Biometric Client Profile Portal Hub
+  // MASTER APPLICATION VIEWPORTS ROUTER
+  // 1. Middle transition: dedicated 3D matrix scan for MATTA (code 7777)
+  if (viewState === 'scanning_matta') {
+    return (
+      <IntroScreen
+        autoBoot
+        onAccessGranted={() => {
+          // Once the progress bar hits 100%, route directly into the client page
+          setAccessCode('7777');
+          unlockMattaProfile();
+        }}
+      />
+    );
+  }
+
+  // SYSTEM FRAME A: Unified Posture & Ergonomics Workspace
+  if (viewState === 'mobility') {
+    const postureModules = [
+      {
+        id: 'pe_cervical',
+        title: 'Test 1: Cervical & Desk-Posture Grid',
+        direction: 'Forward Head Translation & Spine Angles // Side View Capture',
+        metrics: 'Neck Mobility & Extension Constraints',
+        duration: '3 Minutes',
+        icon: <Sparkles className="w-5 h-5 text-cyan-400" />,
+        desc: 'Maps exact forward skull carriage distances and shoulder rounding vectors directly caused by long hours at a computer terminal screen.',
+      },
+      {
+        id: 'pe_lumbar',
+        title: 'Test 2: Lumbar Spine & Pelvic Recruitment',
+        direction: 'Lumbar Curve & Pelvic Tilt Bias // Side View Capture',
+        metrics: 'Posterior/Anterior Pelvic Loading Lines',
+        duration: '3 Minutes',
+        icon: <Activity className="w-5 h-5 text-emerald-400" />,
+        desc: 'Maps lumbar hyper-extension and pelvic angle drop patterns under controlled tilt recruitment to isolate lower-spine compression bias.',
+      },
+      {
+        id: 'pe_thoracic',
+        title: 'Test 3: Trunk & Thoracic Rotation Matrix',
+        direction: 'Ribcage Transverse Flexibility // Frontal View Capture',
+        metrics: 'Spinal Twisting Decompression Lines',
+        duration: '3 Minutes',
+        icon: <Anchor className="w-5 h-5 text-amber-400" />,
+        desc: 'Measures core rotation limits and trunk stiffness lines built up during workplace shifts, isolating trapped structural paths.',
+      },
+    ];
+
+    // Intercept card click mechanics to switch into deep corporate portal views
+    const handlePostureModuleAction = (id) => {
+      if (id === 'pe_cervical') {
+        setActivePostureModule('pe_cervical');
+        return;
+      }
+      if (id === 'pe_lumbar') {
+        setActivePostureModule('pe_lumbar');
+        return;
+      }
+      if (id === 'pe_thoracic') {
+        setActivePostureModule('pe_thoracic');
+        return;
+      }
+      document.getElementById(id).click();
+    };
+
+    const handlePostureFileChange = (id, event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setUploadStatus((prev) => ({ ...prev, [id]: { state: 'scanning', fileName: file.name } }));
+      setTimeout(() => {
+        setUploadStatus((prev) => ({ ...prev, [id]: { state: 'complete', fileName: file.name } }));
+      }, 4000);
+    };
+
+    // =========================================================================
+    // POSTURE SUB-PORTAL 1: Cervical & Desk-Posture Grid
+    // =========================================================================
+    if (activePostureModule === 'pe_cervical') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('POSTURE_ERGONOMICS // CERVICAL_GRID_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActivePostureModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    CERVICAL & DESK-POSTURE GRID
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-cyan-400 font-bold uppercase">// SPINE_COMPRESSION</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // INITIAL BASE
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop your first bodyless skeleton asset here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // DYNAMIC APEX
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop your peak joint angle vector asset here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // TERMINAL STABILITY
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop your load deceleration holding asset here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Stand naturally or sit in your habitual computer workspace stance. Look straight ahead for 3
+                      seconds, then drop your chin completely down to your chest, return slowly to center, and look
+                      fully upward toward the ceiling vector.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-cyan-400">FORWARD HEAD JUT</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-cyan-400">PLUMB LINE MATRIX</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your phone camera exactly at shoulder height, standing 5 to 6 feet away directly facing
+                      your side profile path (90-degree lateral profile view). Frame the base of the skull down to
+                      mid-torso lines.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // POSTURE SUB-PORTAL 2: Lumbar Spine & Pelvic Loading
+    // =========================================================================
+    if (activePostureModule === 'pe_lumbar') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('POSTURE_ERGONOMICS // LUMBAR_PELVIC_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-emerald-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActivePostureModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-emerald-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    LUMBAR SPINE & PELVIC RECRUITMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-emerald-400 font-bold uppercase">// PELVIC_TILT_BIAS</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-emerald-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-emerald-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // NEUTRAL STANDING
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop lumbar curve baseline graphic here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-emerald-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-emerald-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // FLEXION VECTOR
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop posterior pelvic rotation tracking asset here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-emerald-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-emerald-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // EXTENSION OVERLOAD
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop anterior shear angle summary metric here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Place your hands on your hip crest lines. Gently tuck your tailbone completely underneath you to
+                      flatten your lower back (posterior tilt), hold for 2 seconds, then reverse the pattern by
+                      exaggerating your lower spinal curve outward (anterior tilt).
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-emerald-400">LUMBAR HYPER-EXT</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-emerald-400">PELVIC ANGLE DROP</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Set your capture device precisely at pelvic crest line height, standing 6 feet away directly
+                      matching your lateral profile axis (90-degree side view). Keep loose shirts tucked away to avoid
+                      obscuring spinal marker telemetry.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // POSTURE SUB-PORTAL 3: Trunk & Thoracic Rotation Matrix
+    // =========================================================================
+    if (activePostureModule === 'pe_thoracic') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('POSTURE_ERGONOMICS // THORACIC_ROTATION')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-orange-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActivePostureModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-orange-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    TRUNK & THORACIC ROTATION MATRIX
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-orange-400 font-bold uppercase">// CORE_DECOMPRESSION</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-orange-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-orange-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // SEATED AXIAL ALIGNMENT
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop seated neutral spine rotation axis here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-orange-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-orange-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // LEFT DEFLECTION APEX
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop left shoulder transverse plane angle vector here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-orange-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-orange-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // RIGHT DEFLECTION APEX
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop right shoulder transverse plane angle vector here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-orange-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Sit tall on a bench or chair with a straight rod across your upper shoulders. Keeping your hips
+                      completely forward and fixed, rotate your upper torso fully to the left side and hold for 2
+                      seconds, then rotate fully to the right side and hold for 2 seconds.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-orange-400">THORACIC MOBILITY RANGE</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-orange-400">PELVIC ASYMMETRY ROTATION</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-orange-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your phone camera exactly at chest height, standing 6 to 7 feet away directly facing the
+                      front center profile path (full frontal view capture). Both shoulders must stay visible throughout
+                      the twisting motion.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MAIN SUITE LISTING: Render Standardized Posture & Ergonomics Grid
+    // =========================================================================
+    return (
+      <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+        {/* Universal Top Terminal Strip */}
+        {renderSystemHeader('POSTURE_ERGONOMICS_COMPRESSION_MATRIX')}
+
+        {/* Scrollable Container Box Matching Look Style */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          <div className="w-full max-w-5xl bg-slate-950/40 rounded-2xl border border-slate-800/80 p-6 md:p-8 backdrop-blur-md shadow-2xl space-y-6">
+            {/* Standardized Branded Header Section */}
+            <div className="border-b border-slate-900 pb-5">
+              <h2 className="text-2xl font-bold text-white tracking-tight uppercase">
+                LONGEVITY BLUEPRINT ASSESSMENT SUITE // POSTURE & ERGONOMICS
+              </h2>
+              <p className="text-slate-400 text-sm mt-1.5 font-sans leading-relaxed font-normal tracking-wide border-l-2 border-cyan-500/40 pl-4">
+                "Corporate & Desk Worker Track — Combating Screen Compression." This premium assessment path shifts
+                focus to foundational durability, exposing hidden spinal degradation, neck posture strain, and
+                workplace structural fatigue.
+              </p>
+            </div>
+
+            {/* Double-Column Grid Container Mapping Hook */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {postureModules.map((item) => {
+                const current = uploadStatus[item.id];
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handlePostureModuleAction(item.id)}
+                    className={`p-5 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none flex flex-col justify-between min-h-[220px]
+                      ${current?.state === 'scanning' ? 'bg-slate-950 border-cyan-500/40 cursor-wait' : ''}
+                      ${
+                        current?.state === 'complete'
+                          ? 'bg-slate-900/40 border-emerald-500/30 cursor-default shadow-md'
+                          : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-950 hover:border-cyan-500/30 cursor-pointer active:scale-[0.99]'
+                      }
+                    `}
+                  >
+                    <input
+                      type="file"
+                      id={item.id}
+                      onChange={(e) => handlePostureFileChange(item.id, e)}
+                      accept="video/*"
+                      className="hidden"
+                    />
+
+                    {/* High-Tech Infinite Loop Overlay Tracker */}
+                    {current?.state === 'scanning' && (
+                      <div className="absolute inset-0 bg-[#020617] flex flex-col items-center justify-center p-4 z-10 text-center font-mono">
+                        <div className="text-3xl text-cyan-400 font-light select-none tracking-normal animate-pulse inline-block duration-1000 transform scale-150 mb-3">
+                          ∞
+                        </div>
+                        <p className="text-cyan-400 text-xs font-bold tracking-widest uppercase animate-pulse">
+                          RUNNING KINETIC TELEMETRY SCAN...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Card Media Information Bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="p-2 bg-slate-900 border border-slate-800/60 rounded-lg text-cyan-400">
+                          {item.icon}
+                        </div>
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-slate-900 text-slate-400 rounded-full border border-slate-800">
+                          {item.duration}
+                        </span>
+                      </div>
+
+                      {/* Card Identity Header */}
+                      <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors uppercase tracking-tight font-mono">
+                        {item.title}
+                      </h3>
+                      <p className="text-[10px] text-cyan-500/90 font-bold uppercase tracking-widest mt-1 mb-2 font-mono">
+                        // {item.direction}
+                      </p>
+                      <p className="text-xs font-sans text-slate-400 font-normal leading-relaxed">{item.desc}</p>
+                    </div>
+
+                    {/* Standardized Bottom Action Strip */}
+                    <div className="mt-5 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-500 font-medium">{item.metrics}</span>
+
+                      {!current && (
+                        <span className="text-cyan-400 flex items-center gap-1 font-bold group-hover:translate-x-0.5 transition-transform">
+                          Start Assessment →
+                        </span>
+                      )}
+                      {current?.state === 'complete' && (
+                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
+                          ✓ SECURED // PENDING COACH KEY
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SYSTEM FRAME F: Unified Vital Flow Longevity Suite Workspace
+  if (viewState === 'vital_flow') {
+    const vitalModules = [
+      {
+        id: 'vf_squat',
+        title: 'Deep Squat & Mobility Matrix',
+        direction: 'Bilateral Wide Stance // Frontal View Capture',
+        metrics: '46 Mobility Data Points',
+        duration: '4 Minutes',
+        icon: <Sparkles className="w-5 h-5 text-indigo-400" />,
+        desc: 'Analyzes dynamic lateral tracking paths, deep knee alignment profiles, and pelvic drop depth vectors under loading cycles.',
+      },
+      {
+        id: 'vf_ext',
+        title: 'Mobility Back Extension Assessment',
+        direction: 'Kinetic Power & Structural Extension // Side Profile View',
+        metrics: 'Spinal Articulation Coefficients',
+        duration: '3 Minutes',
+        icon: <Activity className="w-5 h-5 text-amber-400" />,
+        desc: 'Maps segmented thoracic expansion arcs against lumbar shear limits to ensure overhead extensions are shielded.',
+      },
+      {
+        id: 'vf_hold',
+        title: 'Single-Leg Hold Stability Secure Assessment',
+        direction: 'Static Unilateral Postural Sway // Frontal View',
+        metrics: 'Postural Sway Radius Matrix',
+        duration: '3 Minutes',
+        icon: <Anchor className="w-5 h-5 text-emerald-400" />,
+        desc: 'Exposes hidden left-to-right micro-instabilities and stabilizer sway frequencies under persistent loading patterns.',
+      },
+    ];
+
+    const handleModuleCardAction = (id) => {
+      if (id === 'vf_squat') {
+        setActiveVitalModule('vf_squat');
+        return;
+      }
+      if (id === 'vf_ext') {
+        setActiveVitalModule('vf_ext');
+        return;
+      }
+      if (id === 'vf_hold') {
+        setActiveVitalModule('vf_hold');
+        return;
+      }
+      document.getElementById(id)?.click();
+    };
+
+    const handleVitalFileChange = (id, event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setUploadStatus((prev) => ({ ...prev, [id]: { state: 'scanning', fileName: file.name } }));
+      setTimeout(() => {
+        setUploadStatus((prev) => ({ ...prev, [id]: { state: 'complete', fileName: file.name } }));
+      }, 4000);
+    };
+
+    // =========================================================================
+    // SUB-ROUTER CONDITIONAL: Render Test One Sub-Portal
+    // =========================================================================
+    if (activeVitalModule === 'vf_squat') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('VITAL_FLOW // DEEP_SQUAT_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-blue-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              {/* PORTAL TITLE DECK HEADLINE */}
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveVitalModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-blue-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    DEEP SQUAT & MOBILITY ASSESSMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-blue-400 font-bold uppercase">// MOBILITY_ANALYSIS</span>
+              </div>
+
+              {/* CLEAN DUAL-COLUMN HIGH-ART RECORDING SYSTEM */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: MASSIVE HOLOGRAPHIC BIOMETRIC EXAMPLES */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-blue-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-blue-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // STANDING SETUP
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop first bodyless skeleton model profile here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-blue-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-blue-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // ECCENTRIC TRANSITION
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop hip-crease alignment vector graphics here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-blue-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-blue-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // MAXIMUM DEPTH HOLD
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop deep apex telemetry outline asset here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: UPSCALE SYSTEM TELEMETRY INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  {/* EXPANDED INSTRUCTIONS CARD */}
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Stand with your feet shoulder-width apart, arms extended straight out in front of your chest.
+                      Descend smoothly into your maximum controlled deep squat, pulling your hips low while keeping your
+                      heels firmly anchored to the floor. Hold the absolute bottom position for 3 full seconds before
+                      returning to the start line.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-blue-400">ANKLE DORSIFLEXION</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-blue-400">HIP DEPTH SHIFT</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* EXPANDED CAMERA ALIGNMENT CARD */}
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your phone camera device exactly at knee height, standing 7 to 8 feet away directly facing
+                      your side profile (90-degree lateral view capture). Ensure your entire body, from your feet to peak
+                      extended hand line, remains tracked within the screen workspace throughout the entire pattern.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // VITAL FLOW MODULE: Mobility Back Extension Assessment
+    // =========================================================================
+    if (activeVitalModule === 'vf_ext') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('VITAL_FLOW // SPINE_EXTENSION_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveVitalModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    MOBILITY BACK EXTENSION ASSESSMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-cyan-400 font-bold uppercase">// THORACIC_ALIGNMENT</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // PRONE EXTENSION SETUP
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop prone resting alignment skeleton here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // SEGMENTAL SPINE DRIVE
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop dynamic lumbar thoracic extension arcs here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // MAXIMUM POSTERIOR HOLD
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop apex chest-lift clearance tracking file here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Lie completely prone face down on your training mat. Place your hands flat directly underneath your
+                      shoulders. Keeping your pelvis and legs firmly glued down to the floor, press through your hands to
+                      extend your upper torso upward. Arrive at a comfortable peak range, holding for 3 full seconds.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-cyan-400">THORACIC SEGMENT EXTN</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-cyan-400">PELVIC ANCHOR BREAK</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Set your camera device directly on the floor or a low platform at mat level. Position it 7 to 8 feet
+                      away, perfectly square to your side profile (90-degree lateral profile capture). Ensure your entire
+                      length from head to toes stays framed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // VITAL FLOW MODULE: Single Leg Hold Stability Assessment
+    // =========================================================================
+    if (activeVitalModule === 'vf_hold') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('VITAL_FLOW // UNILATERAL_BALANCE_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveVitalModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    SINGLE LEG HOLD STABILITY ASSESSMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-cyan-400 font-bold uppercase">
+                  // CORE_STABILIZER_MATRIX
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // UNILATERAL SETUP
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop static single leg ankle loading map here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // CENTER MASS SWAY
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop torso sway lateral displacement graph here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // BASE ANCHOR STABILITY
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop proprietary anchor pronation summary file here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Lift one foot cleanly off the floor, keeping your standing support leg completely straight with
+                      your hands placed firmly on your hip crest lines. Maintain this frozen posture perfectly still for
+                      20 continuous seconds, tracking balance micro-corrections.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-cyan-400">TORSO ANGLE OSCILLATION</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-cyan-400">FOOT CONTROLLER SWAY</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your phone camera device exactly at waist height, standing 6 feet away directly facing the
+                      front path vector (full frontal view capture). Frame both hip points and feet clearly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // ORIGINAL MATRIX SUITE LISTING CONTENT DISPLAY (Wrap beneath sub-router)
+    // =========================================================================
+    return (
+      <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden">
+        {/* Universal Top Terminal Strip */}
+        {renderSystemHeader('VITAL_FLOW_DECOMPRESSION_MATRIX')}
+
+        {/* Scrollable Container Box Matching the Look Style */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          <div className="w-full max-w-5xl bg-slate-950/40 rounded-2xl border border-slate-800/80 p-6 md:p-8 backdrop-blur-md shadow-2xl space-y-6">
+            {/* Standardized Header Section */}
+            <div className="border-b border-slate-900 pb-5">
+              <h2 className="text-2xl font-bold text-white tracking-tight uppercase">
+                LONGEVITY BLUEPRINT ASSESSMENT SUITE // VITAL FLOW
+              </h2>
+              <p className="text-slate-400 text-sm mt-1.5 font-sans leading-relaxed font-normal tracking-wide">
+                "Flexibility without stability is a recipe for joint wear-and-tear." Select an assessment pathway below
+                to view setup grids and start your movement calibration.
+              </p>
+            </div>
+
+            {/* Clean Grid Framework Matching the Image Exactly */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {vitalModules.map((item) => {
+                const current = uploadStatus[item.id];
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleModuleCardAction(item.id)}
+                    className={`p-5 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none flex flex-col justify-between min-h-[220px]
+                      ${current?.state === 'scanning' ? 'bg-slate-950 border-cyan-500/40 cursor-wait' : ''}
+                      ${
+                        current?.state === 'complete'
+                          ? 'bg-slate-900/40 border-emerald-500/30 cursor-default shadow-[0_0_20px_rgba(16,185,129,0.02)]'
+                          : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-950 hover:border-cyan-500/30 cursor-pointer active:scale-[0.99]'
+                      }
+                    `}
+                  >
+                    <input
+                      type="file"
+                      id={item.id}
+                      onChange={(e) => handleVitalFileChange(item.id, e)}
+                      accept="video/*"
+                      className="hidden"
+                    />
+
+                    {/* High-Tech Infinite Loop Overlay Tracker */}
+                    {current?.state === 'scanning' && (
+                      <div className="absolute inset-0 bg-[#020617] flex flex-col items-center justify-center p-4 z-10 text-center">
+                        <div className="text-3xl text-cyan-400 font-light select-none tracking-normal animate-pulse inline-block duration-1000 transform scale-150 mb-3">
+                          ∞
+                        </div>
+                        <p className="text-cyan-400 text-xs font-bold tracking-widest uppercase animate-pulse">
+                          RUNNING KINETIC TELEMETRY SCAN...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Card Top Row */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="p-2 bg-slate-900 border border-slate-800/60 rounded-lg text-cyan-400">
+                          {item.icon}
+                        </div>
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-slate-900 text-slate-400 rounded-full border border-slate-800">
+                          {item.duration}
+                        </span>
+                      </div>
+
+                      {/* Card Identity Header */}
+                      <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors uppercase tracking-tight">
+                        {item.title}
+                      </h3>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 mb-2 font-mono">
+                        // {item.direction}
+                      </p>
+                      <p className="text-xs font-sans text-slate-400 font-normal leading-relaxed">{item.desc}</p>
+                    </div>
+
+                    {/* Standardized Bottom Action Strip */}
+                    <div className="mt-5 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium font-mono">{item.metrics}</span>
+
+                      {!current && (
+                        <span className="text-cyan-400 flex items-center gap-1 font-bold group-hover:translate-x-0.5 transition-transform font-mono">
+                          Start Assessment →
+                        </span>
+                      )}
+                      {current?.state === 'complete' && (
+                        <span className="text-emerald-400 flex items-center gap-1 font-bold font-mono">
+                          ✓ SECURED // PENDING COACH KEY
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SYSTEM FRAME G: Dedicated Athlete Precision Workspace
+  if (viewState === 'athlete_precision') {
+    const athleteModules = [
+      {
+        id: 'ap_overhead',
+        title: 'Test 1: Overhead Bilateral Squat',
+        direction: 'Bilateral Overhead Extension // Frontal View Capture',
+        metrics: 'Knee Valgus Angle & Depth Symmetry',
+        duration: '4 Minutes',
+        icon: <Sparkles className="w-5 h-5 text-cyan-400" />,
+        desc: 'Tracks dynamic frontal knee tracking paths and rotational valgus collapse limits. Pinpoints unweighted hip-to-ankle alignment shifts under core extension.',
+      },
+      {
+        id: 'ap_single',
+        title: 'Test 2: Dynamic Single-Leg Squat',
+        direction: 'Unilateral Lower Body Load // Frontal View Capture',
+        metrics: 'Limb Symmetry Index (LSI) Telemetry',
+        duration: '5 Minutes',
+        icon: <Activity className="w-5 h-5 text-indigo-400" />,
+        desc: 'Compares left-leg stabilizer tracking values directly against right-leg parameters to isolate hidden muscular asymmetries and quad dominance ratios.',
+      },
+      {
+        id: 'ap_hold',
+        title: 'Test 3: Single Leg Hold Stability',
+        direction: 'Unilateral Static Balance // Frontal View Capture',
+        metrics: 'Core Stabilizer & Foot Sway Telemetry',
+        duration: '3 Minutes',
+        icon: <Anchor className="w-5 h-5 text-cyan-400" />,
+        desc: 'Tracks torso oscillation and foot-controller sway under a frozen single-leg lockout hold to isolate balance micro-corrections and ankle loading bias.',
+      },
+    ];
+
+    // Intercept card click mechanics to switch into deep athlete precision portals
+    const handleAthleteModuleAction = (id) => {
+      if (id === 'ap_overhead') {
+        setActiveAthleteModule('ap_overhead');
+        return;
+      }
+      if (id === 'ap_single') {
+        setActiveAthleteModule('ap_single');
+        return;
+      }
+      if (id === 'ap_hold') {
+        setActiveAthleteModule('ap_hold');
+        return;
+      }
+      // Fallback file input click loop for the remaining cards
+      document.getElementById(id).click();
+    };
+
+    const handleAthleteFileChange = (id, event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setUploadStatus((prev) => ({ ...prev, [id]: { state: 'scanning', fileName: file.name } }));
+      setTimeout(() => {
+        setUploadStatus((prev) => ({ ...prev, [id]: { state: 'complete', fileName: file.name } }));
+      }, 4000);
+    };
+
+    // =========================================================================
+    // SUB-ROUTER CONDITIONAL: Render Athlete Test One Sub-Portal (Overhead Squat)
+    // =========================================================================
+    if (activeAthleteModule === 'ap_overhead') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('ATHLETE_PRECISION // OVERHEAD_SQUAT_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              {/* PORTAL TITLE DECK HEADLINE */}
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveAthleteModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    OVERHEAD BILATERAL SQUAT ASSESSMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-cyan-400 font-bold uppercase">// SYMMETRY_ANALYSIS</span>
+              </div>
+
+              {/* CLEAN DUAL-COLUMN HIGH-ART RECORDING SYSTEM */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: MASSIVE HOLOGRAPHIC BIOMETRIC EXAMPLES */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // OVERHEAD LOCKOUT
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop dowel/bar track skeleton model here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // BILATERAL DRIVE DEPTH
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop frontal knee-tracking lateral shift matrix here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // BILATERAL AXIS STICK
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop shoulder torso angle symmetry metrics here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: UPSCALE SYSTEM TELEMETRY INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  {/* EXPANDED INSTRUCTIONS CARD */}
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Raise your arms directly overhead, holding a PVC pipe, dowel rod, or light straight line bar vector
+                      with elbows locked out crisp. Keep your chest up high and squat downward as low as your anatomy
+                      allows. Press your weight evenly through both feet, holding the absolute base threshold stable for
+                      2 seconds before pushing upright.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-cyan-400">THORACIC EXTENSION</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-cyan-400">VALGUS KNEE DEVIA</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* EXPANDED CAMERA ALIGNMENT CARD */}
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Set your recording device perfectly at mid-torso height, positioned 8 feet out directly facing your
+                      front center profile (full frontal view capture). Your hands, shoulders, knees, and feet must stay
+                      completely tracked inside the capture envelope at all times.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // ATHLETE PRECISION MODULE: Dynamic Single-Leg Squat Assessment
+    // =========================================================================
+    if (activeAthleteModule === 'ap_single') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('ATHLETE_PRECISION // SINGLE_LEG_SQUAT_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-blue-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveAthleteModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-blue-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    DYNAMIC SINGLE-LEG SQUAT ASSESSMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-blue-400 font-bold uppercase">// BILATERAL_SYMMETRY</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-blue-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-blue-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // SINGLE LEG BALANCE UNLOAD
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop unilateral stance baseline skeletal frame here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-blue-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-blue-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // ECCENTRIC VALGUS APEX
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop dynamic knee tracking deviation vector files here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-blue-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-blue-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // HIP STABILITY DROP CONSOLE
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop pelvis tilt asymmetry tracking metrics here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Balance firmly on your target tracking leg, raising your opposite foot cleanly off the floor
+                      surface. Extend your arms out forward for balance, descend smoothly to your maximum comfortable
+                      single-leg depth, and push straight back up to complete the rep vector.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-blue-400">VALGUS KNEE TRACK</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-blue-400">LATERAL HIP SHIFT</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Set up your video recording device exactly at knee height, standing 7 to 8 feet away directly facing
+                      the front center profile line (full frontal view capture). Keep your entire frame from base to
+                      shoulders tracked.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // ATHLETE PRECISION MODULE: Single Leg Hold Stability Assessment
+    // =========================================================================
+    if (activeAthleteModule === 'ap_hold') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('ATHLETE_PRECISION // SINGLE_LEG_HOLD_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveAthleteModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    SINGLE LEG HOLD STABILITY ASSESSMENT
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-cyan-400 font-bold uppercase">
+                  // CORE_STABILIZER_MATRIX
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // UNILATERAL LOCKOUT TIMELINE
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop static single leg ankle loading map here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // CENTER VECTOR DRIFT ANALYSIS
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop torso sway lateral displacement graph here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-500/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // FOOT APEX DEVIATION
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop proprietary anchor pronation summary file here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Lift one foot cleanly off the floor, keeping your standing support leg straight with your hands
+                      placed firmly on your hip crest lines. Maintain this frozen posture perfectly still for 20
+                      continuous seconds, tracking balance micro-corrections.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-cyan-400">TORSO ANGLE OSCILL</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-cyan-400">FOOT CONTROLLER SWAY</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your device camera exactly at waist height, standing 6 feet away directly facing the front
+                      path vector (full frontal view capture). Frame both hip points and feet clearly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+        {/* Universal Top Terminal Strip */}
+        {renderSystemHeader('ATHLETE_PRECISION_DURABILITY_MATRIX')}
+
+        {/* Scrollable Container Box Matching Your Look Style */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          <div className="w-full max-w-4xl bg-slate-950/40 rounded-2xl border border-slate-800/80 p-6 md:p-8 backdrop-blur-md shadow-2xl space-y-6">
+            {/* Standardized Branded Header Section */}
+            <div className="border-b border-slate-900 pb-5">
+              <h2 className="text-2xl font-bold text-white tracking-tight uppercase">
+                LONGEVITY BLUEPRINT ASSESSMENT SUITE // ATHLETE PRECISION
+              </h2>
+              <p className="text-slate-400 text-sm mt-1.5 font-sans leading-relaxed font-normal tracking-wide border-l-2 border-cyan-500/40 pl-4">
+                "This assessment shifts the focus from raw power to foundational durability, exposing hidden asymmetries."
+                This targeted tracking matrix identifies micro-asymmetries and neuromuscular imbalances before they evolve
+                into long-term mechanical degradation.
+              </p>
+            </div>
+
+            {/* Clean Grid Framework Matching the Vital Flow & Posture Standard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {athleteModules.map((item) => {
+                const current = uploadStatus[item.id];
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleAthleteModuleAction(item.id)}
+                    className={`p-5 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none flex flex-col justify-between min-h-[220px]
+                      ${current?.state === 'scanning' ? 'bg-slate-950 border-cyan-500/40 cursor-wait' : ''}
+                      ${
+                        current?.state === 'complete'
+                          ? 'bg-slate-900/40 border-emerald-500/30 cursor-default shadow-md'
+                          : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-950 hover:border-cyan-500/30 cursor-pointer active:scale-[0.99]'
+                      }
+                    `}
+                  >
+                    <input
+                      type="file"
+                      id={item.id}
+                      onChange={(e) => handleAthleteFileChange(item.id, e)}
+                      accept="video/*"
+                      className="hidden"
+                    />
+
+                    {/* High-Tech Infinite Loop Loader Overlay */}
+                    {current?.state === 'scanning' && (
+                      <div className="absolute inset-0 bg-[#020617] flex flex-col items-center justify-center p-4 z-10 text-center font-mono">
+                        <div className="text-3xl text-cyan-400 font-light select-none tracking-normal animate-pulse inline-block duration-1000 transform scale-150 mb-3">
+                          ∞
+                        </div>
+                        <p className="text-cyan-400 text-xs font-bold tracking-widest uppercase animate-pulse">
+                          RUNNING KINETIC TELEMETRY SCAN...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Card Media Information Bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="p-2 bg-slate-900 border border-slate-800/60 rounded-lg text-cyan-400">
+                          {item.icon}
+                        </div>
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-slate-900 text-slate-400 rounded-full border border-slate-800">
+                          {item.duration}
+                        </span>
+                      </div>
+
+                      {/* Card Track Title Specs */}
+                      <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors uppercase tracking-tight font-mono">
+                        {item.title}
+                      </h3>
+                      <p className="text-[10px] text-cyan-500/90 font-bold uppercase tracking-widest mt-1 mb-2 font-mono">
+                        // {item.direction}
+                      </p>
+                      <p className="text-xs font-sans text-slate-400 font-normal leading-relaxed">{item.desc}</p>
+                    </div>
+
+                    {/* Standardized Bottom Action Strip */}
+                    <div className="mt-5 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-500 font-medium">{item.metrics}</span>
+
+                      {!current && (
+                        <span className="text-cyan-400 flex items-center gap-1 font-bold group-hover:translate-x-0.5 transition-transform">
+                          Start Assessment →
+                        </span>
+                      )}
+                      {current?.state === 'complete' && (
+                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
+                          ✓ SECURED // PENDING COACH KEY
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SYSTEM FRAME H: Unified Kinetic Power Integrity Combat Track Workspace
+  if (viewState === 'kinetic_power') {
+    const combatModules = [
+      {
+        id: 'kp_boxing',
+        title: 'Test 1: Shadow Boxing Cross or Hook',
+        direction: 'General Mobility Assessment // Frontal View Capture',
+        metrics: 'Kinetic Energy Leak & Rotation Ratios',
+        duration: '3 Minutes',
+        icon: <Sparkles className="w-5 h-5 text-rose-400" />,
+        desc: 'Maps the transfer of kinetic force from the ground up. Tracking rotation angles reveals exactly where striking energy is lost before reaching the target.',
+      },
+      {
+        id: 'kp_bound',
+        title: 'Test 2: Lateral Single-Leg Bound and Hold',
+        direction: 'Jump / Landing Assessment (Sideways Bound) // Frontal View',
+        metrics: 'Dynamic Ankle & Knee Torque Stabilization',
+        duration: '4 Minutes',
+        icon: <Activity className="w-5 h-5 text-amber-400" />,
+        desc: 'Measures how quickly joint angles stabilize after absorbing sharp lateral force vectors, testing directly for structural ligament protection.',
+      },
+      {
+        id: 'kp_stance',
+        title: 'Test 3: Low Combat Stance Hold',
+        direction: 'Squat Solution Module // Frontal View Capture',
+        metrics: 'Weight-Distribution Shift Percentages',
+        duration: '3 Minutes',
+        icon: <Anchor className="w-5 h-5 text-cyan-400" />,
+        desc: 'Checks left vs. right knee loading angles to see if a fighter overloads their lead or rear tracking leg while maintaining their center-of-mass balance.',
+      },
+    ];
+
+    // Intercept card click mechanics to switch into deep combat portal views
+    const handleCombatModuleAction = (id) => {
+      if (id === 'kp_boxing') {
+        setActiveCombatModule('kp_boxing');
+        return;
+      }
+      if (id === 'kp_bound') {
+        setActiveCombatModule('kp_bound');
+        return;
+      }
+      if (id === 'kp_stance') {
+        setActiveCombatModule('kp_stance');
+        return;
+      }
+      document.getElementById(id).click();
+    };
+
+    const handleCombatFileChange = (id, event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setUploadStatus((prev) => ({ ...prev, [id]: { state: 'scanning', fileName: file.name } }));
+      setTimeout(() => {
+        setUploadStatus((prev) => ({ ...prev, [id]: { state: 'complete', fileName: file.name } }));
+      }, 4000);
+    };
+
+    // =========================================================================
+    // COMBAT TEST SUB-PORTAL 1: Shadow Boxing Cross or Hook Assessment
+    // =========================================================================
+    if (activeCombatModule === 'kp_boxing') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('KINETIC_POWER // STRIKING_MOBILITY_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-rose-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveCombatModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-rose-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    TEST 1: SHADOW BOXING CROSS OR HOOK
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-rose-400 font-bold uppercase">// ENERGY_TRANSFER</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-rose-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-rose-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-rose-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // STANCE DRIVE LINE
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop rear-foot heel rotation vector file here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-rose-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-rose-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-rose-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // HIP ROTATIONAL SNAP
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop kinetic energy pelvis slinging outline here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-rose-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-rose-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-rose-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // PEAK IMPACT EXTENSION
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop torso alignment lumbar guard asset here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-rose-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Square up into your fighting stance. Fire 3 maximum-velocity rear-hand cross punches or heavy lead
+                      hooks into shadow boxing space. Exaggerate your heel-pivoting drive and hip snap, freezing the peak
+                      extension line perfectly stable for 1 full second on the final repetition.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-rose-400">ROTATIONAL FORCE LEAKS</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-rose-400">LUMBAR SHEAR PROTECTION</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-rose-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Set up your device camera exactly at chest height, standing 7 to 8 feet away directly facing your
+                      front center-line vector (full frontal view capture). Your entire frame from your tracking feet up
+                      to the punch arc path must stay tracked.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // COMBAT TEST SUB-PORTAL 2: Lateral Single-Leg Bound and Hold
+    // =========================================================================
+    if (activeCombatModule === 'kp_bound') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('KINETIC_POWER // LATERAL_DECELERATION_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-amber-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveCombatModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-amber-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    TEST 2: LATERAL SINGLE-LEG BOUND AND HOLD
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-amber-400 font-bold uppercase">// LIGAMENT_PROTECTION</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-amber-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-amber-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // SIDEWAYS LAUNCH DRIVE
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop explosive lateral drive force graphic here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-amber-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-amber-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // TORQUE STABILIZATION
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop dynamic knee deceleration vector file here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-amber-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-amber-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // STATUE BASE ANCHOR
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop terminal ankle angle stability metric asset here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-amber-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Bound sideways explosively into the tracking frame, landing firmly on your outside tracking leg.
+                      Drop deeply into your hips to absorb the incoming force vectors and stick the landing like a
+                      statue. Hold that frozen single-leg base completely stable for 3 full seconds without resetting.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-amber-400">DYNAMIC KNEE TORQUE</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-amber-400">DECELERATION ANKLE ANCHOR</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-amber-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your camera device exactly at knee height, standing 8 feet away directly facing your
+                      jumping trajectory path (full frontal view capture). Make sure the full width of your lateral
+                      bound track stays within the workspace boundary.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // COMBAT TEST SUB-PORTAL 3: Low Combat Stance Hold Assessment
+    // =========================================================================
+    if (activeCombatModule === 'kp_stance') {
+      return (
+        <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+          {renderSystemHeader('KINETIC_POWER // LOW_STANCE_MATRIX')}
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+            <div className="w-full max-w-6xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl flex flex-col gap-8 relative">
+              <div className="flex justify-between items-center border-b border-slate-900 pb-5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveCombatModule(null)}
+                    className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer text-xs font-bold tracking-wider"
+                  >
+                    ← BACK TO MATRIX
+                  </button>
+                  <h3 className="text-xl font-black text-slate-100 uppercase tracking-widest">
+                    TEST 3: LOW COMBAT STANCE HOLD
+                  </h3>
+                </div>
+                <span className="text-xs tracking-widest text-cyan-400 font-bold uppercase">// WEIGHT_DISTRIBUTION</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+                {/* LEFT HALF: VISUAL STAGE PLACEHOLDERS */}
+                <div className="flex flex-col gap-5">
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">
+                    // MOVEMENT_STAGES_VISUAL_GUIDE
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 01 // STANCE DEPTH ENTRY
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop grappling base alignment silhouette here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 02 // LEAD VS REAR BIAS LOADING
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop left vs right knee loading balance mesh here
+                    </p>
+                  </div>
+
+                  <div className="flex-1 min-h-[140px] bg-slate-900/20 border border-slate-900 rounded-xl relative overflow-hidden flex flex-col items-center justify-center p-5 group border-dashed hover:border-cyan-400/30 transition-colors">
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                    <span className="text-xs text-cyan-400 font-black tracking-wider uppercase mb-1.5">
+                      STAGE 03 // CENTER MASS SUSTAIN
+                    </span>
+                    <p className="text-[10px] font-sans text-slate-500 text-center uppercase tracking-widest max-w-xs leading-relaxed">
+                      Placeholder: Drop pelvis center-of-mass tracking vectors here
+                    </p>
+                  </div>
+                </div>
+
+                {/* RIGHT HALF: INSTRUCTIONS */}
+                <div className="flex flex-col gap-6 justify-between">
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>🔎 MOVEMENT EXECUTION INSTRUCTIONS</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Sink down deep into your maximum functional low combat stance or grappling base. Hold that exact
+                      center-of-mass depth perfectly stable for 10 full seconds without creeping or rising up,
+                      maintaining a crisp high defensive guard line throughout the entire duration.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-[10px] font-mono text-slate-500 font-bold pt-2 uppercase">
+                      <div>
+                        TARGET 1: <span className="text-cyan-400">LEAD/REAR KNEE ANGLES</span>
+                      </div>
+                      <div>
+                        TARGET 2: <span className="text-cyan-400">CENTER DEPTH TRACKING</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="text-xs text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2 border-b border-slate-900/60 pb-2">
+                      <span>📷 CAMERA ANGLE & TELEMETRY ALIGNMENT</span>
+                    </div>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      Position your phone camera device exactly at pelvic crest height, centered 7 to 8 feet away
+                      directly facing the front center-line layout (full frontal view capture). Frame both feet and
+                      knees clearly within the active scanning plane.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MAIN SUITE LISTING: Render Standardized Kinetic Power Integrity Grid
+    // =========================================================================
+    return (
+      <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+        {/* Universal Top Terminal Strip */}
+        {renderSystemHeader('KINETIC_POWER_INTEGRITY_COMBAT_MATRIX')}
+
+        {/* Scrollable Container Box Matching Your Look Style */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          <div className="w-full max-w-4xl bg-slate-950/40 rounded-2xl border border-slate-800/80 p-6 md:p-8 backdrop-blur-md shadow-2xl space-y-6">
+            {/* Standardized Branded Header Section */}
+            <div className="border-b border-slate-900 pb-5">
+              <h2 className="text-2xl font-bold text-white tracking-tight uppercase">
+                LONGEVITY BLUEPRINT ASSESSMENT SUITE // KINETIC POWER INTEGRITY
+              </h2>
+              <p className="text-slate-400 text-sm mt-1.5 font-sans leading-relaxed font-normal tracking-wide border-l-2 border-rose-500/40 pl-4">
+                "This assessment focuses on absolute joint torque bracing and elite impact stabilization metrics."
+                Engineered explicitly for combat sport athletes to track fascial force transmission and protect
+                structural cartilage.
+              </p>
+            </div>
+
+            {/* Clean Grid Framework Matching the Look Style */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {combatModules.map((item) => {
+                const current = uploadStatus[item.id];
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleCombatModuleAction(item.id)}
+                    className={`p-5 rounded-xl border transition-all duration-300 relative overflow-hidden group select-none flex flex-col justify-between min-h-[220px]
+                        ${current?.state === 'scanning' ? 'bg-slate-950 border-cyan-500/40 cursor-wait' : ''}
+                        ${
+                          current?.state === 'complete'
+                            ? 'bg-slate-900/40 border-emerald-500/30 cursor-default shadow-md'
+                            : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-950 hover:border-cyan-500/30 cursor-pointer active:scale-[0.99]'
+                        }
+                      `}
+                  >
+                    <input
+                      type="file"
+                      id={item.id}
+                      onChange={(e) => handleCombatFileChange(item.id, e)}
+                      accept="video/*"
+                      className="hidden"
+                    />
+
+                    {/* Card Media Information Bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="p-2 bg-slate-900 border border-slate-800/60 rounded-lg text-rose-400">
+                          {item.icon}
+                        </div>
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 bg-slate-900 text-slate-400 rounded-full border border-slate-800">
+                          {item.duration}
+                        </span>
+                      </div>
+
+                      <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors uppercase tracking-tight font-mono">
+                        {item.title}
+                      </h3>
+                      <p className="text-[10px] text-rose-400/90 font-bold uppercase tracking-widest mt-1 mb-2 font-mono">
+                        // {item.direction}
+                      </p>
+                      <p className="text-xs font-sans text-slate-400 font-normal leading-relaxed">{item.desc}</p>
+                    </div>
+
+                    {/* Standardized Bottom Action Strip */}
+                    <div className="mt-5 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-500 font-medium">{item.metrics}</span>
+                      {!current && (
+                        <span className="text-cyan-400 flex items-center gap-1 font-bold group-hover:translate-x-0.5 transition-transform">
+                          Start Assessment →
+                        </span>
+                      )}
+                      {current?.state === 'complete' && (
+                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
+                          ✓ SECURED // PENDING COACH KEY
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SYSTEM FRAME B: Premium Biometric Client Profile Portal Hub
   if (viewState === 'client_profile' && activeClientProfile) {
     return (
-      <div className="w-screen min-h-screen bg-[#020617] text-white font-mono p-4 md:p-8 flex items-center justify-center overflow-y-auto select-none relative">
-        {/* Main Strategic Card Panel Framework */}
-        <div className="w-full max-w-5xl bg-slate-950/80 border border-cyan-500/20 rounded-2xl backdrop-blur-xl p-6 md:p-8 shadow-2xl relative z-0">
-          {/* Header Action Row */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-900 pb-5 mb-6 gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs tracking-widest uppercase mb-1">
-                <Shield className="w-3.5 h-3.5" /> SECURE DATA PORTAL MATRIX // OVERVIEW
-              </div>
-              <h2 className="text-2xl font-black text-slate-100 tracking-tight uppercase">
-                {activeClientProfile.name}
-              </h2>
+      <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden relative">
+        {renderSystemHeader(`CLIENT_DOSSIER // ${activeClientProfile.name.toUpperCase()}`)}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          {/* Your main active card panel framework remains perfectly safe inside here */}
+          <div className="w-full max-w-7xl bg-slate-950/80 border border-cyan-500/20 rounded-2xl backdrop-blur-xl p-6 md:p-8 shadow-2xl relative">
+
+            {/* Dossier Header Info Block */}
+            <div className="border-b border-slate-900 pb-4 mb-6">
+              <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest mb-0.5">// ACTIVE PROFILE ARCHIVE</div>
+              <h2 className="text-2xl font-black text-slate-100 tracking-tight uppercase">{activeClientProfile.name}</h2>
             </div>
-            <button
-              onClick={handleReturnToCore}
-              className="px-4 py-2 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white text-xs bg-slate-900/60 font-bold tracking-wider transition-all uppercase cursor-pointer active:scale-95 shrink-0"
-            >
-              ← [ESC] Exit Profile Terminal
-            </button>
-          </div>
 
-          {/* Grid Separation Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column: Demographics, Core Identity & Tier Modifiers */}
-            <div className="space-y-4">
-              <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl flex flex-col items-center text-center">
-                {/* Profile Placeholder Graphic Circle */}
-                <div className="w-24 h-24 rounded-full bg-slate-950 border border-cyan-500/20 flex items-center justify-center shadow-lg mb-4 text-cyan-400 relative overflow-hidden group">
-                  <User className="w-10 h-10 group-hover:scale-105 transition-transform" />
-                  <div className="absolute inset-0 bg-cyan-400/5 mix-blend-overlay" />
-                </div>
-
-                <div className="text-xs font-bold text-cyan-400 uppercase tracking-widest px-2.5 py-0.5 bg-slate-950 rounded-full border border-slate-800 mb-3">
-                  {activeClientProfile.archetype}
-                </div>
-
-                {/* Matrix Tier Dropdown Selector (Active inside Modify Mode) */}
-                <div className="w-full mt-1 border-t border-slate-900/60 pt-3 text-center">
-                  <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider mb-1">
-                    CURRENT MATRIX SUBSCRIPTION
-                  </span>
-                  {isEditMode ? (
-                    <select
-                      value={editTier}
-                      onChange={(e) => setEditTier(e.target.value)}
-                      className="bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 text-cyan-400 font-mono text-xs rounded px-2 py-1.5 outline-none tracking-wide text-center cursor-pointer transition-colors max-w-full font-bold uppercase shadow-inner"
-                    >
-                      <option value="Vector Tier">Vector Tier</option>
-                      <option value="Tensegrity Tier">Tensegrity Tier</option>
-                      <option value="Infinite Matrix Tier">Infinite Matrix Tier</option>
-                    </select>
-                  ) : (
-                    <span
-                      className={`text-sm font-black tracking-wide uppercase font-mono block mt-0.5
-                      ${activeClientProfile.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.25)]' : ''}
-                      ${activeClientProfile.matrixTier === 'Tensegrity Tier' ? 'text-cyan-400' : ''}
-                      ${activeClientProfile.matrixTier === 'Vector Tier' ? 'text-indigo-400' : ''}
-                    `}
-                    >
-                      {activeClientProfile.matrixTier || 'Vector Tier'}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Secure Digital Contact Cards with Form Field Inputs */}
-              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 text-xs font-medium text-slate-300">
-                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-950 pb-1.5">
-                  // IDENTITY SPECIFICATIONS
-                </div>
-
-                {/* Date of Birth Field Row */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Calendar className="w-3.5 h-3.5" />{' '}
-                    <span className="text-[9px] font-bold tracking-wider uppercase">Date of Birth</span>
+            {/* Grid Separation Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Demographics, Core Identity & Tier Modifiers */}
+              <div className="space-y-4">
+                <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl flex flex-col items-center text-center">
+                  <div className="w-24 h-24 rounded-full bg-slate-950 border border-cyan-500/20 flex items-center justify-center shadow-lg mb-4 text-cyan-400 relative overflow-hidden group">
+                    <User className="w-10 h-10 group-hover:scale-105 transition-transform" />
+                    <div className="absolute inset-0 bg-cyan-400/5 mix-blend-overlay" />
                   </div>
-                  {isEditMode ? (
-                    <input
-                      type="text"
-                      value={editBirthdate}
-                      onChange={(e) => setEditBirthdate(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none shadow-inner"
-                      placeholder="MM/DD/YYYY"
-                    />
-                  ) : (
-                    <div className="text-sm font-semibold text-slate-200 pl-5">{activeClientProfile.birthdate}</div>
-                  )}
+
+                  <div className="text-xs font-bold text-cyan-400 uppercase tracking-widest px-2.5 py-0.5 bg-slate-950 rounded-full border border-slate-800 mb-3">
+                    {activeClientProfile.archetype}
+                  </div>
+
+                  <div className="w-full mt-1 border-t border-slate-900/60 pt-3 text-center">
+                    <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider mb-1">CURRENT MATRIX SUBSCRIPTION</span>
+                    {isEditMode ? (
+                      <select
+                        value={editTier}
+                        onChange={(e) => setEditTier(e.target.value)}
+                        className="bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 text-cyan-400 font-mono text-xs rounded px-2 py-1.5 outline-none tracking-wide text-center cursor-pointer transition-colors max-w-full font-bold uppercase shadow-inner"
+                      >
+                        <option value="Vector Tier">Vector Tier</option>
+                        <option value="Tensegrity Tier">Tensegrity Tier</option>
+                        <option value="Infinite Matrix Tier">Infinite Matrix Tier</option>
+                      </select>
+                    ) : (
+                      <span className={`text-sm font-black tracking-wide uppercase font-mono block mt-0.5
+                        ${activeClientProfile.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400' : ''}
+                        ${activeClientProfile.matrixTier === 'Tensegrity Tier' ? 'text-cyan-400' : ''}
+                        ${activeClientProfile.matrixTier === 'Vector Tier' ? 'text-indigo-400' : ''}
+                      `}>
+                        {activeClientProfile.matrixTier || "Vector Tier"}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Email Contact Field Row */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Mail className="w-3.5 h-3.5" />{' '}
-                    <span className="text-[9px] font-bold tracking-wider uppercase">Email Contact</span>
+                {/* Secure Digital Contact Cards (Hides personal info dynamically for clients) */}
+                <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 text-xs font-medium text-slate-300 font-mono">
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-950 pb-1.5">
+                    // IDENTITY SPECIFICATIONS
                   </div>
-                  {isEditMode ? (
-                    <input
-                      type="email"
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none truncate shadow-inner"
-                      placeholder="name@email.com"
-                    />
+
+                  {isCoachMode ? (
+                    /* Coach Mode: Reveals full contact records for editing and review */
+                    <div className="space-y-4 animate-fade-in">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-slate-500">
+                          <Calendar className="w-3.5 h-3.5" />{' '}
+                          <span className="text-[9px] font-bold tracking-wider uppercase">Date of Birth</span>
+                        </div>
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={editBirthdate}
+                            onChange={(e) => setEditBirthdate(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none"
+                            placeholder="MM/DD/YYYY"
+                          />
+                        ) : (
+                          <div className="text-sm font-semibold text-slate-200 pl-5">
+                            {activeClientProfile.birthdate}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-slate-500">
+                          <Mail className="w-3.5 h-3.5" />{' '}
+                          <span className="text-[9px] font-bold tracking-wider uppercase">Email Contact</span>
+                        </div>
+                        {isEditMode ? (
+                          <input
+                            type="email"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none truncate"
+                            placeholder="name@email.com"
+                          />
+                        ) : (
+                          <div className="text-sm font-semibold text-slate-200 pl-5 truncate max-w-full">
+                            {activeClientProfile.email}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-slate-500">
+                          <Phone className="w-3.5 h-3.5" />{' '}
+                          <span className="text-[9px] font-bold tracking-wider uppercase">Phone Terminal</span>
+                        </div>
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={editPhone}
+                            onChange={(e) => setEditPhone(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none"
+                            placeholder="(555) 000-0000"
+                          />
+                        ) : (
+                          <div className="text-sm font-semibold text-slate-200 pl-5">{activeClientProfile.phone}</div>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    <div className="text-sm font-semibold text-slate-200 pl-5 truncate max-w-full">
-                      {activeClientProfile.email}
+                    /* Client Mode: Hides private data, displaying high-art telemetry confirmation instead */
+                    <div className="p-3 bg-slate-950/60 border border-slate-900/80 rounded-xl space-y-2 text-slate-400 font-mono text-[11px] leading-relaxed animate-fade-in">
+                      <div>
+                        <span className="text-cyan-400 font-bold">STATUS:</span> ACTIVE MATRIX SYNCHRONIZATION
+                      </div>
+                      <div>
+                        <span className="text-cyan-400 font-bold">SECURITY:</span> PIPELINE ENCRYPTED
+                      </div>
+                      <div>
+                        <span className="text-cyan-400 font-bold">DECOMPRESSION:</span> RATIOS LOADED
+                      </div>
                     </div>
                   )}
-                </div>
 
-                {/* Phone Contact Field Row */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Phone className="w-3.5 h-3.5" />{' '}
-                    <span className="text-[9px] font-bold tracking-wider uppercase">Phone Terminal</span>
+                  {/* Embedded Access PIN Passcode Row */}
+                  <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between text-slate-400">
+                    <span className="font-bold text-[10px] tracking-wider text-slate-500 uppercase">SYS_ACCESS_PIN:</span>
+                    <span className="text-sm font-black text-cyan-400 tracking-widest font-mono bg-slate-950 px-2 py-0.5 border border-slate-900 rounded">
+                      {accessCode}
+                    </span>
                   </div>
-                  {isEditMode ? (
-                    <input
-                      type="text"
-                      value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm font-mono outline-none shadow-inner"
-                      placeholder="(555) 000-0000"
-                    />
-                  ) : (
-                    <div className="text-sm font-semibold text-slate-200 pl-5">{activeClientProfile.phone}</div>
-                  )}
-                </div>
-
-                {/* Embedded Access PIN Passcode Row */}
-                <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between text-slate-400">
-                  <span className="font-bold text-[10px] tracking-wider text-slate-500 uppercase">SYS_ACCESS_PIN:</span>
-                  <span className="text-sm font-black text-cyan-400 tracking-widest font-mono bg-slate-950 px-2 py-0.5 border border-slate-900 rounded">
-                    {accessCode}
-                  </span>
                 </div>
               </div>
-            </div>
-
-            {/* Middle Column: Architectural Movement Notes & Data Descriptions */}
-            <div className="space-y-4 lg:col-span-2 flex flex-col justify-between">
-              <div className="space-y-4">
+              {/* Middle Column: Architectural Movement Notes, Case Logs & Focus Writing Pads */}
+              <div className="space-y-4 flex flex-col justify-start">
                 {/* Movement Vector Log Card / Text Area Trigger */}
                 <div
                   onClick={() => isEditMode && setActiveFocusField('desc')}
@@ -687,14 +2874,12 @@ export default function App() {
                     </span>
                     {isEditMode && (
                       <span className="text-[9px] text-cyan-500 font-black animate-pulse tracking-wider bg-slate-950 px-2 py-0.5 border border-slate-800 rounded">
-                        ⛶ CLICK TO EXPAND WRITING PAD
+                        ⛶ CLICK TO EXPAND
                       </span>
                     )}
                   </div>
-                  <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-4">
-                    {isEditMode
-                      ? editDesc || 'No narrative entered yet. Expand window to write...'
-                      : activeClientProfile.desc}
+                  <p className="text-sm font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-6">
+                    {isEditMode ? editDesc || 'No narrative logged yet.' : activeClientProfile.desc}
                   </p>
                 </div>
 
@@ -711,172 +2896,187 @@ export default function App() {
                     </span>
                     {isEditMode && (
                       <span className="text-[9px] text-indigo-500 font-black animate-pulse tracking-wider bg-slate-950 px-2 py-0.5 border border-slate-800 rounded">
-                        ⛶ CLICK TO EXPAND WRITING PAD
+                        ⛶ CLICK TO EXPAND
                       </span>
                     )}
                   </div>
-                  <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-4">
-                    {isEditMode
-                      ? editNotes || 'No directives logged yet. Expand window to write...'
-                      : activeClientProfile.notes}
+                  <p className="text-sm font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-6">
+                    {isEditMode ? editNotes || 'No directives logged yet.' : activeClientProfile.notes}
                   </p>
                 </div>
               </div>
 
-              {/* Bottom Row Parameter Tracker Readouts / Input Editors */}
-              <div className="pt-5 border-t border-slate-900 mt-5">
-                <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-4 flex flex-col md:flex-row justify-between md:items-center gap-3">
-                  <span>// VERIFIED CALIBRATION RATINGS</span>
+              {/* Right Column: High-Art Studio 3D Preview Deck */}
+              <div className="flex flex-col justify-between items-center h-full min-h-[460px] relative">
+                <div className="w-full h-full bg-slate-950/70 border border-cyan-500/20 rounded-xl p-4 backdrop-blur-xl flex flex-col shadow-2xl animate-fade-in">
+                  <div className="flex justify-between items-center mb-3 border-b border-slate-900 pb-2.5">
+                    <div>
+                      <p className="text-[10px] tracking-widest text-cyan-400 font-mono uppercase">// TENSEGRITY LAYER</p>
+                      <h3 className="text-sm font-bold tracking-wider text-slate-200 uppercase">CORE VECTOR DECK</h3>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] font-mono block text-slate-500 uppercase tracking-widest">ACTIVE ARCHIVE</span>
+                      <span className="text-xs font-mono text-cyan-400 font-bold">
+                        {activeClientProfile.name.split(' ')[0].toUpperCase()}_SYS
+                      </span>
+                    </div>
+                  </div>
 
-                  {/* Comprehensive Coach Utilities Matrix */}
-                  <div className="flex flex-wrap gap-2">
-                    {/* Real Functional Data Export Engine */}
+                  <div className="flex-1 w-full bg-[#030d1e]/40 border border-cyan-950/60 rounded-lg overflow-hidden relative inner-shadow min-h-[300px]">
+                    <Canvas camera={{ position: [0, 1.5, 9], fov: 45 }}>
+                      <ambientLight intensity={2.5} />
+                      <Suspense fallback={null}>
+                        <CustomHologramMesh />
+                      </Suspense>
+                      <OrbitControls enablePan={true} enableZoom={true} minDistance={2} maxDistance={9} />
+                      <Grid
+                        position={[0, -1.8, 0]}
+                        args={[]}
+                        cellSize={0.5}
+                        cellThickness={1}
+                        cellColor="#1e293b"
+                        sectionSize={2}
+                        sectionColor="#334155"
+                        fadeDistance={25}
+                      />
+                    </Canvas>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Calibration Ratings Row (Gated with Client-Side Download Engines) */}
+            <div className="pt-5 border-t border-slate-900 mt-5">
+              <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-4 flex flex-col md:flex-row justify-between md:items-center gap-3">
+                <span>// VERIFIED CALIBRATION RATINGS</span>
+
+                {isCoachMode ? (
+                  /* Coach Mode Actions Terminal Panel */
+                  <div className="flex flex-wrap gap-2 animate-fade-in">
                     <button
-                      onClick={async () => {
-                        // 1. Gather all active client variables from memory
-                        const reportText = `==================================================
-LONGEVITY BLUEPRINT OBJECTIVE BIOMETRIC REPORT
-==================================================
-ATHLETE DOSSIER: ${activeClientProfile.name.toUpperCase()}
-ARCHETYPE:       ${activeClientProfile.archetype.toUpperCase()}
-PASSCODE KEY:    [ ${accessCode} ]
-RECORDED DOB:    ${activeClientProfile.birthdate}
-CONTACT LINE:    ${activeClientProfile.email}
---------------------------------------------------
-
-[1] BIOMECHANICAL ARCHETYPE VECTOR LOG:
-${editDesc}
-
-[2] KINETIC DIRECTIVES & CASE COACH NOTES:
-${editNotes}
-
---------------------------------------------------
-[3] VERIFIED METRIC CALIBRATION RATINGS:
-- Deep Squat Mobility Matrix:    ${editMetrics.squat}
-- Single-Leg Land Stability:     ${editMetrics.land}
-- Kinetic Power Extension (CMJ): ${editMetrics.cmj}
-- Multi-Plane Deceleration (505): ${editMetrics.agility}
-
-==================================================
-SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
-==================================================`;
-
-                        const fileName = `${activeClientProfile.name.replace(/\s+/g, '_')}_Biometric_Blueprint.txt`;
-
-                        try {
-                          // 2. Save directly to Desktop\Temp Client Blueprints via local Vite export API
-                          const response = await fetch('/api/export-blueprint', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ fileName, content: reportText }),
-                          });
-                          const result = await response.json();
-                          if (!response.ok || !result.ok) {
-                            throw new Error(result.error || 'Export failed');
-                          }
-                          alert(`✓ BLUEPRINT SECURED // SAVED TO:\n${result.path}`);
-                        } catch (error) {
-                          alert(`EXPORT ENGINE FAULT // ${error.message}`);
-                        }
+                      onClick={() => {
+                        const reportText = `==================================================\nLONGEVITY BLUEPRINT OBJECTIVE BIOMETRIC REPORT\n==================================================\nATHLETE DOSSIER: ${activeClientProfile.name.toUpperCase()}\nARCHETYPE:       ${activeClientProfile.archetype.toUpperCase()}\nPASSCODE KEY:    [ ${accessCode} ]\nRECORDED DOB:    ${activeClientProfile.birthdate}\nCONTACT LINE:    ${activeClientProfile.email}\n--------------------------------------------------\n BIOMECHANICAL ARCHETYPE VECTOR LOG:\n${editDesc}\n KINETIC DIRECTIVES & CASE COACH NOTES:\n${editNotes}\n-------------------------------------------------- VERIFIED METRIC CALIBRATION RATINGS:\n- Deep Squat Mobility Matrix:    ${editMetrics.squat}\n- Single-Leg Land Stability:     ${editMetrics.land}\n- Kinetic Power Extension (CMJ): ${editMetrics.cmj}\n- Multi-Plane Deceleration (505): ${editMetrics.agility}\n==================================================\nSECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8\n==================================================`;
+                        const element = document.createElement('a');
+                        const file = new Blob([reportText], { type: 'text/plain' });
+                        element.href = URL.createObjectURL(file);
+                        element.download = `${activeClientProfile.name.replace(/\s+/g, '_')}_Biometric_Blueprint.txt`;
+                        document.body.appendChild(element);
+                        element.click();
+                        document.body.removeChild(element);
                       }}
-                      className="px-3 py-1.5 bg-slate-950 text-cyan-400 border border-cyan-500/40 hover:border-cyan-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      className="px-3 py-1.5 bg-slate-950 text-cyan-400 border border-cyan-500/40 hover:border-cyan-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all cursor-pointer"
                     >
                       📥 Export Data
                     </button>
-
                     <button
                       onClick={handleChangeClientCode}
-                      className="px-3 py-1.5 bg-slate-950 text-indigo-400 border border-indigo-500/40 hover:border-indigo-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      className="px-3 py-1.5 bg-slate-950 text-indigo-400 border border-indigo-500/40 hover:border-indigo-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all cursor-pointer"
                     >
                       🔑 Change Code
                     </button>
-
                     <button
                       onClick={() => (isEditMode ? handleSaveProfileChanges() : setIsEditMode(true))}
-                      className={`px-3 py-1.5 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95
-                        ${
-                          isEditMode
-                            ? 'bg-emerald-500 text-slate-950 border border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                            : 'bg-slate-950 text-cyan-400 border border-cyan-400/40 hover:border-cyan-400'
-                        }
-                      `}
+                      className={`px-3 py-1.5 rounded font-mono font-bold text-[10px] uppercase transition-all cursor-pointer border ${
+                        isEditMode
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                          : 'bg-slate-950 text-cyan-400 border-cyan-500/40'
+                      }`}
                     >
                       {isEditMode ? '✓ Save Changes' : '⚙ Modify Record'}
                     </button>
-
                     <button
                       onClick={handleDeleteClientRecord}
-                      className="px-3 py-1.5 bg-slate-950/40 text-rose-500 border border-rose-900/50 hover:border-rose-500 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      className="px-3 py-1.5 bg-slate-950/40 text-rose-500 border border-rose-900/50 hover:border-rose-500 rounded font-mono font-bold text-[10px] uppercase transition-all cursor-pointer"
                     >
                       🗑️ Delete Client
                     </button>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
-                  {Object.entries(editMetrics).map(([key, value], index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-slate-950 border border-slate-900 rounded-xl text-center flex flex-col items-center justify-center"
+                ) : (
+                  /* Client View: Renders an active report downloader right next to the status flag */
+                  <div className="flex flex-wrap items-center gap-3 font-mono animate-fade-in">
+                    <button
+                      onClick={() => {
+                        const reportText = `==================================================\nOFFICIAL LONGEVITY BLUEPRINT MOVEMENT SPECIFICATION\n==================================================\nCLIENT DOSSIER:  ${activeClientProfile.name.toUpperCase()}\nMOVEMENT MATRIX: ${activeClientProfile.archetype.toUpperCase()}\nACCESS PIN KEY:  [ ${accessCode} ]\n--------------------------------------------------\nYOUR BIOMECHANICAL VECTOR LOG:\n${activeClientProfile.desc}\n\nYOUR COACH SYSTEM CONFIGURATIONS & DIRECTIVES:\n${activeClientProfile.notes}\n--------------------------------------------------\nYOUR QUANTITATIVE OBJECTIVE PERFORMANCE RATINGS:\n- Deep Squat Mobility Matrix:    ${activeClientProfile.metrics.squat}\n- Single-Leg Land Stability:     ${activeClientProfile.metrics.land}\n- Kinetic Power Extension (CMJ): ${activeClientProfile.metrics.cmj}\n- Multi-Plane Deceleration (505): ${activeClientProfile.metrics.agility}\n==================================================\nSECURE BLUEPRINT SUITE // CHROME DOWNLOAD CAPTURE\n==================================================`;
+                        const element = document.createElement('a');
+                        const file = new Blob([reportText], { type: 'text/plain' });
+                        element.href = URL.createObjectURL(file);
+                        element.download = `${activeClientProfile.name.replace(/\s+/g, '_')}_Blueprint_Specs.txt`;
+                        document.body.appendChild(element);
+                        element.click();
+                        document.body.removeChild(element);
+                      }}
+                      className="px-4 py-1.5 bg-slate-950 hover:bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 font-bold rounded text-[10px] tracking-widest uppercase transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-1.5"
                     >
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5 font-bold">
-                        {key === 'squat'
-                          ? 'Deep Squat'
-                          : key === 'land'
-                            ? 'Land Hold'
-                            : key === 'cmj'
-                              ? 'Kinetic CMJ'
-                              : 'Agility 505'}
-                      </div>
-                      {isEditMode ? (
-                        <input
-                          type="text"
-                          value={value}
-                          onChange={(e) => setEditMetrics((prev) => ({ ...prev, [key]: e.target.value }))}
-                          className="w-20 bg-slate-900 border border-cyan-500/30 rounded px-2 py-1 text-center text-base font-black text-cyan-400 tracking-tight outline-none focus:border-cyan-400"
-                          placeholder="00/100"
-                        />
-                      ) : (
-                        <div className="text-xl md:text-2xl font-black text-cyan-400 tracking-tight">{value}</div>
-                      )}
+                      📥 Download Report
+                    </button>
+                    <div className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase bg-slate-950 px-3 py-1.5 border border-emerald-900/40 rounded shadow-md">
+                      ✓ SECURE CLIENT READ-ONLY PATHWAY ENFORCED
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
+              {/* Calibration Ratings Grid (Gated with isCoachMode Protection) */}
+                {isCoachMode && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono mt-4 animate-fade-in">
+                    {Object.entries(editMetrics).map(([key, value], idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 bg-slate-950 border border-slate-900 rounded-xl text-center flex flex-col items-center justify-center"
+                      >
+                        <div className="text-[10px] text-slate-500 uppercase font-bold mb-1.5">
+                          {key === 'squat'
+                            ? 'Deep Squat'
+                            : key === 'land'
+                              ? 'Land Hold'
+                              : key === 'cmj'
+                                ? 'Kinetic CMJ'
+                                : 'Agility 505'}
+                        </div>
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={value}
+                            onChange={(e) => setEditMetrics((prev) => ({ ...prev, [key]: e.target.value }))}
+                            className="w-20 bg-slate-900 border border-cyan-500/30 text-center text-base font-black text-cyan-400 outline-none"
+                          />
+                        ) : (
+                          <div className="text-xl md:text-2xl font-black text-cyan-400 tracking-tight">{value}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
-          </div>
 
-          {/* High-Art Secure Document Status Footer Bar */}
-          <div className="mt-6 pt-4 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-500 gap-2">
-            <div className="flex items-center gap-1.5">
-              <CheckSquare className="w-3.5 h-3.5 text-emerald-400" />
-              <span>OFFICIAL BIOMETRIC BLUEPRINT SECURED // VALID ACCESS PATH</span>
+            {/* High-Art Secure Document Status Footer Bar */}
+            <div className="mt-6 pt-4 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-500 gap-2 font-mono">
+              <div className="flex items-center gap-1.5">
+                <CheckSquare className="w-3.5 h-3.5 text-emerald-400" />
+                <span>OFFICIAL BIOMETRIC BLUEPRINT SECURED // VALID ACCESS PATH</span>
+              </div>
+              <div>STATION RECOVERY ENGINE: v4.8_STABLE</div>
             </div>
-            <div>STATION RECOVERY ENGINE: v4.8_STABLE</div>
+
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* DYNAMIC FULL-SIZE FOCUS WRITING PAD OVERLAY */}
-        {/* ========================================================================= */}
+        {/* Dynamic Focus Pad Overlay Area Component */}
         {activeFocusField && (
-          <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-8 animate-fade-in">
+          <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-8 animate-fade-in font-mono">
             <div
-              className={`w-full max-w-5xl h-[90vh] bg-slate-950 border rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-2xl transition-all duration-300
-              ${activeFocusField === 'desc' ? 'border-cyan-500/40 shadow-cyan-950/20' : 'border-indigo-500/40 shadow-indigo-950/20'}
-            `}
+              className={`w-full max-w-5xl h-[90vh] bg-slate-950 border rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-2xl transition-all duration-300 ${
+                activeFocusField === 'desc' ? 'border-cyan-500/40' : 'border-indigo-500/40'
+              }`}
             >
               <div>
-                {/* Modal Title Row */}
                 <div className="flex justify-between items-center border-b border-slate-900 pb-4 mb-5">
                   <div>
-                    <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase block">
-                      // HIGH-CAPACITY TEXT FOCUS WRITER
-                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold block">// HIGH-CAPACITY TEXT FOCUS WRITER</span>
                     <h3
-                      className={`text-lg font-black tracking-wider uppercase mt-0.5
-                      ${activeFocusField === 'desc' ? 'text-cyan-400' : 'text-indigo-400'}
-                    `}
+                      className={`text-lg font-black uppercase mt-0.5 ${
+                        activeFocusField === 'desc' ? 'text-cyan-400' : 'text-indigo-400'
+                      }`}
                     >
                       {activeFocusField === 'desc'
                         ? 'Biomechanical Archetype Editor'
@@ -885,42 +3085,33 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
                   </div>
                   <button
                     onClick={() => setActiveFocusField(null)}
-                    className="px-3.5 py-1.5 border border-slate-800 hover:border-slate-600 rounded-lg text-slate-400 hover:text-white text-xs bg-slate-900 transition-all font-bold tracking-widest uppercase cursor-pointer active:scale-95"
+                    className="px-3.5 py-1.5 border border-slate-800 hover:border-slate-600 rounded-lg text-slate-400 text-xs bg-slate-900 font-bold tracking-widest uppercase cursor-pointer active:scale-95"
                   >
                     ✕ Close Pad [ESC]
                   </button>
                 </div>
-
-                {/* Giant Full-Screen Text Field Form */}
                 <textarea
                   autoFocus
+                  readOnly={!isCoachMode}
                   value={activeFocusField === 'desc' ? editDesc : editNotes}
                   onChange={(e) =>
-                    activeFocusField === 'desc' ? setEditDesc(e.target.value) : setEditNotes(e.target.value)
+                    isCoachMode &&
+                    (activeFocusField === 'desc' ? setEditDesc(e.target.value) : setEditNotes(e.target.value))
                   }
-                  placeholder="Initiate diagnostic narrative entry..."
-                  className={`w-full h-[62vh] bg-[#030712] border border-slate-900 rounded-xl p-6 text-base md:text-lg text-slate-200 font-sans leading-relaxed tracking-wide focus:outline-none resize-none shadow-inner
-                    ${activeFocusField === 'desc' ? 'focus:border-cyan-500/60' : 'focus:border-indigo-500/60'}
-                  `}
+                  className={`w-full h-[62vh] bg-[#030712] border border-slate-900 rounded-xl p-6 text-base text-slate-200 font-sans focus:outline-none resize-none ${
+                    activeFocusField === 'desc' ? 'focus:border-cyan-500/60' : 'focus:border-indigo-500/60'
+                  }`}
                 />
               </div>
-
-              {/* Modal Save/Confirmation Action Footer */}
               <div className="border-t border-slate-900 pt-4 flex justify-between items-center">
-                <div className="text-[11px] text-slate-600 tracking-wider font-mono">
-                  MATRIX CELL: {activeFocusField.toUpperCase()}_LOG_BUFFER
-                </div>
+                <div className="text-[11px] text-slate-600">MATRIX CELL: {activeFocusField.toUpperCase()}_LOG_BUFFER</div>
                 <button
                   onClick={() => setActiveFocusField(null)}
-                  className={`px-5 py-2.5 rounded-lg text-slate-950 font-bold font-mono text-xs tracking-widest uppercase transition-all shadow-md active:scale-95 cursor-pointer
-                    ${
-                      activeFocusField === 'desc'
-                        ? 'bg-cyan-400 hover:bg-cyan-300 border border-cyan-300 shadow-cyan-950/20'
-                        : 'bg-indigo-400 hover:bg-indigo-300 border border-indigo-300 shadow-indigo-950/20'
-                    }
-                  `}
+                  className={`px-5 py-2.5 rounded-lg text-slate-950 font-bold text-xs tracking-widest uppercase cursor-pointer active:scale-95 ${
+                    activeFocusField === 'desc' ? 'bg-cyan-400' : 'bg-indigo-400'
+                  }`}
                 >
-                  ✓ Lock Entry text & Minimize
+                  ✓ Close & Minimize
                 </button>
               </div>
             </div>
@@ -930,27 +3121,21 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
     );
   }
 
-  // SYSTEM FRAME E: Master Coach Roster & Onboarding Console Menu
+  // SYSTEM FRAME C: Master Coach Roster & Onboarding Console Menu
   if (viewState === 'coach_menu') {
     return (
-      <div className="w-screen min-h-screen bg-[#01040a] text-white font-mono p-4 md:p-8 flex flex-col items-center justify-start overflow-y-auto select-none">
-        <div className="w-full max-w-5xl bg-slate-950 border border-cyan-500/20 rounded-2xl p-6 md:p-8 shadow-2xl space-y-8 relative backdrop-blur-xl">
-          {/* Dashboard Control Banner Header */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-900 pb-5 gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs tracking-widest uppercase mb-1">
-                <Shield className="w-4 h-4" /> MASTER SYSTEMS MANAGEMENT // CONTROL TERMINAL
-              </div>
-              <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight uppercase">
-                Coach Intelligence Dashboard
-              </h2>
-            </div>
-            <button
-              onClick={handleReturnToCore}
-              className="px-4 py-2.5 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white text-xs bg-slate-900/60 font-bold tracking-wider transition-all uppercase cursor-pointer active:scale-95"
-            >
-              ← [ESC] Exit Admin Panel
-            </button>
+      <div className="w-screen h-screen bg-[#01040a] text-white font-mono flex flex-col overflow-hidden select-none">
+        {renderSystemHeader('COACH_TERMINAL')}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          <div className="w-full max-w-5xl bg-slate-950 border border-cyan-500/20 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 relative backdrop-blur-xl">
+          {/* Master Control Board Title Section */}
+          <div className="pb-2">
+            <span className="text-[10px] text-cyan-400 font-bold block tracking-widest uppercase">
+              // CONTROL TERMINAL ARCHIVES
+            </span>
+            <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight uppercase">
+              Coach Intelligence Dashboard
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -1036,23 +3221,18 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
                       </div>
                     </div>
 
-                    {/* New Matrix Tier & Enrollment Column Blocks */}
+                    {/* New Matrix Tier, Enrolled Date & Private Deletion Controls */}
                     <div className="flex items-center gap-6 text-right font-mono shrink-0 ml-4">
                       <div className="hidden sm:block">
-                        <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider">
-                          ENROLLED
-                        </span>
-                        <span className="text-xs text-slate-400 font-medium">
-                          {client.joinedDate || 'PENDING'}
-                        </span>
+                        <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider">ENROLLED</span>
+                        <span className="text-xs text-slate-400 font-medium">{client.joinedDate || 'PENDING'}</span>
                       </div>
+
                       <div className="min-w-[120px]">
-                        <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider">
-                          MATRIX LEVEL
-                        </span>
+                        <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider">MATRIX LEVEL</span>
                         <span
                           className={`text-xs font-black tracking-wide uppercase
-                          ${client.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.2)]' : ''}
+                          ${client.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.25)]' : ''}
                           ${client.matrixTier === 'Tensegrity Tier' ? 'text-cyan-400' : ''}
                           ${client.matrixTier === 'Vector Tier' ? 'text-indigo-400' : ''}
                         `}
@@ -1060,9 +3240,61 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
                           {client.matrixTier || 'Vector Tier'}
                         </span>
                       </div>
+
+                      {/* Private Coach Destructive Scrub Trigger (Bypasses clicking row portal) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              `CRITICAL SYSTEM WARNING // PERMANENTLY SCRUB ${client.name.toUpperCase()} FROM LOG ARCHIVES?\n\nTHIS OPERATION CANNOT BE UNDONE.`
+                            )
+                          ) {
+                            setLocalDatabase((prev) => {
+                              const updated = { ...prev };
+                              delete updated[code];
+                              return updated;
+                            });
+                            alert('✓ SECURE LOG SCRUBBED');
+                          }
+                        }}
+                        className="p-2 bg-slate-900/60 border border-slate-900 hover:border-rose-900 text-slate-600 hover:text-rose-500 rounded-lg transition-all cursor-pointer active:scale-90 font-sans text-xs font-bold"
+                        title="Scrub Client Record"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SYSTEM FRAME B: Telemetry Sync Calibration Bar Loader
+  if (viewState === 'loading') {
+    return (
+      <div className="w-full h-screen bg-[#02050d] text-white flex flex-col items-center justify-center font-mono p-6 select-none relative overflow-hidden">
+        <div className="w-[440px] bg-slate-950/80 border border-cyan-500/20 p-8 rounded-xl shadow-[0_0_60px_rgba(6,182,212,0.05)] backdrop-blur-md">
+          <div className="flex items-center justify-between mb-6 border-b border-cyan-950/60 pb-4">
+            <span className="text-[12px] tracking-widest text-cyan-400 uppercase font-bold">SYSTEM CALIBRATION</span>
+            <span className="text-[10px] text-slate-500 font-bold">LN_V4.8</span>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm tracking-wider text-slate-300 mb-2">
+                <span className="uppercase">COMPILING {selectedAnalysis}...</span>
+                <span className="text-cyan-400 font-bold">{Math.min(bootProgress, 100)}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-900 border border-cyan-950 rounded-full overflow-hidden p-[2px]">
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-500 to-sky-400 rounded-full transition-all duration-100 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                  style={{ width: `${Math.min(bootProgress, 100)}%` }}
+                />
               </div>
             </div>
           </div>
@@ -1071,33 +3303,77 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
     );
   }
 
-  // SYSTEM FRAME: Mobility page containing longevity blueprint selections
-  if (viewState === 'mobility') {
+  // SYSTEM FRAME C: High-Art Studio Preview Deck View
+  if (viewState === 'dashboard') {
     return (
-      <div className="w-screen min-h-screen bg-black text-white font-mono overflow-y-auto p-6 md:p-12 relative flex items-center justify-center">
-        <div className="absolute top-6 left-6 z-10 pointer-events-auto flex flex-col items-start gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse" />
-            <span className="text-xs tracking-widest text-slate-500 uppercase">SYS_STATUS // STABILITY_SECURE</span>
-          </div>
-          <button
-            onClick={handleReturnToCore}
-            className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white text-xs bg-slate-950/80 transition-all uppercase tracking-wider shadow-lg cursor-pointer active:scale-95"
-          >
-            Exit Matrix [Home]
-          </button>
-        </div>
+      <div className="w-full h-screen bg-[#020813] text-white flex flex-col font-sans select-none overflow-hidden">
+        {renderSystemHeader('ASSESSMENT_DECK')}
 
-        <div className="w-full max-w-5xl mt-16 md:mt-0 relative z-0">
-          <BlueprintAssessments />
+        <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+            {/* Upgraded Larger Viewport Container Card */}
+            <div className="w-[640px] h-[680px] bg-slate-950/70 border border-cyan-500/20 rounded-2xl p-6 backdrop-blur-xl flex flex-col shadow-2xl transition-all duration-300">
+              <div className="flex justify-between items-center mb-4 border-b border-slate-900 pb-3">
+                <div>
+                  <p className="text-[11px] tracking-widest text-cyan-400 font-mono uppercase">Biomechanical Target</p>
+                  <h2 className="text-lg font-bold tracking-wider text-slate-200 uppercase">{selectedAnalysis}</h2>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono block text-slate-500 uppercase tracking-widest">Active Matrix</span>
+                  <span className="text-[12px] font-mono text-cyan-400 font-bold">{displayClientName}</span>
+                </div>
+              </div>
+
+              <div className="flex-1 w-full bg-[#030d1e]/90 border border-cyan-950/60 rounded-xl overflow-hidden relative inner-shadow">
+                <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }}>
+                  <ambientLight intensity={1.5} />
+                  <directionalLight position={[10, 10, 5]} intensity={1} />
+                  <Suspense fallback={null}>
+                    <AssessmentMorphScene clientImagePath={clientList[currentIdx]} />
+                  </Suspense>
+                  <Grid
+                    renderOrder={-1}
+                    position={[0, -1.35, 0]}
+                    args={[10.5, 10.5]}
+                    cellSize={0.25}
+                    cellThickness={0.7}
+                    cellColor="#082f49"
+                    sectionSize={1.25}
+                    sectionThickness={1.2}
+                    sectionColor="#0e7490"
+                    fadeDistance={6}
+                  />
+                  <OrbitControls enableZoom maxPolarAngle={Math.PI / 2 + 0.1} minPolarAngle={Math.PI / 4} />
+                </Canvas>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2 pointer-events-auto">
+                <div className="flex gap-2 w-full pointer-events-auto">
+                  <a href="/report.pdf" target="_blank" rel="noopener noreferrer" className="flex-1">
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 bg-slate-900 border border-cyan-400/60 text-cyan-300 text-[12px] font-mono font-bold tracking-wider rounded-lg uppercase shadow-[0_0_12px_rgba(0,242,254,0.35)] transition-all duration-200 hover:border-cyan-300 hover:text-cyan-100 hover:bg-cyan-950/60 hover:shadow-[0_0_22px_rgba(0,242,254,0.65)] hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Open Report
+                    </button>
+                  </a>
+                  <button
+                    onClick={handleReturnToCore}
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-cyan-950 to-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 text-[12px] font-mono font-bold tracking-wider rounded-lg uppercase"
+                  >
+                    ↩ Return To Core
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // SYSTEM FRAME A: Home Viewport with Spinning Crystal Mesh Matrix
-  if (viewState === 'landing') {
-    return (
+  // 2. Default state: Always boot up straight to the Life Longevity Lab Home Page
+  return (
       <div className="relative w-screen h-screen bg-[#020617] text-white font-mono overflow-hidden select-none">
         <div className="absolute inset-0 w-full h-full z-0">
           <Canvas camera={{ position: [0, 1.5, 9], fov: 45 }}>
@@ -1119,6 +3395,11 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
           </Canvas>
         </div>
 
+        {/* GROUND ANCHOR CYBER GRID LAYER */}
+        <div className="absolute bottom-0 left-0 w-full h-[35vh] pointer-events-none z-0 overflow-hidden border-t border-slate-900/40 bg-gradient-to-t from-[#020617] via-transparent to-transparent">
+          <canvas ref={homeGridCanvasRef} className="w-full h-full opacity-80 block" />
+        </div>
+
         <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-8 bg-[radial-gradient(ellipse_at_center,rgba(2,6,23,0.1)_0%,rgba(2,6,23,0.85)_100%)]">
           <div className="w-full flex justify-center">
             <header className="flex flex-col items-center text-center border-b border-cyan-500/20 pb-5 bg-slate-950/50 backdrop-blur-md p-6 rounded-lg max-w-4xl w-full relative">
@@ -1135,18 +3416,29 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
           </div>
 
           <main className="flex justify-between items-start my-auto w-full mt-2">
-            <div className="flex flex-col gap-4 w-72 pointer-events-auto bg-slate-950/80 border border-cyan-500/20 p-4 rounded-xl backdrop-blur-md shadow-2xl">
-              <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest border-b border-cyan-950/40 pb-1 mb-2 text-left">
-                LAUNCH OPERATIONAL MATRIX
+            {/* Left Operational Box: Upgraded Custom Lab Tracks with Hover Telemetry */}
+            <div className="flex flex-col gap-4 w-80 pointer-events-auto bg-slate-950/80 border border-cyan-500/20 p-5 rounded-xl backdrop-blur-md shadow-2xl transition-all">
+              <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest border-b border-cyan-950/40 pb-2 mb-1 text-left font-mono">
+                // SYSTEM OPERATIONAL MATRIX
               </div>
+
               {Object.keys(ANALYSIS_VIEWS).map((key) => (
                 <button
                   key={key}
                   onClick={() => handleLaunchAnalysis(key)}
-                  className="w-full text-left px-3 py-2.5 bg-slate-900/60 border border-slate-800 hover:border-cyan-400 rounded-lg transition-all duration-200 group active:scale-95"
+                  className="w-full text-left px-4 py-3 bg-slate-900/40 hover:bg-slate-900/90 border border-slate-900 hover:border-cyan-400/60 rounded-xl transition-all duration-200 group active:scale-[0.98] cursor-pointer flex flex-col gap-1 shadow-inner relative overflow-hidden"
                 >
-                  <p className="text-[12px] font-bold text-slate-300 group-hover:text-cyan-400 uppercase tracking-wide">
-                    › {ANALYSIS_VIEWS[key]}
+                  {/* Subtle Background Glow Vector on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/5 group-hover:from-cyan-500/5 transition-all duration-300" />
+
+                  {/* Master Track Title Header */}
+                  <p className="text-sm font-black text-slate-300 group-hover:text-cyan-400 font-mono tracking-wider transition-colors uppercase">
+                    › {ANALYSIS_VIEWS[key].label}
+                  </p>
+
+                  {/* Animated Secondary Hover Description Strip */}
+                  <p className="text-[10px] font-sans text-slate-500 group-hover:text-slate-300 transition-colors tracking-wide leading-normal font-normal pl-3 border-l border-slate-800 group-hover:border-cyan-500/40 duration-300 whitespace-normal">
+                    {ANALYSIS_VIEWS[key].hoverDesc}
                   </p>
                 </button>
               ))}
@@ -1196,108 +3488,5 @@ SECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8
           </footer>
         </div>
       </div>
-    );
-  }
-
-  // SYSTEM FRAME B: Telemetry Sync Calibration Bar Loader
-  if (viewState === 'loading') {
-    return (
-      <div className="w-full h-screen bg-[#02050d] text-white flex flex-col items-center justify-center font-mono p-6 select-none relative overflow-hidden">
-        <div className="w-[440px] bg-slate-950/80 border border-cyan-500/20 p-8 rounded-xl shadow-[0_0_60px_rgba(6,182,212,0.05)] backdrop-blur-md">
-          <div className="flex items-center justify-between mb-6 border-b border-cyan-950/60 pb-4">
-            <span className="text-[12px] tracking-widest text-cyan-400 uppercase font-bold">SYSTEM CALIBRATION</span>
-            <span className="text-[10px] text-slate-500 font-bold">LN_V4.8</span>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm tracking-wider text-slate-300 mb-2">
-                <span className="uppercase">COMPILING {selectedAnalysis}...</span>
-                <span className="text-cyan-400 font-bold">{Math.min(bootProgress, 100)}%</span>
-              </div>
-              <div className="w-full h-2 bg-slate-900 border border-cyan-950 rounded-full overflow-hidden p-[2px]">
-                <div
-                  className="h-full bg-gradient-to-r from-cyan-500 to-sky-400 rounded-full transition-all duration-100 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
-                  style={{ width: `${Math.min(bootProgress, 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // SYSTEM FRAME C: High-Art Studio Preview Deck View
-  return (
-    <div className="w-full h-screen bg-[#020813] text-white flex flex-col font-sans select-none overflow-hidden">
-      <div className="border-b border-cyan-900/40 bg-slate-950/80 px-6 py-3 flex items-center justify-between backdrop-blur-md">
-        <span className="text-sm tracking-[0.25em] text-cyan-400 font-bold uppercase">
-          System Active: Longevity Biometrics
-        </span>
-        <span className="text-[11px] tracking-widest text-slate-500 font-mono">
-          ACTIVE LAYERS // {displayClientName}
-        </span>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
-          {/* Upgraded Larger Viewport Container Card */}
-          <div className="w-[640px] h-[680px] bg-slate-950/70 border border-cyan-500/20 rounded-2xl p-6 backdrop-blur-xl flex flex-col shadow-2xl transition-all duration-300">
-            <div className="flex justify-between items-center mb-4 border-b border-slate-900 pb-3">
-              <div>
-                <p className="text-[11px] tracking-widest text-cyan-400 font-mono uppercase">Biomechanical Target</p>
-                <h2 className="text-lg font-bold tracking-wider text-slate-200 uppercase">{selectedAnalysis}</h2>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] font-mono block text-slate-500 uppercase tracking-widest">Active Matrix</span>
-                <span className="text-[12px] font-mono text-cyan-400 font-bold">{displayClientName}</span>
-              </div>
-            </div>
-
-            <div className="flex-1 w-full bg-[#030d1e]/90 border border-cyan-950/60 rounded-xl overflow-hidden relative inner-shadow">
-              <Canvas camera={{ position: [0, 0, 4.2], fov: 45 }}>
-                <ambientLight intensity={1.5} />
-                <directionalLight position={[10, 10, 5]} intensity={1} />
-                <Suspense fallback={null}>
-                  <AssessmentMorphScene clientImagePath={clientList[currentIdx]} />
-                </Suspense>
-                <Grid
-                  renderOrder={-1}
-                  position={[0, -1.35, 0]}
-                  args={[10.5, 10.5]}
-                  cellSize={0.25}
-                  cellThickness={0.7}
-                  cellColor="#082f49"
-                  sectionSize={1.25}
-                  sectionThickness={1.2}
-                  sectionColor="#0e7490"
-                  fadeDistance={6}
-                />
-                <OrbitControls enableZoom maxPolarAngle={Math.PI / 2 + 0.1} minPolarAngle={Math.PI / 4} />
-              </Canvas>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-2 pointer-events-auto">
-              <div className="flex gap-2 w-full pointer-events-auto">
-                <a href="/report.pdf" target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2 bg-slate-900 border border-cyan-400/60 text-cyan-300 text-[12px] font-mono font-bold tracking-wider rounded-lg uppercase shadow-[0_0_12px_rgba(0,242,254,0.35)] transition-all duration-200 hover:border-cyan-300 hover:text-cyan-100 hover:bg-cyan-950/60 hover:shadow-[0_0_22px_rgba(0,242,254,0.65)] hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    Open Report
-                  </button>
-                </a>
-                <button
-                  onClick={handleReturnToCore}
-                  className="flex-1 px-3 py-2 bg-gradient-to-r from-cyan-950 to-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 text-[12px] font-mono font-bold tracking-wider rounded-lg uppercase"
-                >
-                  ↩ Return To Core
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
