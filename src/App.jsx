@@ -410,18 +410,18 @@ export default function App() {
   const clientList = ['/client1.png', '/client2.png', '/client3.png'];
   const homeGridCanvasRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [viewState, setViewState] = useState('landing');
-  const [selectedAnalysis, setSelectedAnalysis] = useState('');
-  const [bootProgress, setBootProgress] = useState(0);
-  const [accessCode, setAccessCode] = useState('');
 
   // LIVE DATABASE, SYSTEMS ROUTERS & PERMISSION CONTROLS
   const [localDatabase, setLocalDatabase] = useState(CLIENT_DATABASE);
   const [activeClientProfile, setActiveClientProfile] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-
-  // NEW: Secure Master Role Gate
   const [isCoachMode, setIsCoachMode] = useState(false);
+
+  // Core Viewport Navigation State Routers
+  const [viewState, setViewState] = useState('landing'); // Controls: landing, loading, mobility, client_profile, coach_menu, pricing_matrix
+  const [selectedAnalysis, setSelectedAnalysis] = useState('');
+  const [bootProgress, setBootProgress] = useState(0);
+  const [accessCode, setAccessCode] = useState('');
 
   // Large Text Form States
   const [editNotes, setEditNotes] = useState('');
@@ -437,21 +437,24 @@ export default function App() {
   // Full Screen Focus Window Tracker States
   const [activeFocusField, setActiveFocusField] = useState(null);
 
-  // Vital Flow Suite Video Capture Upload Tracker
-  const [uploadStatus, setUploadStatus] = useState({});
-  // NEW: Active Vital Flow sub-view controller state
-  const [activeVitalModule, setActiveVitalModule] = useState(null);
-  // NEW: Active Athlete Precision sub-view controller state
-  const [activeAthleteModule, setActiveAthleteModule] = useState(null);
-  // NEW: Active Kinetic Power combat sub-view controller state
-  const [activeCombatModule, setActiveCombatModule] = useState(null);
-  // NEW: Active Posture & Ergonomics sub-view controller state
-  const [activePostureModule, setActivePostureModule] = useState(null);
-
   // Add Client Form States for your onboarding sessions
   const [newClientName, setNewClientName] = useState('');
   const [newClientCode, setNewClientCode] = useState('');
   const [newClientArchetype, setNewClientArchetype] = useState('Acrobatics & Hand Balance');
+
+  // Track workspace sub-portal & upload routers
+  const [uploadStatus, setUploadStatus] = useState({});
+  const [activeVitalModule, setActiveVitalModule] = useState(null);
+  const [activeAthleteModule, setActiveAthleteModule] = useState(null);
+  const [activeCombatModule, setActiveCombatModule] = useState(null);
+  const [activePostureModule, setActivePostureModule] = useState(null);
+
+  // CORE PRICE TERMINAL MATRIX ROUTER HOOKS
+  const [priceTab, setPriceTab] = useState('corporate'); // Defaults directly to Corporate pitches!
+
+  const handleSelectPriceTab = (tab) => {
+    setPriceTab(tab);
+  };
 
   // Triggered when CLIENT logs in with their pin code from the homepage
   const handleAccessCodeChange = (e) => {
@@ -2717,6 +2720,295 @@ export default function App() {
     );
   }
 
+  // SYSTEM FRAME F: Premium Architectural Membership & B2B Corporate Presentation Matrix
+  if (viewState === 'pricing_matrix') {
+    return (
+      <div className="w-screen h-screen bg-[#01040a] text-white font-mono flex flex-col overflow-hidden">
+        {/* Universal Top Terminal Strip */}
+        {renderSystemHeader('COMMERCIAL_B2B_AND_MEMBERSHIP_MATRIX')}
+
+        {/* Scrollable Content Container */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+          <div className="w-full max-w-5xl bg-slate-950 border border-cyan-500/20 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 relative backdrop-blur-xl">
+            {/* Header Text Block */}
+            <div className="flex flex-col md:flex-row justify-between md:items-end border-b border-slate-900 pb-5 gap-4">
+              <div className="text-center sm:text-left">
+                <span className="text-[10px] text-cyan-400 font-bold block tracking-widest uppercase mb-0.5">
+                  // BIOMECHANICAL PACKAGES & TIERS
+                </span>
+                <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight uppercase">
+                  Longevity Laboratory Frameworks
+                </h2>
+                <p className="text-slate-400 text-xs mt-1 leading-relaxed">
+                  Select a matrix orientation below to view employee workspace initiatives or independent athletic
+                  tracks.
+                </p>
+              </div>
+
+              {/* High-Tech B2B / Consumer Tab Toggle Switcher */}
+              <div className="flex gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-lg font-mono text-[10px] uppercase font-bold shrink-0 mx-auto md:mx-0">
+                <button
+                  onClick={() => handleSelectPriceTab('corporate')}
+                  className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                    priceTab === 'corporate'
+                      ? 'bg-cyan-500 text-slate-950 font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  💼 Corporate B2B Labs
+                </button>
+                <button
+                  onClick={() => handleSelectPriceTab('athlete')}
+                  className={`px-3 py-1.5 rounded transition-all cursor-pointer ${
+                    priceTab === 'athlete'
+                      ? 'bg-indigo-600 text-white font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  ⚡ Athlete Programs
+                </button>
+              </div>
+            </div>
+
+            {/* DYNAMIC CARD CONDITION 1: CORPORATE B2B LAB PRESENTATION */}
+            {/* DYNAMIC CARD CONDITION 1: CORPORATE B2B LAB PRESENTATION (Upgraded High-Visibility Typography) */}
+            {priceTab === 'corporate' && (
+              <div className="space-y-6 animate-fade-in font-mono text-slate-200">
+                {/* Main Package Showcase Banner Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 bg-slate-900/30 border border-cyan-500/20 rounded-xl overflow-hidden shadow-xl">
+                  {/* Left Descriptive Core (Typography Scale Amplified to text-sm/text-base) */}
+                  <div className="p-6 lg:col-span-2 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-900">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-[10px] px-2.5 py-0.5 bg-slate-950 text-cyan-400 font-bold border border-slate-800 rounded-full tracking-wider uppercase">
+                        On-Site Lab Initiative
+                      </span>
+                      <span className="text-[10px] px-2.5 py-0.5 bg-slate-950 text-emerald-400 font-bold border border-slate-900 rounded-full tracking-wider uppercase">
+                        5-25 Employees
+                      </span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-black text-slate-100 uppercase tracking-tight font-mono">
+                      // Posture & Ergonomics Wellness Package
+                    </h3>
+                    <p className="text-sm md:text-base font-sans text-slate-200 leading-relaxed font-normal tracking-wide">
+                      "You aren't losing productivity to a lack of motivation—you're losing it to spinal fatigue. Our
+                      10-minute mobile AI Posture Lab scans your team on-site, uncovers hidden ergonomic stress lines, and
+                      delivers instant physical relief to protect your workflow."
+                    </p>
+                    <p className="text-xs md:text-sm font-sans text-slate-400 italic font-normal pt-2 border-t border-slate-900/60 leading-relaxed">
+                      "Your desk shouldn't rewrite your body's structural alignment. Our computer-vision telemetry mapping
+                      reveals exactly why your lower back throbs by 3:00 PM—and hands you the precise 180-second movement
+                      hack to reverse it."
+                    </p>
+                  </div>
+
+                  {/* Financial Investment Core with New CTA Trigger (Price Moved to Bottom, Font Enlarged) */}
+                  <div className="p-6 bg-slate-950/50 flex flex-col justify-between items-center text-center min-h-[220px] font-mono">
+                    <div className="w-full">
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-widest">
+                        // DEPLOYMENT SUMMARY
+                      </span>
+                      <div className="text-xs font-bold text-slate-300 uppercase tracking-wide bg-slate-900 border border-slate-900/80 px-2 py-2 rounded-lg mt-3 font-sans">
+                        On-Site Testing with Individual Longevity Blueprints
+                      </div>
+                    </div>
+
+                    <div className="w-full mt-4 pt-3 border-t border-slate-900/80">
+                      <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wide">
+                        Up to 10 Employees // FLAT VALUE
+                      </span>
+                      <div className="text-3xl md:text-4xl font-black text-cyan-400 tracking-tighter mt-1">$1,000</div>
+
+                      {/* Brand New Secure Conversion Action Button */}
+                      <button
+                        onClick={() =>
+                          alert(
+                            '🔒 COMMERCIAL SECURE GATEWAY // INITIALIZING CORPORATE B2B PROCUREMENT ORDER PIPELINE'
+                          )
+                        }
+                        className="w-full text-center py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black rounded-lg text-[10px] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:shadow-[0_0_20px_rgba(16,185,129,0.35)] active:scale-95 cursor-pointer mt-3"
+                      >
+                        🔒 Secure Offer Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technical Problem Data vs Solution Output Grid (Font Size Bumped Up) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm font-medium">
+                  {/* Left Column: The Problem Data (Biomechanical Failures) */}
+                  <div className="p-5 bg-slate-950 border border-slate-900 rounded-xl space-y-4 shadow-xl">
+                    <div className="text-rose-400 font-bold tracking-widest text-[11px] uppercase border-b border-slate-900/80 pb-2 flex items-center gap-1.5 font-mono">
+                      ⚠️ THE PROBLEM DATA // DESK-BOUND COMPRESSION
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-slate-100 font-bold uppercase text-[12px] font-mono">
+                        1. Cervical Compression Profile
+                      </h4>
+                      <p className="font-sans text-slate-300 font-normal leading-relaxed text-sm md:text-base">
+                        Prolonged screen tracking forces a forward head migration, loading up to{' '}
+                        <span className="text-rose-400 font-bold font-mono">42 lbs of extra shearing pressure</span> onto
+                        the upper spine, causing persistent neck strain.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-slate-100 font-bold uppercase text-[12px] font-mono">
+                        2. Locked Thoracic Extension
+                      </h4>
+                      <p className="font-sans text-slate-300 font-normal leading-relaxed text-sm md:text-base">
+                        Extended keyboard positioning locks the mid-back, forcing the lower lumbar spine to
+                        over-compensate and arch excessively during basic human movements.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-slate-100 font-bold uppercase text-[12px] font-mono">
+                        3. Dormant Lateral Glute Activation
+                      </h4>
+                      <p className="font-sans text-slate-300 font-normal leading-relaxed text-sm md:text-base">
+                        Long hours spent sitting in ergonomic chairs signals the deep hip stabilizers to{' '}
+                        <span className="text-rose-400 font-bold font-mono">"turn off,"</span> triggering a chronic pelvic
+                        drop that manifests as deep lower back throbbing by mid-afternoon.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right Column: The Solution Output (Deliverables) */}
+                  <div className="p-5 bg-slate-950 border border-slate-900 rounded-xl space-y-4 shadow-xl">
+                    <div className="text-emerald-400 font-bold tracking-widest text-[11px] uppercase border-b border-slate-900/80 pb-2 flex items-center gap-1.5 font-mono">
+                      ✓ THE SOLUTION OUTPUT // VERIFIED DELIVERABLES
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-slate-100 font-bold uppercase text-[12px] font-mono">
+                        1. Personal Digital Ergonomics Map
+                      </h4>
+                      <p className="font-sans text-slate-300 font-normal leading-relaxed text-sm md:text-base">
+                        Every employee receives a private, interactive telemetry blueprint report with analysis, coaching
+                        tips, screen and chair adjustments that they can make could be critical for long term.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-slate-100 font-bold uppercase text-[12px] font-mono">2. Immediate Pain-Mapping</h4>
+                      <p className="font-sans text-slate-300 font-normal leading-relaxed text-sm md:text-base">
+                        We isolate the exact millimeter discrepancies causing their recurring daily shoulder tension, hip
+                        tightness, or energy crashes.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <h4 className="text-slate-100 font-bold uppercase text-[12px] font-mono">
+                        3. The 3-Minute Desk Restorative Circuit
+                      </h4>
+                      <p className="font-sans text-slate-300 font-normal leading-relaxed text-sm md:text-base">
+                        A customized, low-barrier daily movement blueprint that fits seamlessly into a busy workday to
+                        instantly reset spinal pressure lines.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Segment Clear Space Spacer */}
+                <div className="pt-2" />
+              </div>
+            )}
+
+            {/* DYNAMIC CARD CONDITION 2: INDEPENDENT ATHLETE TIERS */}
+            {priceTab === 'athlete' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 font-mono animate-fade-in">
+                {/* Vector Tier */}
+                <div className="p-5 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col justify-between group hover:border-indigo-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[9px] px-2 py-0.5 bg-slate-950 text-indigo-400 font-bold border border-slate-800 rounded-full tracking-wider uppercase">
+                        Single Entry
+                      </span>
+                      <h3 className="text-md font-black text-slate-200 uppercase mt-2">Vector Tier</h3>
+                      <div className="text-xl font-black text-cyan-400 tracking-tight mt-1.5">
+                        $149 <span className="text-[10px] font-normal text-slate-500">/ Session</span>
+                      </div>
+                    </div>
+                    <p className="text-slate-400 text-xs font-sans leading-relaxed font-normal min-h-[64px]">
+                      Ideal for single-focused biomechanical testing or workspace corporate checks. Focuses on isolated
+                      range of motion constraints.
+                    </p>
+                    <ul className="text-[11px] text-slate-300 space-y-2 pt-2 border-t border-slate-900">
+                      <li className="flex items-center gap-2 text-slate-400">✓ 1x Target Pipeline Upload</li>
+                      <li className="flex items-center gap-2 text-slate-400">✓ Desk Posture & ROM Scan</li>
+                      <li className="flex items-center gap-2 text-slate-400">✓ Client Profile Access Token</li>
+                    </ul>
+                  </div>
+                  <div className="text-[10px] font-bold text-indigo-400 bg-slate-950 border border-slate-900 p-2 text-center rounded-lg mt-5 uppercase tracking-widest">
+                    Vector Pipeline Gated
+                  </div>
+                </div>
+
+                {/* Tensegrity Tier */}
+                <div className="p-5 bg-slate-900/50 border border-cyan-500/20 rounded-xl flex flex-col justify-between relative overflow-hidden group shadow-lg shadow-cyan-950/5">
+                  <div className="absolute top-0 right-0 bg-cyan-400 text-slate-950 text-[9px] font-black tracking-widest px-3 py-1 uppercase rounded-bl">
+                    Recommended
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[9px] px-2 py-0.5 bg-slate-950 text-cyan-400 font-bold border border-slate-800 rounded-full tracking-wider uppercase">
+                        Full Evaluation
+                      </span>
+                      <h3 className="text-md font-black text-slate-200 uppercase mt-2">Tensegrity Tier</h3>
+                      <div className="text-xl font-black text-cyan-400 tracking-tight mt-1.5">
+                        $299 <span className="text-[10px] font-normal text-slate-500">/ Evaluation</span>
+                      </div>
+                    </div>
+                    <p className="text-slate-400 text-xs font-sans leading-relaxed font-normal min-h-[64px]">
+                      A complete full-body structural breakdown mapping multi-plane kinetic shifts, rotational torque
+                      asymmetries, and explosive stability.
+                    </p>
+                    <ul className="text-[11px] text-slate-300 space-y-2 pt-2 border-t border-slate-900">
+                      <li className="flex items-center gap-2 text-cyan-400">✓ All 4 Performance Uploads</li>
+                      <li className="flex items-center gap-2 text-cyan-400">✓ Full Fascial Balance Chart</li>
+                      <li className="flex items-center gap-2 text-cyan-400">✓ Downloadable Blueprint Doc</li>
+                    </ul>
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-950 bg-cyan-400 p-2 text-center rounded-lg mt-5 uppercase tracking-widest">
+                    Calibrate Full Blueprint
+                  </div>
+                </div>
+
+                {/* Infinite Matrix Tier */}
+                <div className="p-5 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col justify-between group hover:border-amber-500/30 transition-colors">
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[9px] px-2 py-0.5 bg-slate-950 text-amber-400 font-bold border border-slate-800 rounded-full tracking-wider uppercase">
+                        Ongoing Support
+                      </span>
+                      <h3 className="text-md font-black text-slate-200 uppercase mt-2">Infinite Matrix</h3>
+                      <div className="text-xl font-black text-cyan-400 tracking-tight mt-1.5">
+                        $199 <span className="text-[10px] font-normal text-slate-500">/ Month</span>
+                      </div>
+                    </div>
+                    <p className="text-slate-400 text-xs font-sans leading-relaxed font-normal min-h-[64px]">
+                      Continuous dynamic access designed for martial artists, acrobats, and practitioners scaling
+                      systemic patterns under high load profiles.
+                    </p>
+                    <ul className="text-[11px] text-slate-300 space-y-2 pt-2 border-t border-slate-900">
+                      <li className="flex items-center gap-2 text-amber-400">✓ Unlimited Pipeline Upgrades</li>
+                      <li className="flex items-center gap-2 text-amber-400">✓ Direct Roster Case Logs</li>
+                      <li className="flex items-center gap-2 text-amber-400">✓ Dynamic 3D Model Tracking</li>
+                    </ul>
+                  </div>
+                  <div className="text-[10px] font-bold text-amber-400 bg-slate-950 border border-slate-900 p-2 text-center rounded-lg mt-5 uppercase tracking-widest">
+                    Initialize Matrix Stream
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // SYSTEM FRAME B: Premium Biometric Client Profile Portal Hub
   if (viewState === 'client_profile' && activeClientProfile) {
     return (
@@ -3442,6 +3734,19 @@ export default function App() {
                   </p>
                 </button>
               ))}
+
+              {/* Upgraded Commercial Entry Point Access Trigger Button */}
+              <div className="mt-2 pt-2 border-t border-slate-900">
+                <button
+                  onClick={() => {
+                    setSelectedAnalysis('Membership Portal Sync');
+                    setViewState('pricing_matrix');
+                  }}
+                  className="w-full text-center py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black rounded-lg text-[11px] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 cursor-pointer"
+                >
+                  ⚡ [ UNLOCK MATRIX MEMBERSHIP ]
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 w-64 pointer-events-auto bg-slate-950/70 border border-slate-800 p-4 rounded-xl backdrop-blur-md shadow-2xl text-right">
