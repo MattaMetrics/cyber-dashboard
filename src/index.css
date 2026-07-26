@@ -58,7 +58,7 @@
 
   .scan-line::after {
     content: '';
-    @apply absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent;
-    animation: scan 4s linear infinite;
+    @apply absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent;
+    animation: scan 4s ease-in-out infinite;
   }
 }

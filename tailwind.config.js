@@ -17,7 +17,7 @@ export default {
       },
       animation: {
         'pulse-heart': 'pulse-heart 0.85s ease-in-out infinite',
-        scan: 'scan 3s linear infinite',
+        scan: 'scan 3s ease-in-out infinite',
         flicker: 'flicker 4s ease-in-out infinite',
       },
       keyframes: {
@@ -26,8 +26,9 @@ export default {
           '50%': { opacity: '0.6', transform: 'scale(1.05)' },
         },
         scan: {
-          '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(100%)' },
+          '0%': { top: '0%' },
+          '50%': { top: '100%' },
+          '100%': { top: '0%' },
         },
         flicker: {
           '0%, 100%': { opacity: '1' },

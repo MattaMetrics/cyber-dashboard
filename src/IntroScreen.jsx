@@ -131,6 +131,29 @@ function IntroScreen({ onAccessGranted, autoBoot = false }) {
     };
   }, []);
 
+  const PROTECTED_SESSION_VIEWS = new Set([
+    'client_profile',
+    'intake_terminal',
+    'pricing_matrix',
+    'more_info',
+    'mobility',
+    'vital_flow',
+    'athlete_precision',
+    'kinetic_power',
+    'coach_menu',
+  ]);
+
+  const readCachedLabView = () => {
+    try {
+      const cached = window.localStorage?.getItem('lab_view_state') || '';
+      if (!cached) return '';
+      const resolved = cached.startsWith('"') ? JSON.parse(cached) : cached;
+      return typeof resolved === 'string' ? resolved : '';
+    } catch {
+      return '';
+    }
+  };
+
   // MASTER MATRIX PIN VERIFIER LOOP
   const handlePinSubmit = (val) => {
     if (val === '7777') {
@@ -143,7 +166,15 @@ function IntroScreen({ onAccessGranted, autoBoot = false }) {
 
         if (currentProgress >= 100) {
           clearInterval(interval);
-          onAccessGranted('7777');
+
+          // Do not force landing / wipe an active authenticated session on boot completion
+          const cachedView = readCachedLabView();
+          if (cachedView && PROTECTED_SESSION_VIEWS.has(cachedView)) {
+            onAccessGranted?.(val, { preserveCachedView: true, cachedView });
+            return;
+          }
+
+          onAccessGranted?.(val, { preserveCachedView: false });
         }
       }, 150); // Changed from 60 to 150 to make the 3D scan cinematic and longer!
     }
