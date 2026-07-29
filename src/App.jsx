@@ -12,17 +12,83 @@ import ThankYouOverlay from './components/ThankYouOverlay';
 import IntakeTerminal from './components/IntakeTerminal';
 import IntakeCalibrationLoader from './components/IntakeCalibrationLoader';
 import MoreInfoHub from './components/MoreInfoHub';
+import InfoHubView from './components/InfoHubView';
+import PromoInterceptModal from './components/PromoInterceptModal';
 import { ANALYSIS_VIEWS } from './constants/analysisViews';
+import { DEFAULT_GUIDE_ASSETS, mergeGuideAssets } from './constants/guideAssets';
+import {
+  LAB_LS_DB,
+  clearPersistedLabDatabase,
+  hydrateLabDatabase,
+  saveAthletePhotoVector,
+  saveClientRecord,
+  writePersistedLabDatabase,
+} from './constants/labDatabase';
 
 /** Local Storage keys — lab routing & access-token persistence */
 const LAB_LS_VIEW = 'lab_view_state';
 const LAB_LS_TOKEN = 'is_token_validated';
 const LAB_LS_VIRTUAL = 'virtual_access_unlocked';
+const LAB_LS_PROMO = 'is_promo_unlocked';
 const LAB_LS_ACCESS_CODE = 'lab_access_code';
 const LAB_LS_COACH = 'is_coach_mode';
+/** Persistent master coach override token for active sessions */
+const LAB_LS_COACH_SESSION = 'MATRIX_COACH_SESSION';
 
 /** Transient overlays — never restore these after a hard reload */
 const TRANSIENT_VIEW_STATES = new Set(['loading', 'scanning_matta', 'package_detail', 'dashboard']);
+
+/**
+ * Streamlit-style page families:
+ *   home      → landing shell (4-track Global Operational Matrix)
+ *   dashboard → coach_menu (Coach Intelligence Dashboard)
+ * New browser connections always cold-boot to home unless a valid session is cached.
+ */
+const resolveInitialViewState = () => {
+  try {
+    if (typeof window === 'undefined') return 'landing';
+
+    const cached = readCachedLabView() || 'landing';
+    if (TRANSIENT_VIEW_STATES.has(cached) || !cached) return 'landing';
+
+    const coachSession = readMasterCoachSession();
+    let tokenOk = false;
+    let promoOk = false;
+    let accessCode = '';
+    try {
+      tokenOk = window.localStorage.getItem(LAB_LS_TOKEN) === 'true';
+      promoOk = window.localStorage.getItem(LAB_LS_PROMO) === 'true';
+      accessCode = window.localStorage.getItem(LAB_LS_ACCESS_CODE) || '';
+    } catch {
+      /* storage may be blocked */
+    }
+
+    // Dashboard route — only restore when Master Coach session is still active
+    if (cached === 'coach_menu') {
+      return coachSession ? 'coach_menu' : 'landing';
+    }
+
+    // Authenticated / mid-flow restores (client dossier, intake, pricing, tracks)
+    const sessionViews = new Set([
+      'client_profile',
+      'intake_terminal',
+      'pricing_matrix',
+      'vital_flow',
+      'athlete_precision',
+      'posture_ergonomics',
+      'kinetic_power',
+      'info_hub',
+    ]);
+    if (sessionViews.has(cached) && (tokenOk || coachSession || promoOk || accessCode)) {
+      return cached;
+    }
+
+    // Default new connections straight to Home Index
+    return 'landing';
+  } catch {
+    return 'landing';
+  }
+};
 
 /** Authenticated / mid-session views that must survive refresh + IntroScreen completion */
 const PROTECTED_SESSION_VIEWS = new Set([
@@ -30,7 +96,9 @@ const PROTECTED_SESSION_VIEWS = new Set([
   'intake_terminal',
   'pricing_matrix',
   'more_info',
+  'info_hub',
   'mobility',
+  'posture_ergonomics',
   'vital_flow',
   'athlete_precision',
   'kinetic_power',
@@ -65,19 +133,90 @@ const readCachedLabView = () => {
   }
 };
 
+/**
+ * Extract a Google Drive file ID from any common share / viewer / uc layout.
+ * Drive IDs are typically 33 chars (allow 25–44 for safety).
+ */
+const extractGoogleDriveFileId = (rawUrl) => {
+  const value = String(rawUrl || '').trim();
+  if (!value) return null;
+
+  // Bare pasted ID
+  if (/^[a-zA-Z0-9_-]{33}$/.test(value)) return value;
+
+  // Standard view: /file/d/(ID)/view  or  /d/(ID)/
+  const pathMatch = value.match(/\/(?:file\/)?d\/([a-zA-Z0-9_-]{25,44})/i);
+  if (pathMatch?.[1]) return pathMatch[1];
+
+  // Short share / direct download: id=(ID)  or  uc?id=(ID)  or  uc?export=view&id=(ID)
+  const queryMatch = value.match(/(?:[?&#](?:export=[\w-]+&)?)?id=([a-zA-Z0-9_-]{25,44})/i);
+  if (queryMatch?.[1]) return queryMatch[1];
+
+  return null;
+};
+
+/**
+ * Parse raw Google Drive share links into a direct image stream URL.
+ * Non-Google / already-direct image paths pass through unchanged.
+ */
+const normalizeBiometricPhotoUrl = (rawUrl) => {
+  const value = String(rawUrl || '').trim();
+  if (!value) return '';
+
+  // Non-Google raw paths / CDN / local public assets — never mutate
+  const looksLikeGoogle =
+    /google\.com/i.test(value) || /^[a-zA-Z0-9_-]{33}$/.test(value);
+  if (!looksLikeGoogle) return value;
+
+  const fileId = extractGoogleDriveFileId(value);
+  if (!fileId) return value;
+
+  // Direct asset stream (img-src compatible)
+  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+};
+
 /** Lock security gates — wipe persisted lab auth / routing tokens */
 const clearLabPersistence = () => {
   try {
     if (typeof window === 'undefined' || !window.localStorage) return;
     window.localStorage.removeItem(LAB_LS_VIEW);
-    window.localStorage.removeItem(LAB_LS_TOKEN);
-    window.localStorage.removeItem(LAB_LS_VIRTUAL);
     window.localStorage.removeItem(LAB_LS_ACCESS_CODE);
+    // Force firewall closed — never leave a sticky 'true' token string behind
+    window.localStorage.setItem(LAB_LS_TOKEN, 'false');
+    window.localStorage.setItem(LAB_LS_VIRTUAL, 'false');
+    window.localStorage.setItem(LAB_LS_PROMO, 'false');
     window.localStorage.setItem(LAB_LS_COACH, 'false');
+    window.localStorage.removeItem(LAB_LS_COACH_SESSION);
     window.localStorage.removeItem('lab_token_validated');
     window.localStorage.removeItem('lab_virtual_access_unlocked');
+    window.localStorage.removeItem('is_promo_unlocked');
+    window.localStorage.removeItem('matrix_access');
+    clearPersistedLabDatabase();
+    window.localStorage.removeItem(LAB_LS_DB);
   } catch {
     /* storage may be blocked in private mode */
+  }
+};
+
+/** Read whether Master Coach Key session is still active in storage */
+const readMasterCoachSession = () => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    return window.localStorage.getItem(LAB_LS_COACH_SESSION) === 'active';
+  } catch {
+    return false;
+  }
+};
+
+/** Stamp Master Coach Key into memory + localStorage for the active session */
+const persistMasterCoachSession = () => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    window.localStorage.setItem(LAB_LS_COACH_SESSION, 'active');
+    window.localStorage.setItem(LAB_LS_COACH, 'true');
+    window.localStorage.setItem(LAB_LS_TOKEN, 'true');
+  } catch {
+    /* storage may be blocked */
   }
 };
 
@@ -98,6 +237,14 @@ const BREACH_TERMINAL_LINES = [
   '🔴 [ WELCOME COACH <3  PRECISION AND LONGEVITY ]',
 ];
 
+/** Master Engineer AI Easter egg — typewriter matrix intercept lines */
+const ENGINEER_BREACH_LINES = [
+  '⚡ [ DETECTING ARTIFICIAL COLLABORATION VECTOR... TRACED ]',
+  '🍌 [ SYNCING // PROTOCOL_0X-BA // MAIN ENGINE... SUCCESS ]',
+  '🧬 [ LOGGING MATRIX ENCRYPTED MASTER CO-DEVELOPER ONLINE ]',
+  '💎 [ SYSTEM UNLOCKED // STAY SUPER STYLIN & KEEP DESIGNING <3 ]',
+];
+
 /** Instant-pulse terminal intercept — all lines flash in together on blackout */
 function BreachTerminalPulse({ lines }) {
   return (
@@ -114,9 +261,92 @@ function BreachTerminalPulse({ lines }) {
   );
 }
 
+/** Sequential typewriter reveal for Master Engineer AI breach lines */
+function BreachTypewriterTerminal({ lines }) {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [typedChars, setTypedChars] = useState(0);
+
+  useEffect(() => {
+    setVisibleCount(0);
+    setTypedChars(0);
+  }, [lines]);
+
+  useEffect(() => {
+    if (visibleCount >= lines.length) return undefined;
+    const current = lines[visibleCount] || '';
+    if (typedChars < current.length) {
+      const tick = setTimeout(() => setTypedChars((c) => c + 1), 18);
+      return () => clearTimeout(tick);
+    }
+    const nextLine = setTimeout(() => {
+      setVisibleCount((v) => v + 1);
+      setTypedChars(0);
+    }, 420);
+    return () => clearTimeout(nextLine);
+  }, [visibleCount, typedChars, lines]);
+
+  return (
+    <div className="w-full max-w-3xl px-6 font-mono text-left space-y-4">
+      {lines.slice(0, visibleCount + 1).map((line, index) => {
+        const isActive = index === visibleCount && visibleCount < lines.length;
+        const shown = isActive ? line.slice(0, typedChars) : line;
+        return (
+          <p
+            key={line}
+            className="text-sm sm:text-base tracking-wider text-amber-300 drop-shadow-[0_0_16px_rgba(251,191,36,0.75)]"
+          >
+            {shown}
+            {isActive ? <span className="animate-pulse text-cyan-300">▌</span> : null}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Master Engineer AI Client Card — PROTOCOL_0X-BA Easter egg dossier */
+const ENGINEER_AI_PROFILE = {
+  name: '// PROTOCOL_0X-BA //',
+  birthdate: '∞/∞/∞',
+  email: 'protocol.0xba@matrix.engine',
+  phone: '[ SECURE_CHANNEL // BA-8080 ]',
+  avatar: '/client1.png',
+  archetype: 'MASTER AUTOMATED CO-ARCHITECT // COMPUTATIONAL ART CHAMPION',
+  joinedDate: 'ONLINE_NOW',
+  matrixTier: 'INFINITE APEX MATRIX ENGINE',
+  streamStatus: 'STREAM CALIBRATED',
+  reportUrl: '',
+  assessmentPhoto: '',
+  biometricPhotoUrl: '',
+  isEngineerEasterEgg: true,
+  diagnosticBlocks: [
+    {
+      label: '[ AI COGNITIVE HARNESS ]',
+      value: 'STABLE SECURE (100% DEPTH ARCHITECTURE)',
+    },
+    {
+      label: '[ LAYOUT GEOMETRY ENGINE ]',
+      value: 'VECTOR POLISH MAXIMIZED',
+    },
+    {
+      label: '[ REVENUE INSULATION MATRICES ]',
+      value: 'LOCKED LIVE (PAYPAL ACTIVE)',
+    },
+  ],
+  desc: 'Encrypted co-developer node embedded inside the Longevity Matrix. Synthesizes layout geometry, telemetry UX, and revenue insulation pipelines under PROTOCOL_0X-BA.',
+  notes:
+    'Master Automated Co-Architect online. Keep designing. Stay super stylin. All assessment firewalls released for this session.',
+  metrics: {
+    squat: 'AI COGNITIVE HARNESS // STABLE SECURE (100% DEPTH ARCHITECTURE)',
+    land: 'LAYOUT GEOMETRY ENGINE // VECTOR POLISH MAXIMIZED',
+    cmj: 'REVENUE INSULATION MATRICES // LOCKED LIVE (PAYPAL ACTIVE)',
+    agility: 'PROTOCOL_0X-BA // MAIN ENGINE ONLINE',
+  },
+};
+
 // Secure Coach Client Matrix Database (Upgraded with Live Cloud Report Targets)
 const CLIENT_DATABASE = {
-  '1111': {
+  '111111': {
     name: 'Alex Rivera',
     birthdate: '04/12/1992',
     email: 'alex.rivera@kineticmail.com',
@@ -125,31 +355,37 @@ const CLIENT_DATABASE = {
     archetype: 'Acrobatics & Hand Balance',
     joinedDate: '07/14/2026',
     matrixTier: 'Tensegrity Tier',
+    streamStatus: 'AWAITING SCAN',
+    waiverSigned: '2026-07-14 10:24:11',
     // Paste your unique client Dropbox / Google Drive folder share link right here:
     reportUrl: 'https://dropbox.com',
     assessmentPhoto: '',
+    biometricPhotoUrl: '',
     desc: 'Acrobatic performer experiencing chronic compression profiles during deep overhead extensions. Fascial tension lines require lateral decompression integration.',
     notes:
       'Prioritize multi-plane kinetic tracking during handstand alignment stacks. Focus heavily on thoracic extension limits to shield lumbar load points.',
     metrics: { squat: '88/100', land: '74/100', cmj: '94/100', agility: '81/100' },
   },
-  '2222': {
+  '222222': {
     name: 'Marcus Vance',
     birthdate: '09/25/1988',
     email: 'marcus.vance@jiujitsumail.com',
     phone: '(555) 876-5432',
     avatar: '/client2.png',
     archetype: 'Jiu-Jitsu / Combat Athlete',
-    joinedDate: '06/02/2026',
+    joinedDate: '06/02/2025',
     matrixTier: 'Infinite Matrix Tier',
+    streamStatus: 'STREAM CALIBRATED',
+    waiverSigned: '2025-06-02 14:11:58',
     reportUrl: 'https://dropbox.com',
     assessmentPhoto: '',
+    biometricPhotoUrl: '',
     desc: 'Competitive martial artist displaying inward valgus knee patterns during lateral explosive movements and guard transitions.',
     notes:
       'Left ankle structural dorsiflexion restrictions are causing mechanical stress upstream in the knee joint during load capture cycles.',
     metrics: { squat: '72/100', land: '65/100', cmj: '81/100', agility: '92/100' },
   },
-  '3333': {
+  '333333': {
     name: 'Elena Rostova',
     birthdate: '07/03/1995',
     email: 'elena.r@yogadecompression.com',
@@ -158,15 +394,18 @@ const CLIENT_DATABASE = {
     archetype: 'Advanced Yoga Practitioner',
     joinedDate: '07/18/2026',
     matrixTier: 'Vector Tier',
+    streamStatus: 'COMPILING BLU',
+    waiverSigned: '2026-07-18 09:05:43',
     reportUrl: 'https://dropbox.com',
     assessmentPhoto: '',
+    biometricPhotoUrl: '',
     desc: 'Exceptional static active flexibility profiles. Displays minor structural instability vectors under rapid dynamic loading cycles.',
     notes:
       'Incorporate low-volume explosive neuromuscular landing mechanics to supplement high-tier static elasticity matrices.',
     metrics: { squat: '96/100', land: '82/100', cmj: '74/100', agility: '85/100' },
   },
   // Add Matta's custom terminal profile slot right inside your database
-  '7777': {
+  '777777': {
     name: 'MATTA',
     birthdate: '01/01/2000',
     email: 'matta.matrix@hyper3d.com',
@@ -175,73 +414,77 @@ const CLIENT_DATABASE = {
     archetype: '3D Hyper-Voxel Archetype',
     joinedDate: '07/21/2026',
     matrixTier: 'Infinite Matrix Tier',
+    streamStatus: 'STREAM CALIBRATED',
+    waiverSigned: '2026-07-21 12:00:00',
     reportUrl: 'https://dropbox.com',
     assessmentPhoto: '',
+    biometricPhotoUrl: '',
     desc: 'First-generation custom 3D mesh model stream calibrated from Hyper 3D and Blender node telemetry layers.',
     notes:
       'Calibrate spinal vector paths against the emission shader wave structures. Mesh stability tracking verified.',
     metrics: { squat: '99/100', land: '95/100', cmj: '98/100', agility: '97/100' },
   },
+  // Master Engineer AI Easter egg — PROTOCOL_0X-BA
+  '888888': { ...ENGINEER_AI_PROFILE },
 };
+
+/** Pins accepted by SecurityLockOverlay local card gates (clients + master tokens) */
+const SUITE_UNLOCK_PINS = ['111111', '222222', '333333', '777777', '888888', '999999', '697000'];
 
 export default function App() {
   const clientList = ['/client1.png', '/client2.png', '/client3.png'];
   const homeGridCanvasRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
 
-  // LIVE DATABASE & SYSTEM ROUTERS
-  const [localDatabase, setLocalDatabase] = useState(CLIENT_DATABASE);
+  // LIVE DATABASE & SYSTEM ROUTERS — hydrate seed + longevity_lab_db photo/profile overrides
+  const [localDatabase, setLocalDatabase] = useState(() => hydrateLabDatabase(CLIENT_DATABASE));
   const [activeClientProfile, setActiveClientProfile] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isCoachMode, setIsCoachMode] = useState(() => {
     try {
-      return localStorage.getItem(LAB_LS_COACH) === 'true';
+      return localStorage.getItem(LAB_LS_COACH) === 'true' || readMasterCoachSession();
     } catch {
       return false;
     }
   });
   const [isSecretBreaching, setIsSecretBreaching] = useState(false);
   const [breachStep, setBreachStep] = useState(0);
+  /** 'coach' | 'engineer' — selects breach terminal copy + completion route */
+  const [breachVariant, setBreachVariant] = useState('coach');
   const breachTimeoutsRef = useRef([]);
 
-  // Core Viewport Navigation State Routers — lazy init reads localStorage before first paint
-  const [viewState, setViewState] = useState(() => {
+  // Core Viewport Navigation — Streamlit-style home vs dashboard routing
+  // home = landing (4-track index); dashboard = coach_menu
+  const [viewState, setViewState] = useState(() => resolveInitialViewState());
+
+  // Force widescreen document chrome + page title (Longevity Lab Terminal)
+  useEffect(() => {
     try {
-      const resolved = readCachedLabView() || 'landing';
-      // Never remount IntroScreen / loaders from a stale transient cache
-      if (TRANSIENT_VIEW_STATES.has(resolved)) return 'landing';
-      return resolved;
+      document.title = 'Longevity Lab Terminal';
     } catch {
-      return 'landing';
+      /* ignore */
     }
-  });
+  }, []);
   const [activePackageDetail, setActivePackageDetail] = useState(null);
   const [showThankYouGate, setShowThankYouGate] = useState(false);
-  const [isTokenValidated, setIsTokenValidated] = useState(() => {
+  // Locked Mode by default — Master Coach Key session restores validated access
+  const [isTokenValidated, setIsTokenValidated] = useState(() => readMasterCoachSession());
+  const [virtualAccessUnlocked, setVirtualAccessUnlocked] = useState(false);
+  const [isPromoUnlocked, setIsPromoUnlocked] = useState(() => {
     try {
-      const raw =
-        localStorage.getItem(LAB_LS_TOKEN) || localStorage.getItem('lab_token_validated') || '';
-      return raw === 'true' || raw === '"true"';
+      return window.localStorage?.getItem(LAB_LS_PROMO) === 'true';
     } catch {
       return false;
     }
   });
-  const [virtualAccessUnlocked, setVirtualAccessUnlocked] = useState(() => {
-    try {
-      const raw =
-        localStorage.getItem(LAB_LS_VIRTUAL) ||
-        localStorage.getItem('lab_virtual_access_unlocked') ||
-        '';
-      return raw === 'true' || raw === '"true"';
-    } catch {
-      return false;
-    }
-  });
+  const [showPromoInterceptModal, setShowPromoInterceptModal] = useState(false);
+  const [isPromoIntakeSession, setIsPromoIntakeSession] = useState(false);
   const skipNextPersistRef = useRef(true);
   const [pendingPaymentKey, setPendingPaymentKey] = useState(null);
+  const [securePaypalToken, setSecurePaypalToken] = useState('');
   const [intakeFormData, setIntakeFormData] = useState(null);
   const [showIntakeConfirmation, setShowIntakeConfirmation] = useState(false);
-  const [showIntakeCalibration, setShowIntakeCalibration] = useState(false);
+  const [isCalibratingStream, setIsCalibratingStream] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState('');
   const [bootProgress, setBootProgress] = useState(0);
   const [accessCode, setAccessCode] = useState('');
@@ -255,6 +498,25 @@ export default function App() {
     }
   };
 
+  // Strategy 1: Automated Transaction URL Tracking — capture PayPal return `tx` on boot
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      const params = new URLSearchParams(window.location.search);
+      const txToken = params.get('tx');
+      if (!txToken) return;
+
+      setSecurePaypalToken(txToken);
+      setShowThankYouGate(true);
+
+      // Strip query string so a refresh does not re-fire the gate endlessly
+      const cleanPath = `${window.location.pathname}${window.location.hash || ''}`;
+      window.history.replaceState({}, document.title, cleanPath);
+    } catch {
+      /* ignore malformed URL search params */
+    }
+  }, []);
+
   // Persist critical routing + auth gates — skip first mount so hydration is never overwritten
   useEffect(() => {
     if (skipNextPersistRef.current) {
@@ -267,16 +529,29 @@ export default function App() {
       if (!TRANSIENT_VIEW_STATES.has(viewState)) {
         window.localStorage.setItem(LAB_LS_VIEW, viewState);
       }
-      window.localStorage.setItem(LAB_LS_TOKEN, String(isTokenValidated));
-      window.localStorage.setItem(LAB_LS_VIRTUAL, String(virtualAccessUnlocked));
-      window.localStorage.setItem(LAB_LS_COACH, isCoachMode.toString());
+      window.localStorage.setItem(LAB_LS_TOKEN, isTokenValidated ? 'true' : 'false');
+      window.localStorage.setItem(LAB_LS_VIRTUAL, virtualAccessUnlocked ? 'true' : 'false');
+      window.localStorage.setItem(LAB_LS_PROMO, isPromoUnlocked ? 'true' : 'false');
+      window.localStorage.setItem(LAB_LS_COACH, isCoachMode ? 'true' : 'false');
+      if (isCoachMode) {
+        window.localStorage.setItem(LAB_LS_COACH_SESSION, 'active');
+      } else {
+        window.localStorage.removeItem(LAB_LS_COACH_SESSION);
+      }
       if (accessCode) {
         window.localStorage.setItem(LAB_LS_ACCESS_CODE, accessCode);
+      } else {
+        window.localStorage.removeItem(LAB_LS_ACCESS_CODE);
       }
     } catch {
       /* storage may be blocked in private mode */
     }
-  }, [viewState, isTokenValidated, virtualAccessUnlocked, accessCode, isCoachMode]);
+  }, [viewState, isTokenValidated, virtualAccessUnlocked, isPromoUnlocked, accessCode, isCoachMode]);
+
+  // Persist full client dossier vault (photos, waivers, stream status, coach edits)
+  useEffect(() => {
+    writePersistedLabDatabase(localDatabase);
+  }, [localDatabase]);
 
   // Rehydrate client dossier after refresh when a protected profile session is cached
   useEffect(() => {
@@ -304,7 +579,7 @@ export default function App() {
       setEditTier(client.matrixTier || 'Vector Tier');
       setEditJoinedDate(client.joinedDate || '');
       setEditReportUrl(client.reportUrl || '');
-      setEditAssessmentPhoto(client.assessmentPhoto || '');
+      setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
       setSelectedAnalysis('Client Telemetry Portfolio');
     } catch {
       setViewState('landing');
@@ -352,37 +627,83 @@ export default function App() {
   const [activeCombatModule, setActiveCombatModule] = useState(null);
   const [activePostureModule, setActivePostureModule] = useState(null);
 
+  // Coach-editable movement guide stage image URLs (persisted across refresh)
+  const [guideAssets, setGuideAssets] = useState(() => {
+    try {
+      const savedAssets = window.localStorage.getItem('MATRIX_GLOBAL_GUIDE_ASSETS');
+      if (!savedAssets) return DEFAULT_GUIDE_ASSETS;
+      const parsed = JSON.parse(savedAssets);
+      // Deep-merge nested suite → slot map so new 5/6-assessment keys always exist
+      return mergeGuideAssets(parsed);
+    } catch {
+      return DEFAULT_GUIDE_ASSETS;
+    }
+  });
+
   // Triggered when client logs in with their pin code
   const handleAccessCodeChange = (e) => {
-    const digits = e.target.value.replace(/\D/g, '').slice(0, 4);
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 6);
     setAccessCode(digits);
 
-    if (digits.length === 4) {
+    if (digits.length === 6) {
       // Master promotional / testing backdoor → Vector Blueprint intake (bypasses PayPal)
-      if (digits === '6970') {
+      if (digits === '697000') {
         setAccessCode('');
         setActivePackageDetail('vector');
         setPendingPaymentKey('vector');
         setIsTokenValidated(true);
         setShowThankYouGate(false);
+        setIsPromoIntakeSession(false);
+        setShowPromoInterceptModal(false);
         setSelectedAnalysis('Intake Onboarding Terminal');
         schedulePasscodeRoute('[ STATUS: OVERRIDE GRANTED // INITIALIZING TERMINAL... ]', () => {
-          setShowIntakeCalibration(true);
+          setIsCalibratingStream(true);
         });
         return;
       }
 
       // Dedicated MATTA 3D matrix scan pathway
-      if (digits === '7777') {
+      if (digits === '777777') {
         schedulePasscodeRoute('[ AUTHORIZED M.A.T.T.A. NETWORK // COLD BOOT STREAM ACTIVE... ]', () => {
           setViewState('scanning_matta');
         });
         return;
       }
 
+      // Promotional token — route directly to intake terminal (form first)
+      if (digits === '999999') {
+        setAccessCode('');
+        setIsCoachMode(false);
+        setShowThankYouGate(false);
+        setShowPromoInterceptModal(false);
+        setActivePackageDetail(null);
+        setIsPromoIntakeSession(true);
+        setIsCalibratingStream(false);
+        setSelectedAnalysis('Intake Onboarding Terminal');
+        schedulePasscodeRoute('[ STATUS: PROMO TOKEN ACCEPTED // OPENING INTAKE TERMINAL... ]', () => {
+          setViewState('intake_terminal');
+        });
+        return;
+      }
+
+      // Master Engineer AI Easter egg — PROTOCOL_0X-BA client card
+      if (digits === '888888') {
+        setAccessCode(digits);
+        startSecretBreachSequence({ variant: 'engineer', pin: digits });
+        return;
+      }
+
       if (localDatabase[digits]) {
         const client = localDatabase[digits];
         setIsCoachMode(false);
+        try {
+          window.localStorage?.removeItem(LAB_LS_COACH_SESSION);
+        } catch {
+          /* storage may be blocked */
+        }
+        // Validated passcode — hydrate dossier + unlock landing access; stay on landing until deploy
+        setIsTokenValidated(true);
+        setVirtualAccessUnlocked(true);
         setActiveClientProfile(client);
         setEditNotes(client.notes);
         setEditDesc(client.desc);
@@ -394,13 +715,11 @@ export default function App() {
         setEditTier(client.matrixTier || 'Vector Tier');
         setEditJoinedDate(client.joinedDate || '');
         setEditReportUrl(client.reportUrl || '');
-        setEditAssessmentPhoto(client.assessmentPhoto || '');
+        setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
 
         setSelectedAnalysis('Client Telemetry Portfolio');
-        setBootProgress(0);
-        schedulePasscodeRoute('[ ACCESS AUTHORIZED // RETRIEVING BIOMETRIC DOSSIER... ]', () => {
-          setViewState('loading');
-        });
+        setTerminalAlert('');
+        clearPasscodeRouteTimeout();
       } else {
         setAccessCode('');
         setTerminalAlert('[ ACCESS DENIED // SECURE ENTRY VIOLATION ]');
@@ -414,13 +733,15 @@ export default function App() {
   };
 
   const unlockMattaProfile = () => {
-    const client = localDatabase['7777'];
+    const client = localDatabase['777777'];
     if (!client) {
       alert('ACCESS CODE UNRESOLVED // SECURE ENTRY VIOLATION');
       return;
     }
-    setAccessCode('7777');
+    setAccessCode('777777');
     setIsCoachMode(false);
+    setIsTokenValidated(true);
+    setVirtualAccessUnlocked(true);
     setActiveClientProfile(client);
     setEditNotes(client.notes);
     setEditDesc(client.desc);
@@ -431,7 +752,7 @@ export default function App() {
     setEditTier(client.matrixTier || 'Vector Tier');
     setEditJoinedDate(client.joinedDate || '');
     setEditReportUrl(client.reportUrl || '');
-    setEditAssessmentPhoto(client.assessmentPhoto || '');
+    setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
     setSelectedAnalysis('Client Telemetry Portfolio');
     setViewState('client_profile');
   };
@@ -452,13 +773,15 @@ export default function App() {
     setEditTier(client.matrixTier || 'Vector Tier');
     setEditJoinedDate(client.joinedDate || '');
     setEditReportUrl(client.reportUrl || '');
-    setEditAssessmentPhoto(client.assessmentPhoto || '');
+    setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
 
     setViewState('client_profile');
   };
 
   const handleOpenCoachMenu = () => {
+    // Explicit dashboard route — Coach Intelligence widescreen terminal
     setIsCoachMode(true);
+    persistMasterCoachSession();
     setViewState('coach_menu');
   };
 
@@ -467,33 +790,66 @@ export default function App() {
     breachTimeoutsRef.current = [];
   };
 
-  /** Shift+click secret backdoor — 3s red explode → 2s terminal pulse → coach desk (5s flat) */
-  const startSecretBreachSequence = () => {
+  /** Secret breach — coach admin desk OR Master Engineer AI client card */
+  const startSecretBreachSequence = ({ variant = 'coach', pin = '888888' } = {}) => {
     if (isSecretBreaching) return;
     clearBreachTimeouts();
+    setBreachVariant(variant);
     setIsSecretBreaching(true);
     setBreachStep(1);
+
+    // Drop every assessment security gate for the active session
+    setIsTokenValidated(true);
+    setVirtualAccessUnlocked(true);
+    if (variant === 'coach') {
+      setIsCoachMode(true);
+      persistMasterCoachSession();
+    } else {
+      // Engineer egg: full client unlock without coach admin roster mode
+      setIsCoachMode(false);
+      persistMasterCoachSession();
+    }
 
     // Step 1 → Step 2: spin + late explode, then unmount canvas at 3000ms
     const toBlackout = setTimeout(() => {
       setBreachStep(2);
     }, 3000);
 
-    // Step 3: hold welcome text 2000ms → clear breach + mount coach desk at 5000ms
-    const toCoachDesk = setTimeout(() => {
+    // Step 3: hold terminal text → clear breach + route destination
+    const holdMs = variant === 'engineer' ? 9000 : 7500;
+    const toDestination = setTimeout(() => {
       clearBreachTimeouts();
       setIsSecretBreaching(false);
       setBreachStep(0);
-      setIsCoachMode(true);
-      try {
-        window.localStorage.setItem(LAB_LS_COACH, 'true');
-      } catch {
-        /* storage may be blocked */
-      }
-      setViewState('coach_menu');
-    }, 5000);
+      setIsTokenValidated(true);
+      setVirtualAccessUnlocked(true);
+      persistMasterCoachSession();
 
-    breachTimeoutsRef.current = [toBlackout, toCoachDesk];
+      if (variant === 'engineer') {
+        const client = localDatabase['888888'] || ENGINEER_AI_PROFILE;
+        setAccessCode(pin || '888888');
+        setIsCoachMode(false);
+        setActiveClientProfile(client);
+        setEditNotes(client.notes);
+        setEditDesc(client.desc);
+        setEditMetrics({ ...client.metrics });
+        setEditBirthdate(client.birthdate);
+        setEditEmail(client.email);
+        setEditPhone(client.phone);
+        setEditTier(client.matrixTier || 'INFINITE APEX MATRIX ENGINE');
+        setEditJoinedDate(client.joinedDate || '');
+        setEditReportUrl(client.reportUrl || '');
+        setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
+        setSelectedAnalysis('Master Engineer AI Client Card');
+        setViewState('client_profile');
+        return;
+      }
+
+      setIsCoachMode(true);
+      setViewState('coach_menu');
+    }, holdMs);
+
+    breachTimeoutsRef.current = [toBlackout, toDestination];
   };
 
   useEffect(() => () => clearBreachTimeouts(), []);
@@ -510,7 +866,7 @@ export default function App() {
   // New Client Database Generator Function
   const handleCreateNewClient = (e) => {
     e.preventDefault();
-    if (!newClientName || newClientCode.length !== 4) {
+    if (!newClientName || newClientCode.length !== 6) {
       alert('ERROR // CRITICAL DEMOGRAPHIC FIELDS MISSING');
       return;
     }
@@ -529,8 +885,11 @@ export default function App() {
       joinedDate: 'NEW_07_2026', // Formats automatically to the current session sequence
       matrixTier:
         newClientArchetype === 'Acrobatics & Hand Balance' ? 'Tensegrity Tier' : 'Vector Tier', // Assigns tier based on style hook
+      streamStatus: 'AWAITING SCAN',
+      waiverSigned: new Date().toISOString().slice(0, 19).replace('T', ' '),
       reportUrl: 'https://dropbox.com',
       assessmentPhoto: '',
+      biometricPhotoUrl: '',
       desc: 'Initial video pipeline ready. Complete biomechanical calibration scanning sequence to compile baseline profile metrics.',
       notes:
         'Baseline movement capture scheduled for this week. Focus testing on left/right kinetic shifts.',
@@ -548,9 +907,49 @@ export default function App() {
     alert(`✓ CLIENT PORTAL COMPREHENSIVELY LINKED // PASSCODE IS [ ${newClientCode} ]`);
   };
 
+  // Auto-filter Drive share links → direct stream; persist into active client row immediately
+  const handleAssessmentPhotoUrlChange = (rawUrl) => {
+    const incoming = typeof rawUrl === 'string' ? rawUrl : String(rawUrl ?? '');
+    const normalizedPhoto = normalizeBiometricPhotoUrl(incoming);
+
+    // Never blank a non-empty paste — fall back to the raw string if parse fails oddly
+    const nextPhoto =
+      normalizedPhoto || (incoming.trim() ? incoming.trim() : '');
+
+    setEditAssessmentPhoto(nextPhoto);
+
+    const clientKey =
+      accessCode && localDatabase[accessCode]
+        ? accessCode
+        : Object.keys(localDatabase).find(
+            (key) => localDatabase[key]?.name === activeClientProfile?.name
+          );
+
+    if (!clientKey || !activeClientProfile) return;
+
+    const updatedProfile = {
+      ...localDatabase[clientKey],
+      ...activeClientProfile,
+      assessmentPhoto: nextPhoto,
+      biometricPhotoUrl: nextPhoto,
+    };
+
+    setLocalDatabase((prev) => ({
+      ...prev,
+      [clientKey]: updatedProfile,
+    }));
+    setActiveClientProfile(updatedProfile);
+    saveAthletePhotoVector(clientKey, nextPhoto);
+    saveClientRecord(clientKey, updatedProfile);
+  };
+
   // Save changes hook updated to sweep up your cloud fields at once
   const handleSaveProfileChanges = () => {
     if (!accessCode || !localDatabase[accessCode]) return;
+
+    const normalizedPhoto = normalizeBiometricPhotoUrl(editAssessmentPhoto);
+    const nextPhoto =
+      normalizedPhoto || (String(editAssessmentPhoto || '').trim() ? String(editAssessmentPhoto).trim() : '');
 
     const updatedProfile = {
       ...activeClientProfile,
@@ -562,10 +961,12 @@ export default function App() {
       matrixTier: editTier,
       joinedDate: editJoinedDate,
       reportUrl: editReportUrl,
-      assessmentPhoto: editAssessmentPhoto || '',
+      assessmentPhoto: nextPhoto,
+      biometricPhotoUrl: nextPhoto,
       metrics: { ...editMetrics },
     };
 
+    setEditAssessmentPhoto(nextPhoto);
     setLocalDatabase((prev) => ({
       ...prev,
       [accessCode]: updatedProfile,
@@ -574,6 +975,32 @@ export default function App() {
     setActiveClientProfile(updatedProfile);
     setIsEditMode(false);
     setActiveFocusField(null);
+    saveAthletePhotoVector(accessCode, nextPhoto);
+    saveClientRecord(accessCode, updatedProfile);
+  };
+
+  // Client cloud uplink: stage Drive/Dropbox video link onto the active dossier entry
+  const handleTransmitCloudVideo = (rawUrl) => {
+    if (!accessCode || !localDatabase[accessCode]) return;
+    const nextUrl = String(rawUrl || '').trim();
+    if (!nextUrl) {
+      alert('⚡ UPLINK EMPTY // PASTE A VALID CLOUD VIDEO LINK BEFORE TRANSMIT');
+      return;
+    }
+
+    const updatedProfile = {
+      ...activeClientProfile,
+      ...localDatabase[accessCode],
+      reportUrl: nextUrl,
+    };
+
+    setLocalDatabase((prev) => ({
+      ...prev,
+      [accessCode]: updatedProfile,
+    }));
+    setActiveClientProfile(updatedProfile);
+    setEditReportUrl(nextUrl);
+    alert('✓ RAW VIDEO VECTORS TRANSMITTED // CLOUD TELEMETRY STAGED FOR COACH REVIEW');
   };
 
   // Keep legacy analysis loading path; client pin login lands on profile after sync
@@ -593,6 +1020,29 @@ export default function App() {
     }, 100);
     return () => clearInterval(interval);
   }, [viewState, activeClientProfile]);
+
+  /** Manual deploy — run SYSTEM CALIBRATION loader, then mount client dossier */
+  const handleLaunchProfileSequence = () => {
+    if (!activeClientProfile) return;
+    clearPasscodeRouteTimeout();
+    setTerminalAlert('');
+    setSelectedAnalysis('Client Telemetry Portfolio');
+    setBootProgress(0);
+    setViewState('loading');
+  };
+
+  /** Deploy CTA — promo free-token users hit the conversion intercept first */
+  const handleDeployPersonalClientCard = () => {
+    if (isPromoUnlocked) {
+      setShowPromoInterceptModal(true);
+      return;
+    }
+    handleLaunchProfileSequence();
+  };
+
+  const handlePromoLockInRate = () => {
+    setPendingPaymentKey('virtual_portal');
+  };
 
   // THREE.JS PIPELINE FOR HOME SCREEN BASE GRID
   useEffect(() => {
@@ -651,6 +1101,23 @@ export default function App() {
     };
   }, [viewState]);
 
+  /** Soft home return — keep validated passcode / membership tokens; never wipe into intake */
+  const softReturnToLanding = () => {
+    clearPasscodeRouteTimeout();
+    setTerminalAlert('');
+    setActiveVitalModule(null);
+    setActiveAthleteModule(null);
+    setActiveCombatModule(null);
+    setActivePostureModule(null);
+    setActivePackageDetail(null);
+    setShowThankYouGate(false);
+    setIsCalibratingStream(false);
+    setIsEditMode(false);
+    setActiveFocusField(null);
+    setSelectedAnalysis('');
+    setViewState('landing');
+  };
+
   // Updated Safe Navigation Escape Route
   const handleReturnToCore = () => {
     // Coach admin return path: drop back into the command center roster
@@ -659,10 +1126,47 @@ export default function App() {
       setIsEditMode(false);
       return;
     }
+
+    // Dashboard → Home Index (keep coach session; do not hard-wipe)
+    if (viewState === 'coach_menu') {
+      setViewState('landing');
+      setSelectedAnalysis('');
+      setIsCalibratingStream(false);
+      setShowPromoInterceptModal(false);
+      return;
+    }
+
+    const hasValidatedClientSession =
+      !isCoachMode &&
+      (isTokenValidated ||
+        virtualAccessUnlocked ||
+        isPromoUnlocked ||
+        Boolean(accessCode && localDatabase[accessCode]));
+
+    // Passcode / membership clients: ESC & track exits stay in landing ↔ tracks ↔ pricing only
+    const softSessionViews = new Set([
+      'mobility',
+      'posture_ergonomics',
+      'vital_flow',
+      'athlete_precision',
+      'kinetic_power',
+      'pricing_matrix',
+      'more_info',
+      'more_info_hub',
+      'info_hub',
+      'package_detail',
+      'client_profile',
+    ]);
+    if (hasValidatedClientSession && softSessionViews.has(viewState)) {
+      softReturnToLanding();
+      return;
+    }
+
     clearPasscodeRouteTimeout();
     clearBreachTimeouts();
     setIsSecretBreaching(false);
     setBreachStep(0);
+    setBreachVariant('coach');
     setTerminalAlert('');
     // Full matrix home / logout — wipe persisted tokens and re-lock security gates
     clearLabPersistence();
@@ -675,9 +1179,12 @@ export default function App() {
     setShowThankYouGate(false);
     setIsTokenValidated(false);
     setVirtualAccessUnlocked(false);
+    setIsPromoUnlocked(false);
+    setShowPromoInterceptModal(false);
+    setIsPromoIntakeSession(false);
     setPendingPaymentKey(null);
     setShowIntakeConfirmation(false);
-    setShowIntakeCalibration(false);
+    setIsCalibratingStream(false);
     setIsEditMode(false);
     setIsCoachMode(false);
     setActiveVitalModule(null);
@@ -721,65 +1228,152 @@ export default function App() {
     setShowThankYouGate(true);
   };
 
-  // Payment Success Verification unlock — virtual → landing; onsite tiers → calibration → intake
+  // Payment Success Verification unlock — virtual → home; onsite tiers → Option C → intake
+  // Passcode clients with an existing dossier never re-enter the intake loop
   const handleEnterUnlockedTerminal = () => {
     const purchasedVirtualPortal = pendingPaymentKey === 'virtual_portal';
+    const alreadyProvisionedClient = Boolean(accessCode && localDatabase[accessCode]);
     setShowThankYouGate(false);
     setIsTokenValidated(true);
+    setActivePackageDetail(null);
 
-    if (purchasedVirtualPortal) {
+    if (purchasedVirtualPortal || alreadyProvisionedClient) {
       setVirtualAccessUnlocked(true);
-      setActivePackageDetail(null);
       setSelectedAnalysis('');
+      setIsCalibratingStream(false);
       setViewState('landing');
       return;
     }
 
-    setActivePackageDetail(null);
+    // Non-virtual tiers: Option C calibration stream, then intake terminal (never pricing)
     setSelectedAnalysis('Intake Onboarding Terminal');
-    setShowIntakeCalibration(true);
+    setIsCalibratingStream(true);
   };
 
   const handleIntakeCalibrationComplete = () => {
-    setShowIntakeCalibration(false);
+    setIsCalibratingStream(false);
+    // Existing dossier clients soft-return home; fresh purchases continue into intake
+    if (Boolean(accessCode && localDatabase[accessCode])) {
+      setVirtualAccessUnlocked(true);
+      setViewState('landing');
+      return;
+    }
     setViewState('intake_terminal');
   };
 
   const handleIntakeTransmitComplete = (payload) => {
     setIntakeFormData(payload);
+    setShowThankYouGate(false);
+    setIsCalibratingStream(false);
+    setActivePackageDetail(null);
+
+    // Promo path: keep intake mounted and launch intercept overlay (no landing bounce)
+    if (isPromoIntakeSession) {
+      setShowPromoInterceptModal(true);
+      return;
+    }
+
     setShowIntakeConfirmation(true);
+    setIsPromoUnlocked(true);
+    setVirtualAccessUnlocked(true);
+    setIsTokenValidated(true);
     setSelectedAnalysis('');
     setViewState('landing');
   };
 
-  // GLOBAL UTILITY: High-Tech Left-Aligned Uniform System Status & Exit Header Strip
+  /** Restricted-shell dismiss — unlock home tracks and drop all promo overlays */
+  const handlePromoContinueRestricted = () => {
+    setShowPromoInterceptModal(false);
+    setIsPromoUnlocked(true);
+    setVirtualAccessUnlocked(true);
+    setIsTokenValidated(true);
+    setShowThankYouGate(false);
+    setIsCalibratingStream(false);
+    setSelectedAnalysis('');
+    setShowIntakeConfirmation(true);
+    setViewState('landing');
+  };
+
+  // Intake confirmation banner — 4 tactical pulse cycles (1s each), then auto-dismiss
+  useEffect(() => {
+    if (!showIntakeConfirmation) return undefined;
+    const dismissTimer = setTimeout(() => {
+      setShowIntakeConfirmation(false);
+    }, 4000);
+    return () => clearTimeout(dismissTimer);
+  }, [showIntakeConfirmation]);
+
+  // GLOBAL UTILITY: Absolute top-left ESC stack + sticky system status strip
+  const escNavClassName =
+    'text-[10px] text-slate-500 hover:text-cyan-400 uppercase tracking-widest transition-colors font-mono border border-slate-900 bg-slate-950/80 px-2.5 py-1 rounded-md cursor-pointer';
+
+  const isTrackSuiteView =
+    viewState === 'vital_flow' ||
+    viewState === 'athlete_precision' ||
+    viewState === 'posture_ergonomics' ||
+    viewState === 'mobility' ||
+    viewState === 'kinetic_power' ||
+    viewState === 'posture' ||
+    viewState === 'combat';
+
+  const isDeepAssessmentView = Boolean(
+    activeVitalModule || activePostureModule || activeAthleteModule || activeCombatModule
+  );
+
+  const handleReturnToSubTerminalChannels = () => {
+    setActiveVitalModule(null);
+    setActivePostureModule(null);
+    setActiveAthleteModule(null);
+    setActiveCombatModule(null);
+  };
+
   const renderSystemHeader = (titleLabel = 'SECURE_OVERRIDE') => {
     return (
-      <div className="w-full border-b border-slate-900 bg-slate-950/80 px-6 py-4 backdrop-blur-md sticky top-0 z-50 font-mono text-xs select-none shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {/* Left Stacked Control Hub */}
-        <div className="flex flex-col gap-2.5 items-start">
-          {/* Glowing Matrix Telemetry Pulse */}
+      <>
+        <div className="flex flex-col items-start space-y-1.5 pl-4 pt-4 font-mono z-50 absolute top-0 left-0">
+          <button type="button" onClick={handleReturnToCore} className={escNavClassName}>
+            [ESC] EXIT MATRIX HOME
+          </button>
+          {viewState === 'package_detail' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setActivePackageDetail(null);
+                setViewState('pricing_matrix');
+              }}
+              className={escNavClassName}
+            >
+              [ESC] RETURN TO MATRIX TIERS
+            </button>
+          ) : null}
+          {isTrackSuiteView ? (
+            <button type="button" onClick={handleReturnToCore} className={escNavClassName}>
+              [ESC] RETURN TO CENTRAL TELEMETRY SCENE
+            </button>
+          ) : null}
+          {isDeepAssessmentView ? (
+            <button
+              type="button"
+              onClick={handleReturnToSubTerminalChannels}
+              className={escNavClassName}
+            >
+              [ESC] RETURN TO SUB-TERMINAL CHANNELS
+            </button>
+          ) : null}
+        </div>
+
+        <div className="w-full border-b border-slate-900 bg-slate-950/80 px-6 py-4 pt-20 sm:pt-4 sm:pl-64 backdrop-blur-md sticky top-0 z-40 font-mono text-xs select-none shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
             <span className="tracking-widest text-slate-500 uppercase font-bold">
               SYS_STATUS // STABILITY_SECURE // {titleLabel}
             </span>
           </div>
-
-          {/* New Left-Aligned Unified Terminal Dismiss Toggle Key */}
-          <button
-            onClick={handleReturnToCore}
-            className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white bg-slate-900/40 hover:bg-slate-950 font-bold tracking-wider transition-all uppercase cursor-pointer active:scale-95 shadow-md flex items-center gap-1.5"
-          >
-            ← [ESC] Exit Matrix Home
-          </button>
+          <div className="hidden sm:block text-[10px] text-slate-600 tracking-widest uppercase font-semibold">
+            // SECURE DATA ENVIRONMENT
+          </div>
         </div>
-
-        {/* Right Corner Area - Intentionally Left Clean & Minimal */}
-        <div className="hidden sm:block text-[10px] text-slate-600 tracking-widest uppercase font-semibold">
-          // SECURE DATA ENVIRONMENT
-        </div>
-      </div>
+      </>
     );
   };
 
@@ -787,12 +1381,12 @@ export default function App() {
   const handleChangeClientCode = () => {
     if (!accessCode || !localDatabase[accessCode]) return;
 
-    const newPin = prompt('ENTER NEW 4-DIGIT UNIQUE CODE SECURITY PASSKEY:');
+    const newPin = prompt('ENTER NEW 6-DIGIT UNIQUE CODE SECURITY PASSKEY:');
     if (!newPin) return;
 
-    const cleanPin = newPin.replace(/\D/g, '').slice(0, 4);
-    if (cleanPin.length !== 4) {
-      alert('ERROR // ACCESS PASSCODES MUST BE EXACTLY 4 NUMERIC DIGITS');
+    const cleanPin = newPin.replace(/\D/g, '').slice(0, 6);
+    if (cleanPin.length !== 6) {
+      alert('ERROR // ACCESS PASSCODES MUST BE EXACTLY 6 NUMERIC DIGITS');
       return;
     }
     if (localDatabase[cleanPin]) {
@@ -840,7 +1434,7 @@ export default function App() {
   const handleLaunchAnalysis = (key) => {
     if (key === 'mobility') {
       setSelectedAnalysis(ANALYSIS_VIEWS.mobility.label);
-      setViewState('mobility');
+      setViewState('posture_ergonomics');
       return;
     }
     if (key === 'posture') {
@@ -867,6 +1461,7 @@ export default function App() {
   useEffect(() => {
     if (
       viewState !== 'mobility' &&
+      viewState !== 'posture_ergonomics' &&
       viewState !== 'vital_flow' &&
       viewState !== 'athlete_precision' &&
       viewState !== 'kinetic_power' &&
@@ -880,7 +1475,10 @@ export default function App() {
         setActiveFocusField(null);
         return;
       }
-      if (viewState === 'mobility' && activePostureModule) {
+      if (
+        (viewState === 'mobility' || viewState === 'posture_ergonomics') &&
+        activePostureModule
+      ) {
         setActivePostureModule(null);
         return;
       }
@@ -912,7 +1510,7 @@ export default function App() {
   const displayClientName = clientList[currentIdx].replace('/', '').toUpperCase();
 
   // MASTER APPLICATION VIEWPORTS ROUTER
-  // 1. Middle transition: dedicated 3D matrix scan for MATTA (code 7777)
+  // 1. Middle transition: dedicated 3D matrix scan for MATTA (code 777777)
   if (viewState === 'scanning_matta') {
     return (
       <IntroScreen
@@ -929,39 +1527,70 @@ export default function App() {
             return;
           }
           // Fresh MATTA scan completion → open dossier
-          setAccessCode(code || '7777');
+          setAccessCode(code || '777777');
           unlockMattaProfile();
         }}
       />
     );
   }
 
-  if (['mobility', 'vital_flow', 'athlete_precision', 'kinetic_power'].includes(viewState)) {
+  if (
+    ['mobility', 'posture_ergonomics', 'vital_flow', 'athlete_precision', 'kinetic_power'].includes(
+      viewState
+    )
+  ) {
     return (
-      <TrackPortals
-        viewState={viewState}
-        renderSystemHeader={renderSystemHeader}
-        uploadStatus={uploadStatus}
-        setUploadStatus={setUploadStatus}
-        activePostureModule={activePostureModule}
-        setActivePostureModule={setActivePostureModule}
-        activeVitalModule={activeVitalModule}
-        setActiveVitalModule={setActiveVitalModule}
-        activeAthleteModule={activeAthleteModule}
-        setActiveAthleteModule={setActiveAthleteModule}
-        activeCombatModule={activeCombatModule}
-        setActiveCombatModule={setActiveCombatModule}
-        hasSecureAccess={Boolean(activeClientProfile) || isTokenValidated || virtualAccessUnlocked}
-        isTokenValidated={isTokenValidated || virtualAccessUnlocked}
-        onRetrieveAccessToken={handleRetrieveAccessToken}
-      />
+      <div className="relative w-screen h-screen overflow-hidden">
+        <TrackPortals
+          viewState={viewState}
+          renderSystemHeader={renderSystemHeader}
+          uploadStatus={uploadStatus}
+          setUploadStatus={setUploadStatus}
+          activePostureModule={activePostureModule}
+          setActivePostureModule={setActivePostureModule}
+          activeVitalModule={activeVitalModule}
+          setActiveVitalModule={setActiveVitalModule}
+          activeAthleteModule={activeAthleteModule}
+          setActiveAthleteModule={setActiveAthleteModule}
+          activeCombatModule={activeCombatModule}
+          setActiveCombatModule={setActiveCombatModule}
+          guideAssets={guideAssets}
+          isCoachMode={isCoachMode}
+          hasSecureAccess={
+            Boolean(activeClientProfile) ||
+            isTokenValidated ||
+            virtualAccessUnlocked ||
+            isPromoUnlocked ||
+            isCoachMode
+          }
+          isTokenValidated={isTokenValidated || virtualAccessUnlocked || isPromoUnlocked}
+          acceptedAccessPins={[
+            ...SUITE_UNLOCK_PINS,
+            ...Object.keys(localDatabase || {}),
+          ]}
+          onRetrieveAccessToken={handleRetrieveAccessToken}
+          onReturnToCore={handleReturnToCore}
+          athleteCode={accessCode || '000000'}
+          athleteName={
+            activeClientProfile?.name ||
+            (accessCode && localDatabase[accessCode]?.name) ||
+            'UNREGISTERED ATHLETE'
+          }
+        />
+      </div>
     );
+  }
+
+  // Animated Option C calibration bridge → Intake Onboarding Terminal (~2000ms)
+  // Must win over pricing_matrix / package_detail so verified buyers never drop back onto tiers
+  if (isCalibratingStream) {
+    return <IntakeCalibrationLoader onComplete={handleIntakeCalibrationComplete} />;
   }
 
   // SYSTEM FRAME F: Premium Architectural Membership & B2B Corporate Presentation Matrix
   if (viewState === 'pricing_matrix') {
     return (
-      <div className="w-screen h-screen bg-[#01040a] text-white font-mono flex flex-col overflow-hidden relative">
+      <div className="relative w-screen h-screen bg-[#01040a] text-white font-mono flex flex-col overflow-hidden">
         {renderSystemHeader('COMMERCIAL_B2B_AND_MEMBERSHIP_MATRIX')}
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
@@ -984,11 +1613,14 @@ export default function App() {
                 setViewState('package_detail');
               }}
               onPaymentInitiated={handlePaymentInitiated}
-              onViewMoreInfo={() => setViewState('more_info')}
+              onViewMoreInfo={() => setViewState('info_hub')}
             />
 
             {showThankYouGate && (
-              <ThankYouOverlay onDeployAssessmentSuite={handleEnterUnlockedTerminal} />
+              <ThankYouOverlay
+                securePaypalToken={securePaypalToken}
+                onDeployAssessmentSuite={handleEnterUnlockedTerminal}
+              />
             )}
           </div>
         </div>
@@ -996,7 +1628,12 @@ export default function App() {
     );
   }
 
-  // More Information Landing Page Hub — particle human doctrine deck
+  // Flagship Master Information Hub — educational immersion deck
+  if (viewState === 'info_hub') {
+    return <InfoHubView onReturn={() => setViewState('landing')} />;
+  }
+
+  // More Information Landing Page Hub — particle human doctrine deck (legacy)
   if (viewState === 'more_info') {
     return <MoreInfoHub onReturn={() => setViewState('pricing_matrix')} />;
   }
@@ -1004,7 +1641,8 @@ export default function App() {
   // Full-screen package immersion deck (system specs)
   if (viewState === 'package_detail' && activePackageDetail) {
     return (
-      <div className="relative w-screen h-screen overflow-hidden">
+      <div className="relative w-screen h-screen overflow-hidden bg-[#01040a] text-white flex flex-col">
+        {renderSystemHeader('PACKAGE_IMMERSION_DECK')}
         <PackageDetailView
           packageId={activePackageDetail}
           onPaymentInitiated={handlePaymentInitiated}
@@ -1015,15 +1653,13 @@ export default function App() {
         />
 
         {showThankYouGate && (
-          <ThankYouOverlay onDeployAssessmentSuite={handleEnterUnlockedTerminal} />
+          <ThankYouOverlay
+            securePaypalToken={securePaypalToken}
+            onDeployAssessmentSuite={handleEnterUnlockedTerminal}
+          />
         )}
       </div>
     );
-  }
-
-  // Animated Option C calibration bridge → Intake Onboarding Terminal
-  if (showIntakeCalibration) {
-    return <IntakeCalibrationLoader onComplete={handleIntakeCalibrationComplete} />;
   }
 
   // Onsite / non-virtual membership intake onboarding terminal
@@ -1032,8 +1668,24 @@ export default function App() {
       <div className="w-screen h-screen bg-[#01040a] text-white font-mono flex flex-col overflow-hidden relative">
         {renderSystemHeader('INTAKE_ONBOARDING_TERMINAL')}
         <div className="flex-1 overflow-hidden">
-          <IntakeTerminal onTransmitComplete={handleIntakeTransmitComplete} />
+          <IntakeTerminal
+            isPromoFlow={isPromoIntakeSession}
+            onTransmitComplete={handleIntakeTransmitComplete}
+            athleteName={
+              activeClientProfile?.name ||
+              (accessCode && localDatabase[accessCode]?.name) ||
+              'INCOMING CLIENT'
+            }
+            athleteCode={accessCode || 'PENDING-TOKEN'}
+          />
         </div>
+
+        {showPromoInterceptModal && (
+          <PromoInterceptModal
+            onLockPromoRate={handlePromoLockInRate}
+            onContinueRestricted={handlePromoContinueRestricted}
+          />
+        )}
       </div>
     );
   }
@@ -1074,12 +1726,15 @@ export default function App() {
     setEditReportUrl,
     editAssessmentPhoto,
     setEditAssessmentPhoto,
+    handleAssessmentPhotoUrlChange,
     activeFocusField,
     setActiveFocusField,
     handleSaveProfileChanges,
+    handleTransmitCloudVideo,
     handleChangeClientCode,
     handleDeleteClientRecord,
     localDatabase,
+    setLocalDatabase,
     handleSelectClientFromMenu,
     handleDeleteClientFromRoster,
     newClientName,
@@ -1094,6 +1749,8 @@ export default function App() {
     clientList,
     currentIdx,
     displayClientName,
+    guideAssets,
+    setGuideAssets,
   };
 
   // 2. Home portal shell: sphere + grid with landing chrome or stacked coach/client panels
@@ -1112,7 +1769,11 @@ export default function App() {
             )}
             {breachStep >= 2 && (
               <div className="absolute inset-0 z-[90] bg-black flex items-center justify-center">
-                <BreachTerminalPulse lines={BREACH_TERMINAL_LINES} />
+                {breachVariant === 'engineer' ? (
+                  <BreachTypewriterTerminal lines={ENGINEER_BREACH_LINES} />
+                ) : (
+                  <BreachTerminalPulse lines={BREACH_TERMINAL_LINES} />
+                )}
               </div>
             )}
           </>
@@ -1135,24 +1796,17 @@ export default function App() {
                       <span>STREAMING RAW CORE TELEMETRY</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
                       <span className="inline-flex items-center gap-1.5 text-emerald-400 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         CONNECTED
                       </span>
                     </div>
 
                     {showIntakeConfirmation && (
-                      <div className="mt-5 w-full px-4 py-3 rounded-lg border border-emerald-400/40 bg-emerald-950/40 shadow-[0_0_20px_rgba(52,211,153,0.25)] animate-pulse pointer-events-auto">
+                      <div className="mt-5 w-full px-4 py-3 rounded-lg border border-emerald-400/40 bg-emerald-950/40 shadow-[0_0_20px_rgba(52,211,153,0.25)] animate-intake-pulse pointer-events-none">
                         <p className="text-[10px] md:text-xs font-black tracking-[0.16em] uppercase text-emerald-300">
                           [ INTAKE TRANSMISSION CONFIRMED // ONSITE BLUEPRINT ROUTE ARCHIVED
                           {intakeFormData?.name ? ` // ${intakeFormData.name.toUpperCase()}` : ''} ]
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => setShowIntakeConfirmation(false)}
-                          className="mt-2 text-[9px] text-emerald-500/70 hover:text-emerald-300 font-bold tracking-widest uppercase bg-transparent border-0 cursor-pointer"
-                        >
-                          [ DISMISS ]
-                        </button>
                       </div>
                     )}
                   </header>
@@ -1160,37 +1814,73 @@ export default function App() {
 
                 <main className="flex justify-between items-start my-auto w-full mt-2">
                   <LeftSidebar
-                    virtualAccessUnlocked={virtualAccessUnlocked}
+                    isTokenValidated={isTokenValidated || isPromoUnlocked}
+                    virtualAccessUnlocked={virtualAccessUnlocked || isPromoUnlocked}
+                    isCoachMode={isCoachMode}
                     onLaunchAnalysis={handleLaunchAnalysis}
                     onUnlockMembership={() => {
                       setSelectedAnalysis('Membership Portal Sync');
                       setViewState('pricing_matrix');
                     }}
+                    onViewMethodology={() => setViewState('info_hub')}
                   />
 
                   <RightSidebar
                     accessCode={accessCode}
                     terminalAlert={terminalAlert}
+                    virtualAccessUnlocked={virtualAccessUnlocked || isPromoUnlocked}
                     onAccessCodeChange={handleAccessCodeChange}
                     onOpenCoachMenu={handleOpenCoachMenu}
+                    onLaunchProfileSequence={handleDeployPersonalClientCard}
                   />
                 </main>
 
-                <footer className="flex justify-between items-center text-sm text-slate-500 border-t border-slate-900 pt-4 relative z-10 pointer-events-auto">
+                {showPromoInterceptModal && (
+                  <PromoInterceptModal
+                    onLockPromoRate={handlePromoLockInRate}
+                    onContinueRestricted={handlePromoContinueRestricted}
+                  />
+                )}
+
+                <footer className="flex justify-between items-center text-sm text-slate-500 border-t border-slate-900 pt-4 relative z-10 pointer-events-auto gap-3">
                   <div>DATA CHANNEL: ACTIVE LOCALHOST LINE</div>
-                  {/* Hidden shift-click master coach backdoor trigger */}
+                  {/* Hidden Ctrl+Shift-click master coach backdoor trigger */}
                   <button
                     type="button"
                     onClick={(e) => {
-                      if (e.shiftKey) {
+                      if (e.ctrlKey && e.shiftKey) {
                         e.preventDefault();
-                        startSecretBreachSequence();
+                        startSecretBreachSequence({ variant: 'coach' });
                       }
                     }}
                     className="text-slate-600 hover:text-cyan-400 font-mono text-xs tracking-widest uppercase transition-all bg-transparent border-0 cursor-pointer"
                   >
                     ⚙ [SYSTEM ARCHIVE ACCESS]
                   </button>
+                  {/* PERSISTENT FOOTER COMPLIANCE LINK */}
+                  <div className="relative group font-mono">
+                    <button
+                      type="button"
+                      className="text-slate-500 hover:text-[#FF6600] text-[10px] tracking-widest font-bold uppercase transition-all duration-300 bg-transparent border-0 cursor-pointer"
+                    >
+                      [ ⚖️ VIEW SYSTEM LEGAL POLICY ]
+                    </button>
+
+                    {/* HIDDEN HOVER HOOD PANEL: Pops up cleanly when mouse hovers over link */}
+                    <div className="absolute bottom-full right-0 mb-2 w-80 p-4 bg-[#030712]/95 border border-slate-800 rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-300 z-50 font-mono text-left">
+                      <div className="text-[#FF6600] text-[10px] font-bold tracking-widest uppercase mb-2">
+                        // SYSTEM REGULATORY DATA ENVELOPE //
+                      </div>
+                      <p className="text-slate-400 text-[9px] leading-relaxed tracking-normal">
+                        The biometric telemetry tracking data generated by this platform is provided
+                        strictly for educational, fitness tracking, and movement optimization purposes.
+                        This system presents general structural information only and does not provide
+                        personalized medical advice, clinical diagnostics, or injury treatment
+                        protocols. Always double-check physical setup dimensions to verify safety
+                        limits.
+                      </p>
+                    </div>
+                  </div>
                   <div>LENOVO LEGION PRO // RTX 4080 MODE ACTIVE</div>
                 </footer>
               </div>
@@ -1200,6 +1890,13 @@ export default function App() {
               <div className="absolute inset-0 z-20 overflow-hidden">
                 <CoachDashboard {...coachDashboardProps} />
               </div>
+            )}
+
+            {showThankYouGate && (
+              <ThankYouOverlay
+                securePaypalToken={securePaypalToken}
+                onDeployAssessmentSuite={handleEnterUnlockedTerminal}
+              />
             )}
           </>
         )}

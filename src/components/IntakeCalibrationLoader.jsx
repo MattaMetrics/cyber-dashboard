@@ -6,8 +6,9 @@ const CALIBRATION_LINES = [
   '📡 [ OPENING LAB ENCRYPTED INTAKE PIPELINE... ]',
 ];
 
-const LINE_STAGGER_MS = 700;
-const HOLD_AFTER_LAST_MS = 1100;
+/** Total sequence targets ~2000ms before intake / home handoff */
+const LINE_STAGGER_MS = 500;
+const HOLD_AFTER_LAST_MS = 500;
 
 /**
  * Animated terminal calibration loader — bridges Payment Success → Intake Onboarding Terminal.

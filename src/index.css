@@ -62,3 +62,37 @@
     animation: scan 4s ease-in-out infinite;
   }
 }
+
+/* Coach Intelligence Dashboard — widescreen multi-terminal chassis */
+.coach-dashboard-widescreen {
+  display: grid;
+  grid-template-columns: 320px 1fr 380px;
+  gap: 24px;
+  width: 100%;
+  max-width: 100vw;
+  padding: 24px;
+  box-sizing: border-box;
+  background-color: #030712;
+}
+
+.dashboard-span-all {
+  grid-column: 1 / -1;
+  margin-bottom: 12px;
+}
+
+.secure-system-archives {
+  height: 100%;
+  max-height: calc(100vh - 200px);
+  overflow-y: scroll;
+}
+
+@media (max-width: 1280px) {
+  .coach-dashboard-widescreen {
+    grid-template-columns: 1fr;
+  }
+
+  .secure-system-archives {
+    max-height: 420px;
+  }
+}
+

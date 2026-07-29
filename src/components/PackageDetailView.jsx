@@ -85,33 +85,40 @@ export const PACKAGE_DETAILS = {
     accentClass: 'text-amber-400',
     accentMutedClass: 'text-amber-400/80',
     paragraphs: [
-      'Youth athletes adapt fastest during growth cycles—and those same windows lock in injury patterns for life if left unchecked. Early kinematic screening eliminates permanent risk before it calcifies into chronic limitation.',
-      'Our high-velocity mobile telemetry lab deploys directly to your facility, systematically scanning your full roster without interrupting your practice schedule. By converting raw human movement into actionable kinetic insights, we give your program an elite-level structural shield. Parents receive clear, individualized defensive blueprints to protect their child’s athletic future. Coaches secure tactical Master Roster Reports—delivering vital structural intelligence for training programming, mechanical load management, and long-term athlete longevity across the full team.',
+      'Youth athletes adapt fastest during growth spurts—and those same windows lock in injury risk if imbalances go unchecked. Early kinematic screening eliminates permanent risk before it calcifies into chronic limitation.',
+      'We calculate acceleration and speed changes by tracking the specific millimeter path of a joint from one frame to the next. Our system translates pixel movements into exact physics equations to find your Center of Mass (CoM) balance trends. Through advanced Contextual Skeletal Inference, if a joint goes completely out of frame or is hidden behind the body during a movement, deep learning algorithms evaluate your other limbs to accurately predict and map the hidden joint\'s motion path.',
     ],
     phaseDeckTitle: '[ SYSTEM PHASE DECK // ]',
     phases: [
       {
-        label: '[ ROSTER-WIDE MOBILE SCANS ]',
-        detail: 'High-throughput on-site filming capturing up to 20 individual athletes per event.',
-      },
-      {
-        label: '[ GROW-CYCLE BIOMETRICS ]',
-        detail: 'Instant calculations mapping growth-spurt joint imbalances and limb-length discrepancies.',
-      },
-      {
-        label: '[ DETECT KINETIC RED FLAGS ]',
+        label: '[ POINT VULNERABILITY MAP ]',
         detail:
-          'Proactive calculation of landing force distribution and dangerous inward knee collapse (valgus tracking).',
+          'Exact metrics calculating micro joint tracking angles and hidden structural energy leaks.',
       },
       {
-        label: '[ PARENT PREVENTATIVE CODES ]',
+        label: '[ CUSTOM TEST CONFIG ]',
         detail:
-          'Specialized individual PDF download blueprints packed with age-appropriate corrective mobility cues.',
+          "3 comprehensive assessment tests completely customized to your team's specific athletic goals.",
       },
       {
-        label: '[ MASTER ROSTER TELEMETRY ]',
+        label: '[ FACILITY UPLINK DEPLOY ]',
         detail:
-          'A comprehensive organizational dashboard identifying which players are tracking at critical injury risk.',
+          'Flexible onboarding options deployed either fully on-site or via our virtual portal matrix.',
+      },
+      {
+        label: '[ DECODED MASTER BLUEPRINT ]',
+        detail:
+          'Comprehensive Longevity Lab PDF Blueprint Reports engineered for parents and coaches to view.',
+      },
+      {
+        label: '[ BIOMECHANICAL VISUAL ART ]',
+        detail:
+          "Custom 2D structural art modeling of your athletes' global skeletal balance layout.",
+      },
+      {
+        label: '[ RADIAN FRAME OVERLAY ]',
+        detail:
+          'High-frame-rate Video Degrees Motion Overlays mapping spatial paths frame-by-frame.',
       },
     ],
   },
@@ -210,35 +217,40 @@ export const PACKAGE_DETAILS = {
     accentClass: 'text-emerald-400',
     accentMutedClass: 'text-emerald-400/80',
     paragraphs: [
-      'Corporate Mobile B2B deploys high-throughput ergonomic scanning on-site—mapping desk compression patterns across key employees before they become a chronic company liability. Sedentary workspace environments quietly degrade spinal health, draining daily employee focus, elevating absenteeism, and tanking late-afternoon productivity.',
-      'Our mobile telemetry lab integrates seamlessly into your corporate headquarters, delivering absolute operational efficiency with zero workplace disruption. Interactive stress-line maps and rapid desk restorative circuits convert workplace posture failure into measurable team-wide decompression. Protect your human capital, optimize cognitive performance, and provide a premium health perk that keeps your team firing on all cylinders.',
+      'The Biomechanical Reality: This protocol maps exact forward head distances, cervical spine angles, and shoulder rounding vectors directly at your workstation layout. Corporate environments create a specific threat vector: high-throughput desk compression that drains spinal resilience, focus, and late-day output. On-site decompression protocols reverse that load without disrupting active business operations.',
+      'Age isn\'t measured in years; it is measured in spinal elasticity. By tracking trunk tilt and head displacement to pinpoint exact spinal strain from sitting, our system quantifies chair and desk design to prevent slouching patterns. By measuring the precise angle of your spine relative to your hips, we convert covert telemetry into actionable shields—delivering enterprise ergonomic matrices that reverse decades of sedentary structural wear and tear.',
     ],
     phaseDeckTitle: '[ SYSTEM PHASE DECK // ]',
     phases: [
       {
-        label: '[ HIGH-THROUGHPUT RUN TIMES ]',
+        label: '[ DESK-SIDE SCANS ]',
         detail:
-          'Rapid, on-site telemetry captures up to 10 key employee profiles in a single, high-efficiency morning block.',
+          'On-site, non-intrusive structural assessments taking 15 to 30 minutes per employee right at their workspace.',
       },
       {
-        label: '[ SPINE CRADLE MAPPING ]',
+        label: '[ POINT VULNERABILITY MAP ]',
         detail:
-          'Advanced computer-vision tracking to isolate cervical forward shear, mid-back lockup, and unequal pelvic loading.',
+          'Precise tracking metrics uncovering deep joint tracking angles and structural energy leaks.',
       },
       {
-        label: '[ ERGONOMIC MATRIX DECK ]',
+        label: '[ COMPRESSION REMEDIATION ]',
         detail:
-          'Individualized digital action blueprints sent securely to each employee to immediately recalibrate their desk setup.',
+          '3 specialized wellness assessment tests engineered specifically for corporate environments.',
       },
       {
-        label: '[ 3-MINUTE RESTORATIVE DRILLS ]',
+        label: '[ BIOMECHANICAL VISUAL ART ]',
         detail:
-          'Micro-activation circuits engineered to undo spinal compression right at their workstation without sweating.',
+          'Custom 2D structural art modeling of their unique musculoskeletal layout profiles.',
       },
       {
-        label: '[ COMPANY ASSET INSULATION ]',
+        label: '[ DECODED LAB BLUEPRINT ]',
         detail:
-          'Proactive wellness intervention that minimizes health insurance liabilities and reduces ergonomic workplace fatigue.',
+          'Comprehensive, downloadable Lab PDF Blueprint Reports delivering ergonomic adjustments.',
+      },
+      {
+        label: '[ SECURE PORTAL PIPELINE ]',
+        detail:
+          'A personalized Client Portal Access Token providing secure, private telemetry archive views.',
       },
     ],
   },
@@ -329,19 +341,9 @@ export default function PackageDetailView({ packageId, onReturn, onPaymentInitia
   );
 
   return (
-    <div className="w-screen h-screen bg-[#01040a] text-white font-mono flex flex-col overflow-hidden animate-fade-in relative">
-      <div className="w-full border-b border-slate-900 bg-slate-950/90 px-6 py-4 backdrop-blur-md sticky top-0 z-50 shrink-0">
-        <button
-          type="button"
-          onClick={onReturn}
-          className="px-3 py-1.5 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white bg-slate-900/40 hover:bg-slate-950 font-bold tracking-wider transition-all uppercase cursor-pointer active:scale-95 text-xs"
-        >
-          [ESC] RETURN TO MATRIX TIERS
-        </button>
-      </div>
-
+    <div className="flex-1 h-full min-h-0 bg-[#01040a] text-white font-mono flex flex-col overflow-hidden animate-fade-in relative">
       <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-12">
-        <div className="w-full max-w-6xl mx-auto pt-10 font-mono text-slate-200 text-lg md:text-xl">
+        <div className="w-full max-w-6xl mx-auto pt-6 font-mono text-slate-200 text-lg md:text-xl">
           <div className="space-y-2 border-b border-slate-900 pb-5 mb-8">
             <span className={`text-[10px] font-bold tracking-widest uppercase block ${accentClass}`}>
               // PACKAGE IMMERSION DECK

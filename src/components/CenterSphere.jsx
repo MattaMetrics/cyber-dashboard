@@ -85,8 +85,11 @@ export function WireframeSphereMesh({ isBreaching = false } = {}) {
   );
 }
 
-/** Standing biometric hologram — client_profile close-up bust crop */
-export function StandingHologramMesh({ yOffset = -2.7 } = {}) {
+/** Standing biometric hologram — custom human GLB with safe wireframe materials */
+export function StandingHologramMesh({
+  position = [0, -1.2, 0],
+  scale = 1.4,
+} = {}) {
   const groupRef = useRef();
   const [model, setModel] = useState(null);
 
@@ -99,51 +102,47 @@ export function StandingHologramMesh({ yOffset = -2.7 } = {}) {
       (gltf) => {
         if (cancelled) return;
 
-        const root = gltf.scene;
+        const root = gltf.scene.clone(true);
 
         root.traverse((child) => {
           if (child.isMesh) {
+            // Safe material override that preserves spatial geometry
             child.material = new THREE.MeshBasicMaterial({
-              color: HOLOGRAM_COLOR,
+              color: 0x06b6d4,
               wireframe: true,
               transparent: true,
-              opacity: HOLOGRAM_OPACITY,
+              opacity: 0.45,
             });
           }
         });
 
-        const box = new THREE.Box3().setFromObject(root);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        // Aggressive bust scale — ~12% larger so head anchors near upper console border
-        const targetHeight = 2.85 * 2.8;
-        const scaleFactor = targetHeight / maxDim;
-        root.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-        // Drop legs & lower torso below the card clip; keep bust in upper-center frame
-        const scaledBox = new THREE.Box3().setFromObject(root);
-        const center = scaledBox.getCenter(new THREE.Vector3());
-        root.position.x = -center.x;
-        root.position.z = -center.z;
-        root.position.y = -center.y + yOffset;
-
+        // Center and stand upright right on the floor grid plane
+        root.position.set(0, 0, 0);
+        root.scale.set(1, 1, 1);
         setModel(root);
       },
       undefined,
-      (error) => console.error('CenterSphere // standing_model.glb load failure:', error)
+      (error) => {
+        console.error('Matrix Telemetry Load Error:', error);
+      }
     );
 
     return () => {
       cancelled = true;
     };
-  }, [yOffset]);
+  }, []);
 
   useFrame((state) => {
     if (!groupRef.current) return;
+    // Global Y-axis rotational animation
     groupRef.current.rotation.y = state.clock.getElapsedTime() * ROTATION_SPEED_Y;
   });
 
-  return <group ref={groupRef}>{model ? <primitive object={model} /> : null}</group>;
+  return (
+    <group ref={groupRef} position={position} scale={scale}>
+      {model ? <primitive object={model} /> : null}
+    </group>
+  );
 }
 
 /**

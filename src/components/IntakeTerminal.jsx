@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import OnboardingIntakeGate from './OnboardingIntakeGate';
 
 const ARCHIVE_EMAIL_TARGET = import.meta.env.VITE_APP_EMAIL_TARGET;
 
@@ -8,6 +9,13 @@ const CONTACT_PREFERENCES = [
   { id: 'call', label: 'PREFER CALL' },
 ];
 
+const ASSESSMENT_TRACK_OPTIONS = [
+  { id: 'vital_flow', label: 'VITAL FLOW DIAGNOSTIC' },
+  { id: 'athlete_precision', label: 'ATHLETE PRECISION METRICS' },
+  { id: 'workspace_ergonomics', label: 'WORKSPACE PRESSURE ERGONOMICS' },
+  { id: 'kinetic_power', label: 'KINETIC POWER FORCE TORQUE' },
+];
+
 const INTAKE_LS_KEYS = {
   name: 'intake_client_name',
   email: 'intake_email',
@@ -15,6 +23,7 @@ const INTAKE_LS_KEYS = {
   contactPreference: 'intake_contact_preference',
   requestedDate: 'intake_requested_date',
   contactHours: 'intake_contact_hours',
+  assessmentTracks: 'intake_assessment_tracks',
   goalsNote: 'intake_background_notes',
 };
 
@@ -25,6 +34,7 @@ const EMPTY_FORM = {
   contactPreference: '',
   requestedDate: '',
   contactHours: [],
+  assessmentTracks: [],
   goalsNote: '',
 };
 
@@ -32,12 +42,20 @@ const readIntakeDraft = () => {
   try {
     if (typeof window === 'undefined' || !window.localStorage) return { ...EMPTY_FORM };
     let contactHours = [];
+    let assessmentTracks = [];
     try {
       const rawHours = localStorage.getItem(INTAKE_LS_KEYS.contactHours);
       const parsed = rawHours ? JSON.parse(rawHours) : [];
       contactHours = Array.isArray(parsed) ? parsed : [];
     } catch {
       contactHours = [];
+    }
+    try {
+      const rawTracks = localStorage.getItem(INTAKE_LS_KEYS.assessmentTracks);
+      const parsedTracks = rawTracks ? JSON.parse(rawTracks) : [];
+      assessmentTracks = Array.isArray(parsedTracks) ? parsedTracks : [];
+    } catch {
+      assessmentTracks = [];
     }
     return {
       name: localStorage.getItem(INTAKE_LS_KEYS.name) || '',
@@ -46,6 +64,7 @@ const readIntakeDraft = () => {
       contactPreference: localStorage.getItem(INTAKE_LS_KEYS.contactPreference) || '',
       requestedDate: localStorage.getItem(INTAKE_LS_KEYS.requestedDate) || '',
       contactHours,
+      assessmentTracks,
       goalsNote: localStorage.getItem(INTAKE_LS_KEYS.goalsNote) || '',
     };
   } catch {
@@ -65,12 +84,18 @@ const clearIntakePersistence = () => {
 /**
  * Full-screen laboratory Intake Onboarding Terminal — non-virtual package tiers.
  */
-export default function IntakeTerminal({ onTransmitComplete }) {
+export default function IntakeTerminal({
+  onTransmitComplete,
+  isPromoFlow = false,
+  athleteName = 'INCOMING CLIENT',
+  athleteCode = 'PENDING-TOKEN',
+}) {
   const [form, setForm] = useState(() => readIntakeDraft());
   const [errors, setErrors] = useState({});
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const [networkError, setNetworkError] = useState('');
+  const [waiverUnlocked, setWaiverUnlocked] = useState(false);
   const skipNextPersistRef = useRef(true);
 
   // Sync draft fields to localStorage whenever the user types / toggles
@@ -87,6 +112,7 @@ export default function IntakeTerminal({ onTransmitComplete }) {
       localStorage.setItem(INTAKE_LS_KEYS.contactPreference, form.contactPreference);
       localStorage.setItem(INTAKE_LS_KEYS.requestedDate, form.requestedDate);
       localStorage.setItem(INTAKE_LS_KEYS.contactHours, JSON.stringify(form.contactHours));
+      localStorage.setItem(INTAKE_LS_KEYS.assessmentTracks, JSON.stringify(form.assessmentTracks));
       localStorage.setItem(INTAKE_LS_KEYS.goalsNote, form.goalsNote);
     } catch {
       /* storage may be blocked */
@@ -101,6 +127,24 @@ export default function IntakeTerminal({ onTransmitComplete }) {
         contactHours: hasHour
           ? prev.contactHours.filter((h) => h !== hour)
           : [...prev.contactHours, hour],
+      };
+    });
+  };
+
+  const toggleAssessmentTrack = (trackId) => {
+    setForm((prev) => {
+      const selected = prev.assessmentTracks.includes(trackId);
+      if (selected) {
+        return {
+          ...prev,
+          assessmentTracks: prev.assessmentTracks.filter((id) => id !== trackId),
+        };
+      }
+      // Hard cap at exactly 2 promotional assessment slots
+      if (prev.assessmentTracks.length >= 2) return prev;
+      return {
+        ...prev,
+        assessmentTracks: [...prev.assessmentTracks, trackId],
       };
     });
   };
@@ -121,6 +165,10 @@ export default function IntakeTerminal({ onTransmitComplete }) {
     // Flexible pipeline — need at least one valid contact channel
     if (!validEmail && !validPhone) {
       next.contact = 'PROVIDE EMAIL OR PHONE PIPELINE';
+    }
+
+    if (isPromoFlow && form.assessmentTracks.length !== 2) {
+      next.assessmentTracks = 'SELECT EXACTLY 2 ASSESSMENT TARGETS';
     }
 
     setErrors(next);
@@ -147,8 +195,10 @@ export default function IntakeTerminal({ onTransmitComplete }) {
       contactPreference: form.contactPreference,
       requestedDate: form.requestedDate.trim(),
       contactHours: [...form.contactHours],
+      assessmentTracks: [...form.assessmentTracks],
       goalsNote: form.goalsNote.trim(),
       transmittedAt: new Date().toISOString(),
+      isPromoFlow: Boolean(isPromoFlow),
     };
 
     try {
@@ -172,7 +222,9 @@ export default function IntakeTerminal({ onTransmitComplete }) {
           preference: payload.contactPreference,
           targetDate: payload.requestedDate,
           contactHours: payload.contactHours,
+          assessmentTracks: payload.assessmentTracks,
           backgroundNotes: payload.goalsNote,
+          promoFlow: payload.isPromoFlow,
         }),
       });
 
@@ -182,9 +234,13 @@ export default function IntakeTerminal({ onTransmitComplete }) {
         setForm({ ...EMPTY_FORM });
         skipNextPersistRef.current = true;
 
-        // Brief pulse, then thank-you overlay + exit loop
+        // Brief pulse, then thank-you (standard) or promo intercept handoff
         setTimeout(() => {
           setIsTransmitting(false);
+          if (isPromoFlow) {
+            if (typeof onTransmitComplete === 'function') onTransmitComplete(payload);
+            return;
+          }
           setShowThankYou(true);
           setTimeout(() => {
             if (typeof onTransmitComplete === 'function') onTransmitComplete(payload);
@@ -218,6 +274,22 @@ export default function IntakeTerminal({ onTransmitComplete }) {
 
   const hasValidationErrors = Object.keys(errors).length > 0;
 
+  // Liability waiver gate — must unlock before the intake form stream
+  if (!waiverUnlocked) {
+    return (
+      <div className="w-full h-full bg-[#01040a] text-white font-mono flex flex-col overflow-hidden relative animate-fade-in">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(34,211,238,0.06)_0%,transparent_55%)]" />
+        <div className="relative flex-1 overflow-y-auto px-4 md:px-8 py-10 flex items-center justify-center">
+          <OnboardingIntakeGate
+            athleteName={athleteName || form.name || 'INCOMING CLIENT'}
+            athleteCode={athleteCode || 'PENDING-TOKEN'}
+            onUnlocked={() => setWaiverUnlocked(true)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full bg-[#01040a] text-white font-mono flex flex-col overflow-hidden relative animate-fade-in">
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(34,211,238,0.06)_0%,transparent_55%)]" />
@@ -240,181 +312,247 @@ export default function IntakeTerminal({ onTransmitComplete }) {
         </div>
       )}
 
-      <div className="relative flex-1 overflow-y-auto px-4 md:px-8 py-10 flex flex-col items-center">
-        <div className="w-full max-w-3xl">
-          <h1 className="font-mono text-cyan-400 text-2xl md:text-3xl tracking-widest uppercase mb-5 text-center font-black">
-            // SYSTEM INITIALIZED // KNOW THYSELF BLUEPRINT MASTERY
-          </h1>
+      <div className="relative flex-1 overflow-y-auto px-4 md:px-8 pb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto pt-10">
+          {/* Left: biometric hologram asset */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center min-h-[450px]">
+            <img
+              src="https://i.imgur.com/TL3ptqN.png"
+              alt="Biometric Vector Analysis"
+              className="w-full h-auto object-contain rounded-xl drop-shadow-[0_0_20px_rgba(6,182,212,0.15)] select-none pointer-events-none"
+            />
+          </div>
 
-          <p className="font-sans text-slate-300 text-base md:text-lg leading-relaxed text-center max-w-2xl mx-auto mb-10 font-normal">
-            Welcome to your data-driven physical recovery and performance trajectory. Transmit your intake signature so
-            our laboratory can calibrate your onsite blueprint route with precision.
-          </p>
+          {/* Right: intake headers + form fields */}
+          <div className="lg:col-span-7 min-w-0">
+            <h1 className="font-mono text-cyan-400 text-xl md:text-2xl tracking-widest uppercase mb-4 text-center lg:text-left font-black">
+              // SYSTEM INITIALIZED // KNOW THYSELF BLUEPRINT MASTERY
+            </h1>
 
-          {isTransmitting ? (
-            <div className="border border-cyan-500/30 bg-slate-950/90 rounded-2xl p-12 text-center shadow-[0_0_40px_rgba(34,211,238,0.12)]">
-              <div className="w-3.5 h-3.5 mx-auto mb-5 rounded-full bg-cyan-400 animate-ping shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
-              <p className="text-cyan-400 font-black tracking-[0.2em] uppercase text-base md:text-lg animate-pulse">
-                [ TRANSMITTING ENCRYPTED INTAKE PACKET... ]
-              </p>
-              <p className="text-slate-500 text-xs tracking-widest uppercase mt-3">
-                SECURE ARCHIVE HANDSHAKE IN PROGRESS
-              </p>
-            </div>
-          ) : (
-            <form
-              onSubmit={handleTransmit}
-              className="border border-slate-800/80 bg-slate-950/70 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl space-y-7"
-              noValidate
-            >
-              <div className="space-y-2">
-                <label className={labelClass}>Name</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter full identity signature"
-                  className={fieldClass('name')}
-                  autoComplete="name"
-                />
-                {errors.name && <p className={errorClass}>{errors.name}</p>}
+            <p className="font-sans text-slate-300 text-sm md:text-base leading-relaxed text-center lg:text-left mb-6 font-normal">
+              Welcome to your data-driven physical recovery and performance trajectory. Transmit your intake
+              signature so our laboratory can calibrate your onsite blueprint route with precision.
+            </p>
+
+            {isPromoFlow && (
+              <div className="mb-8 border border-cyan-500/30 bg-indigo-950/30 rounded-xl px-4 py-3 shadow-[0_0_24px_rgba(6,182,212,0.08)]">
+                <p className="text-[10px] md:text-[11px] font-mono font-bold tracking-[0.12em] uppercase text-cyan-300 leading-relaxed text-center lg:text-left">
+                  [ PROMOTIONAL REGISTRATION VALIDATED // NOTE: THIS ACCREDITED PASS TOKEN GRANTS YOU 2
+                  SPECIALIZED ASSESSMENT LOG SELECTION OPTIONS. CHOOSE YOUR TARGET PREFERENCES BELOW. ]
+                </p>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <label className={labelClass}>Email Address</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="Enter your primary digital pipeline"
-                  className={fieldClass('email')}
-                  autoComplete="email"
-                />
+            {isTransmitting ? (
+              <div className="border border-cyan-500/30 bg-slate-950/90 rounded-2xl p-12 text-center shadow-[0_0_40px_rgba(34,211,238,0.12)]">
+                <div className="w-3.5 h-3.5 mx-auto mb-5 rounded-full bg-cyan-400 animate-ping shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
+                <p className="text-cyan-400 font-black tracking-[0.2em] uppercase text-base md:text-lg animate-pulse">
+                  [ TRANSMITTING ENCRYPTED INTAKE PACKET... ]
+                </p>
+                <p className="text-slate-500 text-xs tracking-widest uppercase mt-3">
+                  SECURE ARCHIVE HANDSHAKE IN PROGRESS
+                </p>
               </div>
+            ) : (
+              <form
+                onSubmit={handleTransmit}
+                className="border border-slate-800/80 bg-slate-950/70 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl space-y-7"
+                noValidate
+              >
+                <div className="space-y-2">
+                  <label className={labelClass}>Name</label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter full identity signature"
+                    className={fieldClass('name')}
+                    autoComplete="name"
+                  />
+                  {errors.name && <p className={errorClass}>{errors.name}</p>}
+                </div>
 
-              <div className="space-y-3">
-                <label className={labelClass}>Phone Number</label>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-                  placeholder="Enter your mobile terminal string"
-                  className={fieldClass('phone')}
-                  autoComplete="tel"
-                />
-                {errors.contact && (
-                  <p className={errorClass}>EMAIL OR PHONE PIPELINE REQUIRED // PROVIDE AT LEAST ONE</p>
+                <div className="space-y-2">
+                  <label className={labelClass}>Email Address</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter your primary digital pipeline"
+                    className={fieldClass('email')}
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className={labelClass}>Phone Number</label>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Enter your mobile terminal string"
+                    className={fieldClass('phone')}
+                    autoComplete="tel"
+                  />
+                  {errors.contact && (
+                    <p className={errorClass}>EMAIL OR PHONE PIPELINE REQUIRED // PROVIDE AT LEAST ONE</p>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {CONTACT_PREFERENCES.map((pref) => {
+                      const selected = form.contactPreference === pref.id;
+                      return (
+                        <button
+                          key={pref.id}
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, contactPreference: pref.id }))}
+                          className={`px-4 py-3.5 rounded-lg border text-sm font-black tracking-widest uppercase transition-all cursor-pointer active:scale-95 ${
+                            selected
+                              ? 'border-cyan-400 bg-cyan-950/40 text-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.2)]'
+                              : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                          }`}
+                        >
+                          {pref.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className={labelClass}>Requested Date for Assessment</label>
+                  <input
+                    type="text"
+                    value={form.requestedDate}
+                    onChange={(e) => setForm((prev) => ({ ...prev, requestedDate: e.target.value }))}
+                    placeholder="Select target date window or timeline preference..."
+                    className={fieldOk}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className={labelClass}>Optimal Contact Hours</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {CONTACT_HOURS.map((hour) => {
+                      const checked = form.contactHours.includes(hour);
+                      return (
+                        <label
+                          key={hour}
+                          className={`flex items-center gap-3 px-4 py-3.5 rounded-lg border cursor-pointer transition-all ${
+                            checked
+                              ? 'border-cyan-400/60 bg-cyan-950/30'
+                              : 'border-slate-800 bg-slate-950/60 hover:border-slate-600'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleHour(hour)}
+                            className="accent-cyan-400 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-sm font-bold tracking-widest uppercase text-slate-300">
+                            {hour}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {isPromoFlow && (
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <label className={labelClass}>Assessment Target Preferences</label>
+                      <span className="text-[10px] font-mono tracking-widest uppercase text-indigo-300/80">
+                        SELECT EXACTLY 2 // {form.assessmentTracks.length}/2 LOCKED
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {ASSESSMENT_TRACK_OPTIONS.map((track) => {
+                        const checked = form.assessmentTracks.includes(track.id);
+                        const atCap = !checked && form.assessmentTracks.length >= 2;
+                        return (
+                          <label
+                            key={track.id}
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-lg border transition-all ${
+                              checked
+                                ? 'border-cyan-400/60 bg-cyan-950/30 cursor-pointer'
+                                : atCap
+                                  ? 'border-slate-900 bg-slate-950/40 opacity-50 cursor-not-allowed'
+                                  : 'border-slate-800 bg-slate-950/60 hover:border-slate-600 cursor-pointer'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={atCap}
+                              onChange={() => toggleAssessmentTrack(track.id)}
+                              className="accent-cyan-400 w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                            />
+                            <span className="text-[11px] sm:text-xs font-bold tracking-widest uppercase text-slate-300">
+                              {track.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {errors.assessmentTracks && (
+                      <p className={errorClass}>{errors.assessmentTracks}</p>
+                    )}
+                  </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {CONTACT_PREFERENCES.map((pref) => {
-                    const selected = form.contactPreference === pref.id;
-                    return (
-                      <button
-                        key={pref.id}
-                        type="button"
-                        onClick={() => setForm((prev) => ({ ...prev, contactPreference: pref.id }))}
-                        className={`px-4 py-3.5 rounded-lg border text-sm font-black tracking-widest uppercase transition-all cursor-pointer active:scale-95 ${
-                          selected
-                            ? 'border-cyan-400 bg-cyan-950/40 text-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.2)]'
-                            : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-600 hover:text-slate-200'
-                        }`}
-                      >
-                        {pref.label}
-                      </button>
-                    );
-                  })}
+                <div className="space-y-2">
+                  <label className={labelClass}>Movement Background / Goals Note</label>
+                  <textarea
+                    value={form.goalsNote}
+                    onChange={(e) => setForm((prev) => ({ ...prev, goalsNote: e.target.value }))}
+                    placeholder="Describe movement history, current limitations, and performance targets..."
+                    rows={5}
+                    className={`${fieldOk} resize-y min-h-[120px]`}
+                  />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className={labelClass}>Requested Date for Assessment</label>
-                <input
-                  type="text"
-                  value={form.requestedDate}
-                  onChange={(e) => setForm((prev) => ({ ...prev, requestedDate: e.target.value }))}
-                  placeholder="Select target date window or timeline preference..."
-                  className={fieldOk}
-                />
-              </div>
+                {hasValidationErrors && (
+                  <div className="border border-amber-500/50 bg-amber-950/30 rounded-lg px-4 py-3 text-center shadow-[0_0_18px_rgba(245,158,11,0.15)]">
+                    <p className="text-amber-400 text-sm font-black tracking-[0.16em] uppercase animate-pulse">
+                      [ ERROR // CRITICAL DATA PIPELINES INCOMPLETE ]
+                    </p>
+                  </div>
+                )}
 
-              <div className="space-y-3">
-                <label className={labelClass}>Optimal Contact Hours</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {CONTACT_HOURS.map((hour) => {
-                    const checked = form.contactHours.includes(hour);
-                    return (
-                      <label
-                        key={hour}
-                        className={`flex items-center gap-3 px-4 py-3.5 rounded-lg border cursor-pointer transition-all ${
-                          checked
-                            ? 'border-cyan-400/60 bg-cyan-950/30'
-                            : 'border-slate-800 bg-slate-950/60 hover:border-slate-600'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleHour(hour)}
-                          className="accent-cyan-400 w-4 h-4 cursor-pointer"
-                        />
-                        <span className="text-sm font-bold tracking-widest uppercase text-slate-300">{hour}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+                {networkError && (
+                  <div className="border border-red-500/40 bg-red-950/30 rounded-lg px-4 py-3 text-center shadow-[0_0_18px_rgba(239,68,68,0.12)]">
+                    <p className="text-red-400 text-sm font-black tracking-[0.16em] uppercase animate-pulse">
+                      {networkError}
+                    </p>
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <label className={labelClass}>Movement Background / Goals Note</label>
-                <textarea
-                  value={form.goalsNote}
-                  onChange={(e) => setForm((prev) => ({ ...prev, goalsNote: e.target.value }))}
-                  placeholder="Describe movement history, current limitations, and performance targets..."
-                  rows={5}
-                  className={`${fieldOk} resize-y min-h-[120px]`}
-                />
-              </div>
-
-              {hasValidationErrors && (
-                <div className="border border-amber-500/50 bg-amber-950/30 rounded-lg px-4 py-3 text-center shadow-[0_0_18px_rgba(245,158,11,0.15)]">
-                  <p className="text-amber-400 text-sm font-black tracking-[0.16em] uppercase animate-pulse">
-                    [ ERROR // CRITICAL DATA PIPELINES INCOMPLETE ]
-                  </p>
-                </div>
-              )}
-
-              {networkError && (
-                <div className="border border-red-500/40 bg-red-950/30 rounded-lg px-4 py-3 text-center shadow-[0_0_18px_rgba(239,68,68,0.12)]">
-                  <p className="text-red-400 text-sm font-black tracking-[0.16em] uppercase animate-pulse">
-                    {networkError}
-                  </p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isTransmitting}
-                className="w-full py-4 md:py-5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-sm md:text-base tracking-[0.18em] uppercase rounded-xl transition-all cursor-pointer active:scale-[0.98] shadow-[0_0_28px_rgba(34,211,238,0.35)] disabled:cursor-wait disabled:opacity-80"
-              >
-                [ TRANSMIT BLUEPRINT SCHEDULING ]
-              </button>
-            </form>
-          )}
-
-          <p className="mt-10 text-center text-xs md:text-sm text-slate-500 font-bold tracking-[0.16em] uppercase">
-            ENCRYPTED SECURE DIRECT ARCHIVE ROUTE //{' '}
-            {ARCHIVE_EMAIL_TARGET ? (
-              <a
-                href={`mailto:${ARCHIVE_EMAIL_TARGET}`}
-                className="text-cyan-500/80 hover:text-cyan-400 transition-colors"
-              >
-                {String(ARCHIVE_EMAIL_TARGET).toUpperCase()}
-              </a>
-            ) : (
-              <span className="text-slate-600">[ ARCHIVE CHANNEL LOCKED ]</span>
+                <button
+                  type="submit"
+                  disabled={isTransmitting}
+                  className="w-full py-4 md:py-5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-sm md:text-base tracking-[0.18em] uppercase rounded-xl transition-all cursor-pointer active:scale-[0.98] shadow-[0_0_28px_rgba(34,211,238,0.35)] disabled:cursor-wait disabled:opacity-80"
+                >
+                  [ TRANSMIT ONSITE BLUEPRINT ROUTE // ]
+                </button>
+              </form>
             )}
-          </p>
+
+            <p className="mt-10 text-center lg:text-left text-xs md:text-sm text-slate-500 font-bold tracking-[0.16em] uppercase">
+              ENCRYPTED SECURE DIRECT ARCHIVE ROUTE //{' '}
+              {ARCHIVE_EMAIL_TARGET ? (
+                <a
+                  href={`mailto:${ARCHIVE_EMAIL_TARGET}`}
+                  className="text-cyan-500/80 hover:text-cyan-400 transition-colors"
+                >
+                  {String(ARCHIVE_EMAIL_TARGET).toUpperCase()}
+                </a>
+              ) : (
+                <span className="text-slate-600">[ ARCHIVE CHANNEL LOCKED ]</span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 function IntroScreen({ onAccessGranted, autoBoot = false }) {
-  const [pin, setPin] = useState(autoBoot ? '7777' : '');
+  const [pin, setPin] = useState(autoBoot ? '777777' : '');
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isBooting, setIsBooting] = useState(false);
   const canvasRef = useRef(null);
@@ -156,7 +156,7 @@ function IntroScreen({ onAccessGranted, autoBoot = false }) {
 
   // MASTER MATRIX PIN VERIFIER LOOP
   const handlePinSubmit = (val) => {
-    if (val === '7777') {
+    if (val === '777777') {
       setIsBooting(true);
       let currentProgress = 0;
 
@@ -180,10 +180,10 @@ function IntroScreen({ onAccessGranted, autoBoot = false }) {
     }
   };
 
-  // Auto-start MATTA scan when arriving from the home code box with 7777
+  // Auto-start MATTA scan when arriving from the home code box with 777777
   useEffect(() => {
     if (autoBoot) {
-      handlePinSubmit('7777');
+      handlePinSubmit('777777');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoBoot]);
@@ -222,19 +222,19 @@ function IntroScreen({ onAccessGranted, autoBoot = false }) {
 
             <input
               type="password"
-              maxLength={4}
+              maxLength={6}
               value={pin}
               onChange={(e) => {
-                const inputVal = e.target.value.replace(/\D/g, '');
+                const inputVal = e.target.value.replace(/\D/g, '').slice(0, 6);
                 setPin(inputVal);
-                if (inputVal.length === 4) handlePinSubmit(inputVal);
+                if (inputVal.length === 6) handlePinSubmit(inputVal);
               }}
-              placeholder="••••"
+              placeholder="••••••"
               className="w-full text-center text-xl font-black bg-slate-900 border border-slate-800 focus:border-blue-500/50 rounded-xl py-3 text-blue-400 outline-none transition-colors tracking-[0.75em] placeholder-slate-700"
             />
 
             <div className="text-[8px] tracking-wider text-slate-600 font-bold uppercase font-mono">
-              Demo Code Trigger Hint: Enter <span className="text-blue-500 font-black">7777</span> to scan
+              Demo Code Trigger Hint: Enter <span className="text-blue-500 font-black">777777</span> to scan
               MATTA
             </div>
           </div>
