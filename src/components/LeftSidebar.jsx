@@ -27,8 +27,10 @@ const TRACK_PARAMETER_DECKS = {
 
 export default function LeftSidebar({
   onLaunchAnalysis,
+  onNavigate,
+  setCurrentScreen,
+  setSelectedAssessmentData,
   onUnlockMembership,
-  onViewMethodology,
   virtualAccessUnlocked = false,
   isTokenValidated = false,
   isCoachMode = false,
@@ -48,6 +50,66 @@ export default function LeftSidebar({
     return () => clearTimeout(bootTimer);
   }, [hasActiveAccess]);
 
+  const renderTrackChrome = (key, index, elbowUp) => {
+    const wirePath = elbowUp
+      ? 'M 6 32 H 28 L 44 16 H 72 M 72 8 L 84 16 L 72 24'
+      : 'M 6 32 H 28 L 44 48 H 72 M 72 40 L 84 48 L 72 56';
+    const nodeY = 32;
+    const endNodeY = elbowUp ? 16 : 48;
+    const deck = TRACK_PARAMETER_DECKS[key];
+
+    return (
+      <>
+        <svg
+          viewBox="0 0 96 64"
+          className={`w-24 h-16 pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-1 z-30 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] ${
+            isBootingNodes
+              ? 'opacity-100 translate-x-2 animate-pulse'
+              : 'opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300 ease-out'
+          }`}
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle
+            cx="6"
+            cy={nodeY}
+            r="2.2"
+            fill="rgba(34,211,238,0.85)"
+            stroke="rgba(34,211,238,0.5)"
+            strokeWidth="1"
+          />
+          <path
+            d={wirePath}
+            stroke="rgba(34,211,238,0.5)"
+            strokeWidth="1"
+            strokeLinecap="square"
+            strokeLinejoin="miter"
+            fill="none"
+          />
+          <circle
+            cx="84"
+            cy={endNodeY}
+            r="1.6"
+            fill="rgba(34,211,238,0.7)"
+            stroke="rgba(34,211,238,0.45)"
+            strokeWidth="1"
+          />
+        </svg>
+
+        {deck && (
+          <div className="absolute left-[calc(100%+6rem)] top-1/2 -translate-y-1/2 w-80 bg-slate-950/90 backdrop-blur-xl border border-cyan-500/20 rounded-xl p-4 pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-4 transition-all duration-500 ease-out z-40 shadow-[0_0_25px_rgba(6,182,212,0.05)] text-left">
+            <p className="font-mono text-[11px] font-black tracking-widest uppercase text-cyan-400 mb-2">
+              {deck.title}
+            </p>
+            <p className="font-sans text-xs text-slate-300 leading-relaxed tracking-wide font-normal whitespace-pre-line">
+              {deck.body}
+            </p>
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4 w-72 pointer-events-auto overflow-visible p-5 bg-slate-900/30 border border-slate-900 rounded-xl min-h-[160px] backdrop-blur-md shadow-2xl transition-all">
       <div className="text-[10px] text-cyan-400/70 font-mono font-bold uppercase tracking-widest border-b border-slate-900 pb-2 text-center w-full">
@@ -60,7 +122,7 @@ export default function LeftSidebar({
 
       <button
         type="button"
-        onClick={onViewMethodology}
+        onClick={() => setCurrentScreen('VIEW_SYSTEM_METHODOLOGY_KINETICS')}
         className={`${sidebarBtnClass} whitespace-normal leading-snug px-2.5 break-words`}
       >
         [ VIEW SYSTEM METHODOLOGY & KINETIC RESEARCH // ]
@@ -74,22 +136,36 @@ export default function LeftSidebar({
         </div>
       )}
 
-      {/* Track panels — permanently mounted; gated overlay handles unauthorized init */}
-      {Object.keys(ANALYSIS_VIEWS).map((key, index) => {
-          // Alternate 45° elbow direction for a connected node-graph feel
-          const elbowUp = index % 2 === 0;
-          const wirePath = elbowUp
-            ? 'M 6 32 H 28 L 44 16 H 72 M 72 8 L 84 16 L 72 24'
-            : 'M 6 32 H 28 L 44 48 H 72 M 72 40 L 84 48 L 72 56';
-          const nodeY = 32;
-          const endNodeY = elbowUp ? 16 : 48;
-          const deck = TRACK_PARAMETER_DECKS[key];
+      {/* 🟢 NEW DEFINITIVE BRAND TERMINAL DISCLOSURE LABEL */}
+      <button
+        type="button"
+        onClick={() => {
+          if (typeof setSelectedAssessmentData === 'function') {
+            setSelectedAssessmentData(null);
+          }
+          onNavigate('VITAL_FLOW_DECOMPRESSION_MATRIX');
+        }}
+        className="w-full justify-center text-center font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 hover:text-cyan-400 bg-slate-950/40 border border-slate-900 hover:border-cyan-500/30 px-3 py-2 rounded-lg transition-all cursor-pointer group active:scale-[0.98] flex flex-col gap-1 relative overflow-visible"
+      >
+        <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/5 group-hover:from-cyan-500/5 transition-all duration-300" />
+        </div>
+        <p className="relative z-10 font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 group-hover:text-cyan-400 transition-colors py-0.5">
+          {`> [ ${ANALYSIS_VIEWS.posture.label} ]`}
+        </p>
+        {renderTrackChrome('posture', 0, true)}
+      </button>
 
+      {/* Remaining track panels — permanently mounted; gated overlay handles unauthorized init */}
+      {Object.keys(ANALYSIS_VIEWS)
+        .filter((key) => key !== 'posture')
+        .map((key, index) => {
+          const elbowUp = index % 2 === 0;
           return (
             <button
               key={key}
               type="button"
-              onClick={() => onLaunchAnalysis(key)}
+              onClick={() => onLaunchAnalysis?.(key)}
               className="w-full justify-center text-center font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 hover:text-cyan-400 bg-slate-950/40 border border-slate-900 hover:border-cyan-500/30 px-3 py-2 rounded-lg transition-all cursor-pointer group active:scale-[0.98] flex flex-col gap-1 relative overflow-visible"
             >
               <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
@@ -98,58 +174,7 @@ export default function LeftSidebar({
               <p className="relative z-10 font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 group-hover:text-cyan-400 transition-colors py-0.5">
                 {`> [ ${ANALYSIS_VIEWS[key].label} ]`}
               </p>
-
-              {/* ComfyUI / Blender-style node wireframe pipeline — boot pulse, then hover */}
-              <svg
-                viewBox="0 0 96 64"
-                className={`w-24 h-16 pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-1 z-30 drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] ${
-                  isBootingNodes
-                    ? 'opacity-100 translate-x-2 animate-pulse'
-                    : 'opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300 ease-out'
-                }`}
-                fill="none"
-                aria-hidden="true"
-              >
-                {/* Origin node anchor at button edge */}
-                <circle
-                  cx="6"
-                  cy={nodeY}
-                  r="2.2"
-                  fill="rgba(34,211,238,0.85)"
-                  stroke="rgba(34,211,238,0.5)"
-                  strokeWidth="1"
-                />
-                {/* Unbroken architectural connection strand → outer > bracket */}
-                <path
-                  d={wirePath}
-                  stroke="rgba(34,211,238,0.5)"
-                  strokeWidth="1"
-                  strokeLinecap="square"
-                  strokeLinejoin="miter"
-                  fill="none"
-                />
-                {/* Outer target node */}
-                <circle
-                  cx="84"
-                  cy={endNodeY}
-                  r="1.6"
-                  fill="rgba(34,211,238,0.7)"
-                  stroke="rgba(34,211,238,0.45)"
-                  strokeWidth="1"
-                />
-              </svg>
-
-              {/* Sliding Informational Parameter Deck — tip of node cable */}
-              {deck && (
-                <div className="absolute left-[calc(100%+6rem)] top-1/2 -translate-y-1/2 w-80 bg-slate-950/90 backdrop-blur-xl border border-cyan-500/20 rounded-xl p-4 pointer-events-none opacity-0 group-hover:opacity-100 group-hover:translate-x-4 transition-all duration-500 ease-out z-40 shadow-[0_0_25px_rgba(6,182,212,0.05)] text-left">
-                  <p className="font-mono text-[11px] font-black tracking-widest uppercase text-cyan-400 mb-2">
-                    {deck.title}
-                  </p>
-                  <p className="font-sans text-xs text-slate-300 leading-relaxed tracking-wide font-normal whitespace-pre-line">
-                    {deck.body}
-                  </p>
-                </div>
-              )}
+              {renderTrackChrome(key, index + 1, elbowUp)}
             </button>
           );
         })}

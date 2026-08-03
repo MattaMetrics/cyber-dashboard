@@ -29,7 +29,7 @@ const VITAL_FLOW_CARDS = [
   {
     id: 'vf_spinal',
     tag: '// ASSESSMENT_1-2 //',
-    title: 'MULTI-PLANE SPINAL ARTICULATION',
+    title: 'SPINAL MOVEMENT',
     blocks: [
       {
         label: '[ THE REALITY ]',
@@ -51,7 +51,7 @@ const VITAL_FLOW_CARDS = [
   {
     id: 'vf_thoracic',
     tag: '// ASSESSMENT_1-3 //',
-    title: 'THORACIC DISSOCIATION INDEX',
+    title: 'TRUNK & THORACIC ROTATION',
     subtitle: 'UPPER TRUNK',
     blocks: [
       {
@@ -118,17 +118,17 @@ const VITAL_FLOW_CARDS = [
   {
     id: 'vf_shoulder',
     tag: '// ASSESSMENT_1-6 //',
-    title: 'SHOULDER GIRDLE TELEMETRY',
+    title: 'SHOULDER FLEXION TELEMETRY',
     blocks: [
       {
         label: '[ THE REALITY ]',
         text:
-          'Maps scapular upward rotation, glenohumeral clearance arcs, and bilateral girdle symmetry under controlled elevation and reach vectors.',
+          'Maps scapular upward rotation, glenohumeral clearance arcs, and bilateral symmetry under controlled elevation and reach vectors.',
       },
       {
         label: '[ THE ADVANTAGE ]',
         text:
-          'Flags early scapular winging and restricted overhead pathways before they become rotator-cuff irritation or desk-driven shoulder pinch.',
+          'Flags early restricted overhead pathways before they become rotator-cuff irritation or desk-driven shoulder pinch.',
       },
       {
         label: '[ THE HOOK ]',

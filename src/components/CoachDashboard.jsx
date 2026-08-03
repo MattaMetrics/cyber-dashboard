@@ -14,8 +14,11 @@ import {
 } from 'lucide-react';
 import CenterSphere from './CenterSphere';
 import ClientBiometricArtBox from './ClientBiometricArtBox';
+import CyberDnaMatrixScene from './CyberDnaMatrixScene';
+import AccessCodeGenerator from './AccessCodeGenerator';
 import { AssessmentMorphScene } from './AssessmentMorphScene';
-import { GUIDE_TRACK_OPTIONS, DEFAULT_GUIDE_ASSETS, DEFAULT_PANEL_DRAFT_URL, parseGuideAssetPath, normalizeGuideProtocolLeaf } from '../constants/guideAssets';
+import { DEFAULT_GUIDE_ASSETS } from '../constants/guideAssets';
+import { getLabEngineMetrics } from '../data/assessmentLibrary';
 
 /** Color-coded terminal status badges for Secure System Database Archives rows */
 function ArchiveStatusBadge({ status }) {
@@ -234,12 +237,10 @@ export default function CoachDashboard({
   displayClientName,
   guideAssets,
   setGuideAssets,
+  onNavigate,
+  setCurrentScreen,
 }) {
   const [cloudVideoInput, setCloudVideoInput] = useState('');
-  const [assetPath, setAssetPath] = useState('vital_flow.neck_mobility');
-  const [assetDraftUrl, setAssetDraftUrl] = useState(DEFAULT_PANEL_DRAFT_URL);
-  const [assetDraftExecution, setAssetDraftExecution] = useState('');
-  const [assetDraftAlignment, setAssetDraftAlignment] = useState('');
   const [pipelineRecipientCode, setPipelineRecipientCode] = useState('');
   const [pipelineStatus, setPipelineStatus] = useState('AWAITING UPLINK');
   const [archiveFilter, setArchiveFilter] = useState('ALL');
@@ -331,16 +332,6 @@ export default function CoachDashboard({
     }
   }, [localDatabase, pipelineRecipientCode]);
 
-  // Sync draft fields when coach switches suite.slot path or parent guideAssets updates
-  useEffect(() => {
-    const { suiteKey, slotKey } = parseGuideAssetPath(assetPath);
-    const suite = guideAssets?.[suiteKey] || DEFAULT_GUIDE_ASSETS[suiteKey];
-    const protocol = normalizeGuideProtocolLeaf(suite?.[slotKey]);
-    setAssetDraftUrl(protocol.imageUrl || DEFAULT_PANEL_DRAFT_URL);
-    setAssetDraftExecution(protocol.execution || '');
-    setAssetDraftAlignment(protocol.alignment || '');
-  }, [assetPath, guideAssets]);
-
   // Mirror selected athlete's current stream badge into the override dropdown
   useEffect(() => {
     if (!pipelineRecipientCode || !localDatabase?.[pipelineRecipientCode]) return;
@@ -354,52 +345,25 @@ export default function CoachDashboard({
     }
   }, [pipelineRecipientCode, localDatabase]);
 
-  const handleDeployGuideAssets = () => {
-    if (!setGuideAssets || !assetPath || assetBroadcastPhase) return;
-    const { suiteKey, slotKey } = parseGuideAssetPath(assetPath);
-    if (!suiteKey || !slotKey) return;
-    const priorSuite = {
-      ...(DEFAULT_GUIDE_ASSETS[suiteKey] || {}),
-      ...(guideAssets?.[suiteKey] || {}),
-    };
-    const protocolPacket = {
-      imageUrl: String(assetDraftUrl || '').trim(),
-      execution: String(assetDraftExecution || '').trim(),
-      alignment: String(assetDraftAlignment || '').trim(),
-    };
-    const updatedAssets = {
-      ...(guideAssets || DEFAULT_GUIDE_ASSETS),
-      [suiteKey]: {
-        ...priorSuite,
-        [slotKey]: protocolPacket,
-      },
-    };
-    setGuideAssets(updatedAssets);
-    try {
-      window.localStorage.setItem('MATRIX_GLOBAL_GUIDE_ASSETS', JSON.stringify(updatedAssets));
-    } catch {
-      /* storage may be blocked */
-    }
+  const handleSyncAthleteStatus = () => {
+    if (typeof setLocalDatabase !== 'function' || !pipelineRecipientCode || assetBroadcastPhase) return;
 
-    // Force live visual update on the central archive column for the selected recipient
-    if (typeof setLocalDatabase === 'function' && pipelineRecipientCode) {
-      setLocalDatabase((prev) => {
-        if (!prev?.[pipelineRecipientCode]) return prev;
-        return {
-          ...prev,
-          [pipelineRecipientCode]: {
-            ...prev[pipelineRecipientCode],
-            streamStatus: pipelineStatus,
-          },
-        };
-      });
-    }
+    setLocalDatabase((prev) => {
+      if (!prev?.[pipelineRecipientCode]) return prev;
+      return {
+        ...prev,
+        [pipelineRecipientCode]: {
+          ...prev[pipelineRecipientCode],
+          streamStatus: pipelineStatus,
+        },
+      };
+    });
 
     setAssetBroadcastPhase('transmitting');
     window.setTimeout(() => {
       setAssetBroadcastPhase('success');
       window.setTimeout(() => setAssetBroadcastPhase(''), 2000);
-    }, 1500);
+    }, 800);
   };
 
   // SYSTEM FRAME B: Premium Biometric Client Profile Portal Hub
@@ -861,6 +825,7 @@ export default function CoachDashboard({
 
   // SYSTEM FRAME C: Master Coach Roster & Onboarding Console Menu
   if (viewState === 'coach_menu') {
+    const labMetrics = getLabEngineMetrics();
     return (
       <div className="w-full h-full bg-[#01040a]/95 text-white font-mono flex flex-col overflow-hidden select-none backdrop-blur-xl">
         {renderSystemHeader('COACH_TERMINAL')}
@@ -945,6 +910,75 @@ export default function CoachDashboard({
                 <p className="text-slate-300 text-[10px]">• ACTIVE SUBSCRIPTIONS: $2,394 / MO</p>
                 <p className="text-slate-300 text-[10px]">• HIGH-INTENSIVE TRAJECTORIES: 3 RUNNING</p>
                 <p className="text-emerald-400 text-[10px]">• SYSTEM RETENTION RATE: 98.4% CALIBRATED</p>
+              </div>
+
+              {/* ADD THIS COMPONENT BOX DIRECTLY INTO YOUR DASHBOARD REGISTER LEFT TIER */}
+              <div className="w-full bg-[#030712] border border-slate-900 rounded-lg p-5 font-mono text-left mt-6">
+                <div className="text-[#00FFFF] text-[10px] font-bold tracking-widest uppercase mb-4 flex items-center space-x-2">
+                  <span>📊</span>{' '}
+                  <span>// LAB ENGINE METRIC METADATA OVERVIEW</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-950/60 border border-slate-950 p-3 rounded">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider block">
+                      TOTAL ACTIVE ASSESSMENTS:
+                    </span>
+                    <span className="text-white text-base font-bold tracking-wide">
+                      {labMetrics.totalActiveAssessments} Modules
+                    </span>
+                  </div>
+                  <div className="bg-slate-950/60 border border-slate-950 p-3 rounded">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider block">
+                      PREMIUM BLUEPRINT VAULT VALUE:
+                    </span>
+                    <span className="text-[#00FFFF] text-base font-bold tracking-wide">
+                      ${labMetrics.premiumBlueprintVaultValue}.00 Base
+                    </span>
+                  </div>
+                  <div className="bg-slate-950/60 border border-slate-950 p-3 rounded">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider block">
+                      SYSTEM SERVER LATENCY:
+                    </span>
+                    <span className="text-[#00FF66] text-base font-bold tracking-wide">
+                      {labMetrics.systemServerLatency}
+                    </span>
+                  </div>
+                  <div className="bg-slate-950/60 border border-slate-950 p-3 rounded">
+                    <span className="text-slate-500 text-[9px] uppercase tracking-wider block">
+                      CORE ENCRYPTION INTEGRITY:
+                    </span>
+                    <span className="text-[#00FFFF] text-base font-bold tracking-wide">
+                      {labMetrics.coreEncryptionIntegrity}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <AccessCodeGenerator />
+
+              {/* DASHBOARD TO MASTER DIRECTORY CONNECT LINK */}
+              <div className="mt-6 font-mono">
+                <button
+                  type="button"
+                  onClick={() => setCurrentScreen("MASTER_ASSESSMENT_DIRECTORY_TERMINAL")}
+                  className="w-full text-center border border-[#00FFFF] bg-[#00FFFF]/5 hover:bg-[#00FFFF]/20 text-[#00FFFF] text-[10px] tracking-widest font-bold uppercase py-4 rounded transition-all duration-300 shadow-[0_0_15px_rgba(0,255,255,0.1)]"
+                >
+                  ⚙️ [ Run Master Assessment Directory View // ]
+                </button>
+              </div>
+
+              {/* DYNAMIC BIOMETRIC PDF REPORT LAB LINK */}
+              <div className="mt-4 font-mono">
+                <button
+                  type="button"
+                  onClick={() =>
+                    (onNavigate || setCurrentScreen)?.('REPORT_PDF_GENERATOR_VIEW')
+                  }
+                  className="w-full text-center border border-[#00FFFF] bg-[#00FFFF]/5 hover:bg-[#00FFFF]/20 text-[#00FFFF] text-[10px] tracking-widest font-bold uppercase py-3.5 rounded transition-all duration-300 shadow-[0_0_15px_rgba(0,255,255,0.08)] cursor-pointer"
+                >
+                  📋 [ Compile Biomechanical PDF Report // ]
+                </button>
               </div>
             </div>
 
@@ -1278,51 +1312,14 @@ export default function CoachDashboard({
                 </div>
               </div>
             ) : (
-              <div className="p-5 bg-slate-900/40 border border-amber-500/20 rounded-xl space-y-4 min-w-0">
-                <div className="text-xs font-mono font-bold text-amber-500 mb-4 tracking-widest">
-                  📡 // TELEMETRY UPLINK MODULATOR
-                </div>
+              <div className="space-y-4 min-w-0">
+                <CyberDnaMatrixScene />
 
-                <div className="space-y-1.5">
-                  <label className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block">
-                    Target Assessment Track
-                  </label>
-                  <select
-                    value={assetPath}
-                    onChange={(e) => setAssetPath(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 font-mono text-[11px] p-2 rounded w-full focus:border-amber-500/40 outline-none cursor-pointer"
-                  >
-                    {GUIDE_TRACK_OPTIONS.map((opt) => (
-                      <option key={opt.path} value={opt.path}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-              <div className="border-t border-slate-900 pt-3 space-y-3">
-                <p className="text-[10px] font-mono tracking-widest text-amber-500/70 uppercase">
-                  [ EDIT DATA STREAM CONFIGURATION ]
-                </p>
-
-                <div className="space-y-1.5">
-                  <label className="text-amber-500/80 text-[10px] font-bold uppercase tracking-wider block">
-                    Panel Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={assetDraftUrl}
-                    onChange={(e) => setAssetDraftUrl(e.target.value)}
-                    placeholder="https://i.imgur.com/m0UrRMJ.png"
-                    className="bg-slate-950 border border-slate-800 text-slate-300 font-mono text-[11px] p-2 rounded w-full focus:border-amber-500/40 outline-none"
-                  />
-                </div>
-
-                <div className="border-t border-slate-800/80 pt-3 space-y-3">
+                {/* Local athlete stream-status override (dossier vault) */}
+                <div className="p-5 bg-slate-900/40 border border-cyan-500/20 rounded-xl space-y-3">
                   <p className="text-[10px] font-mono tracking-widest text-cyan-400/80 uppercase">
                     [ OVERRIDE ATHLETE DATASTREAM PROFILE STATE ]
                   </p>
-
                   <div className="space-y-1.5">
                     <label className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block">
                       Recipient Athlete Matrix
@@ -1339,7 +1336,6 @@ export default function CoachDashboard({
                       ))}
                     </select>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block">
                       Update Recipient Operational Status
@@ -1354,56 +1350,26 @@ export default function CoachDashboard({
                       <option value="STREAM LOCKED">STREAM LOCKED</option>
                     </select>
                   </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-amber-500/80 text-[10px] font-bold uppercase tracking-wider block">
-                    📝 BOX 1: Movement Execution Instructions
-                  </label>
-                  <textarea
-                    value={assetDraftExecution}
-                    onChange={(e) => setAssetDraftExecution(e.target.value)}
-                    rows={4}
-                    placeholder="Enter client instructions here..."
-                    className="bg-slate-950 border border-slate-800 text-slate-300 font-sans text-[12px] p-2.5 rounded w-full focus:border-amber-500/40 outline-none resize-y min-h-[96px] leading-relaxed"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-amber-500/80 text-[10px] font-bold uppercase tracking-wider block">
-                    📷 BOX 2: Camera Angle & Alignment
-                  </label>
-                  <textarea
-                    value={assetDraftAlignment}
-                    onChange={(e) => setAssetDraftAlignment(e.target.value)}
-                    rows={4}
-                    placeholder="Enter setup and distance requirements here..."
-                    className="bg-slate-950 border border-slate-800 text-slate-300 font-sans text-[12px] p-2.5 rounded w-full focus:border-amber-500/40 outline-none resize-y min-h-[96px] leading-relaxed"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={handleDeployGuideAssets}
-                  disabled={Boolean(assetBroadcastPhase)}
-                  className={`w-full px-4 py-2.5 bg-slate-950 border border-amber-500/40 hover:border-amber-400 text-amber-400 font-mono font-bold text-[10px] tracking-widest uppercase rounded transition-all cursor-pointer active:scale-[0.98] ${
-                    assetBroadcastPhase === 'transmitting'
-                      ? 'animate-pulse cursor-wait opacity-90'
+                  <button
+                    type="button"
+                    onClick={handleSyncAthleteStatus}
+                    disabled={Boolean(assetBroadcastPhase)}
+                    className={`w-full px-4 py-2.5 bg-slate-950 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 font-mono font-bold text-[10px] tracking-widest uppercase rounded transition-all cursor-pointer active:scale-[0.98] ${
+                      assetBroadcastPhase === 'transmitting'
+                        ? 'animate-pulse cursor-wait opacity-90'
+                        : assetBroadcastPhase === 'success'
+                          ? 'border-emerald-500/40 text-emerald-400 cursor-default'
+                          : ''
+                    }`}
+                  >
+                    {assetBroadcastPhase === 'transmitting'
+                      ? '[ TRANSMITTING STATUS PACKET... ]'
                       : assetBroadcastPhase === 'success'
-                        ? 'border-emerald-500/40 text-emerald-400 cursor-default'
-                        : ''
-                  }`}
-                >
-                  {assetBroadcastPhase === 'transmitting'
-                    ? '[ TRANSMITTING INJECTED PACKETS... SUCCESS ]'
-                    : assetBroadcastPhase === 'success'
-                      ? '[ TARGET MATRIX STREAM UPDATED // GLOBAL TERMINAL ROWS SYNCED ]'
-                      : '⚡ BROADCAST NEW ASSET VECTOR //'}
-                </button>
+                        ? '[ ATHLETE STATUS STREAM UPDATED ]'
+                        : '⚡ SYNC ATHLETE STATUS OVERRIDE //'}
+                  </button>
+                </div>
               </div>
-            </div>
             )}
           </div>
         </div>

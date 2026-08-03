@@ -3,7 +3,7 @@
  * Used as the suite left anchor and as the instruction-panel fallback
  * when a test has no custom panel URL assigned.
  */
-export const DEFAULT_STANDING_HOLOGRAM_PANEL = 'https://i.imgur.com/TL3ptqN.png';
+export const DEFAULT_STANDING_HOLOGRAM_PANEL = 'https://i.imgur.com/jbkxKoD.png';
 
 /** Default draft image shown in the coach Telemetry Uplink modulator. */
 export const DEFAULT_PANEL_DRAFT_URL = 'https://i.imgur.com/m0UrRMJ.png';

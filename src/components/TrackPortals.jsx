@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+// 🟢 ORIGINAL PACKAGE LAYOUT VIEW (6-card Vital Flow grid)
 import VitalFlowTerminal from './VitalFlowTerminal';
 import AthletePrecisionTerminal from './AthletePrecisionTerminal';
 import PostureErgonomicsTerminal from './PostureErgonomicsTerminal';
@@ -10,6 +11,33 @@ import {
   resolveGuideAssetUrl,
   resolveGuideProtocolField,
 } from '../constants/guideAssets';
+import { getTrackByPackageSlot } from '../data/assessmentLibrary';
+
+/** Card module id → library package key + slot tag (ASSESSMENT_1-1 … 4-6) */
+const CARD_PACKAGE_SLOT = {
+  vf_neck: ['VITAL_FLOW', '1-1'],
+  vf_spinal: ['VITAL_FLOW', '1-2'],
+  vf_thoracic: ['VITAL_FLOW', '1-3'],
+  vf_squat: ['VITAL_FLOW', '1-4'],
+  vf_hold: ['VITAL_FLOW', '1-5'],
+  vf_shoulder: ['VITAL_FLOW', '1-6'],
+  ap_neck: ['ATHLETE PRECISION', '2-1'],
+  ap_single: ['ATHLETE PRECISION', '2-2'],
+  ap_spinal: ['ATHLETE PRECISION', '2-3'],
+  ap_shoulder: ['ATHLETE PRECISION', '2-4'],
+  ap_overhead: ['ATHLETE PRECISION', '2-5'],
+  pe_cervical: ['POSTURE & ERGONOMICS', '3-1'],
+  pe_axis: ['POSTURE & ERGONOMICS', '3-2'],
+  pe_hold: ['POSTURE & ERGONOMICS', '3-3'],
+  pe_lumbar: ['POSTURE & ERGONOMICS', '3-4'],
+  pe_shoulder: ['POSTURE & ERGONOMICS', '3-5'],
+  kp_spinal: ['KINETIC POWER INTEGRITY', '4-1'],
+  kp_neck: ['KINETIC POWER INTEGRITY', '4-2'],
+  kp_overhead: ['KINETIC POWER INTEGRITY', '4-3'],
+  kp_stance: ['KINETIC POWER INTEGRITY', '4-4'],
+  kp_shoulder: ['KINETIC POWER INTEGRITY', '4-5'],
+  kp_strike: ['KINETIC POWER INTEGRITY', '4-6'],
+};
 
 /** Resolve panel URL — coach uplink first, then Streamlit pending default graphic. */
 function getAssessmentPanelUrl(moduleId, guideAssets = DEFAULT_GUIDE_ASSETS) {
@@ -24,13 +52,17 @@ function AssessmentBlueprintSplit({
   moduleId,
   guideAssets,
   trackName,
+  panelImageUrl = '',
   fallbackExecution = '',
   fallbackAlignment = '',
   setUploadStatus,
   athleteCode = '000000',
   athleteName = 'UNREGISTERED ATHLETE',
 }) {
-  const imageUrl = getAssessmentPanelUrl(moduleId, guideAssets);
+  const imageUrl =
+    panelImageUrl ||
+    getAssessmentPanelUrl(moduleId, guideAssets) ||
+    DEFAULT_PROTOCOL_FALLBACK.imageUrl;
   const execution =
     resolveGuideProtocolField(moduleId, guideAssets, 'execution') || fallbackExecution || '';
   const alignment =
@@ -86,6 +118,7 @@ export default function TrackPortals({
 }) {
   // Per-card amber gate — track overviews stay readable; only Initialize is locked
   const [activeCardLockGate, setActiveCardLockGate] = useState(null);
+  const [activeLibraryTrack, setActiveLibraryTrack] = useState(null);
   const pendingScanRef = useRef(null);
 
   const readMasterCoachSession = () => {
@@ -101,9 +134,10 @@ export default function TrackPortals({
     isCoachMode || isTokenValidated || hasSecureAccess || readMasterCoachSession()
   );
 
-  // Clear card gate on track change or when master access unlocks
+  // Clear card gate + library node on track change or when master access unlocks
   useEffect(() => {
     setActiveCardLockGate(null);
+    setActiveLibraryTrack(null);
     pendingScanRef.current = null;
   }, [viewState]);
 
@@ -113,6 +147,29 @@ export default function TrackPortals({
       pendingScanRef.current = null;
     }
   }, [hasAllAccess]);
+
+  /** Resolve package card → library row (packageSlots). Returns true if opened. */
+  const openLibraryTrackFromCard = (cardId) => {
+    const mapping = CARD_PACKAGE_SLOT[cardId];
+    if (!mapping) return false;
+    const [packageKey, slot] = mapping;
+    const track = getTrackByPackageSlot(packageKey, slot);
+    if (!track) {
+      console.warn(
+        `[ LIBRARY SLOT MISS: ${packageKey} / ${slot} — falling back to legacy portal ]`
+      );
+      return false;
+    }
+    setActiveVitalModule(null);
+    setActiveAthleteModule(null);
+    setActivePostureModule(null);
+    setActiveCombatModule(null);
+    setActiveLibraryTrack(track);
+    console.log(
+      `[ LIBRARY BIND: card ${cardId} → id ${track.id} // ${track.name} // ${packageKey}:${slot} ]`
+    );
+    return true;
+  };
 
   /** Initialize Assessment Suite — bypass or lock that specific card */
   const tryInitializeAssessment = (cardId, openScan) => {
@@ -165,11 +222,48 @@ export default function TrackPortals({
     },
   };
 
+  // 🟢 Library-bound twin-box — wins over legacy hardcoded portals for all suites
+  if (activeLibraryTrack) {
+    const suiteHeader =
+      {
+        vital_flow: 'VITAL_FLOW',
+        athlete_precision: 'ATHLETE_PRECISION',
+        posture_ergonomics: 'POSTURE_ERGONOMICS',
+        mobility: 'POSTURE_ERGONOMICS',
+        kinetic_power: 'KINETIC_POWER',
+      }[viewState] || 'LIBRARY';
+
+    return (
+      <div className="w-screen h-screen bg-[#020617] text-white font-mono flex flex-col overflow-hidden animate-fade-in">
+        {renderSystemHeader(
+          `${suiteHeader} // LIBRARY_NODE_${activeLibraryTrack.id ?? '00'}`
+        )}
+        <UnifiedAssessmentLayout
+          trackName={activeLibraryTrack.name}
+          databaseRecord={activeLibraryTrack}
+          moduleId={`lib_${activeLibraryTrack.id}`}
+          athleteCode={athleteCode}
+          athleteName={athleteName}
+          onNavigate={() => setActiveLibraryTrack(null)}
+          onUploadPipelineSuccess={({ file }) => {
+            if (typeof setUploadStatus !== 'function') return;
+            const key = `lib_${activeLibraryTrack.id}`;
+            setUploadStatus((prev) => ({
+              ...prev,
+              [key]: { state: 'complete', fileName: file?.name || 'vector.mp4' },
+            }));
+          }}
+        />
+      </div>
+    );
+  }
+
   // SYSTEM FRAME A: Unified Posture & Ergonomics Workspace
   if (viewState === 'posture_ergonomics' || viewState === 'mobility') {
     // Intercept initialize actions → deep corporate assessment portals
     const handlePostureModuleAction = (id) => {
       tryInitializeAssessment(id, () => {
+        if (openLibraryTrackFromCard(id)) return;
         if (
           id === 'pe_cervical' ||
           id === 'pe_lumbar' ||
@@ -365,6 +459,7 @@ export default function TrackPortals({
   if (viewState === 'vital_flow') {
     const handleModuleCardAction = (id) => {
       tryInitializeAssessment(id, () => {
+        if (openLibraryTrackFromCard(id)) return;
         // Multi-Plane Spinal Articulation → existing back-extension portal
         if (id === 'vf_spinal') {
           setActiveVitalModule('vf_ext');
@@ -548,7 +643,7 @@ export default function TrackPortals({
       );
     }
 
-    // Wide 6-card Vital Flow clinical evaluation sub-terminal
+    // 🟢 ORIGINAL ROUTER: 6-card Vital Flow package grid
     return (
       <VitalFlowTerminal
         renderSystemHeader={renderSystemHeader}
@@ -565,6 +660,7 @@ export default function TrackPortals({
     // Intercept initialize actions → deep athlete precision assessment portals
     const handleAthleteModuleAction = (id) => {
       tryInitializeAssessment(id, () => {
+        if (openLibraryTrackFromCard(id)) return;
         // Neck Mobility Matrix → cervical instruction portal
         if (id === 'ap_neck') {
           setActiveAthleteModule('ap_cervical');
@@ -812,6 +908,7 @@ export default function TrackPortals({
     // Intercept initialize actions → deep combat assessment portals
     const handleCombatModuleAction = (id) => {
       tryInitializeAssessment(id, () => {
+        if (openLibraryTrackFromCard(id)) return;
         // Striking punch/kick analysis reuses the shadow-box instruction portal
         if (id === 'kp_strike') {
           setActiveCombatModule('kp_boxing');

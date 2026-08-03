@@ -13,6 +13,10 @@ import IntakeTerminal from './components/IntakeTerminal';
 import IntakeCalibrationLoader from './components/IntakeCalibrationLoader';
 import MoreInfoHub from './components/MoreInfoHub';
 import InfoHubView from './components/InfoHubView';
+import SystemMethodologyKinetics from './components/SystemMethodologyKinetics';
+import BiomechanicalReportPDF from './components/BiomechanicalReportPDF';
+import MasterAssessmentDirectory from './components/MasterAssessmentDirectory';
+import UnifiedAssessmentLayout from './components/UnifiedAssessmentLayout';
 import PromoInterceptModal from './components/PromoInterceptModal';
 import { ANALYSIS_VIEWS } from './constants/analysisViews';
 import { DEFAULT_GUIDE_ASSETS, mergeGuideAssets } from './constants/guideAssets';
@@ -78,6 +82,8 @@ const resolveInitialViewState = () => {
       'posture_ergonomics',
       'kinetic_power',
       'info_hub',
+      'system_methodology_kinetics',
+      'master_assessment_directory',
     ]);
     if (sessionViews.has(cached) && (tokenOk || coachSession || promoOk || accessCode)) {
       return cached;
@@ -97,6 +103,9 @@ const PROTECTED_SESSION_VIEWS = new Set([
   'pricing_matrix',
   'more_info',
   'info_hub',
+  'system_methodology_kinetics',
+  'report_pdf_generator',
+  'master_assessment_directory',
   'mobility',
   'posture_ergonomics',
   'vital_flow',
@@ -408,10 +417,10 @@ const CLIENT_DATABASE = {
   '777777': {
     name: 'MATTA',
     birthdate: '01/01/2000',
-    email: 'matta.matrix@hyper3d.com',
-    phone: '(555) 777-7777',
+    email: 'matta.longevitylab@gmail.com',
+    phone: 'Universe Portal',
     avatar: '/client1.png',
-    archetype: '3D Hyper-Voxel Archetype',
+    archetype: 'Pro Master Coach',
     joinedDate: '07/21/2026',
     matrixTier: 'Infinite Matrix Tier',
     streamStatus: 'STREAM CALIBRATED',
@@ -626,6 +635,12 @@ export default function App() {
   const [activeAthleteModule, setActiveAthleteModule] = useState(null);
   const [activeCombatModule, setActiveCombatModule] = useState(null);
   const [activePostureModule, setActivePostureModule] = useState(null);
+  // Full library track packet for VIEW_SINGLE_ASSESSMENT_CORE
+  const [selectedAssessmentData, setSelectedAssessmentData] = useState(null);
+  const [assessmentReturnView, setAssessmentReturnView] = useState('vital_flow');
+  /** Batch pool for Continue → next vector progression inside UnifiedAssessmentLayout */
+  const [selectedBatchTracks, setSelectedBatchTracks] = useState([]);
+  const [currentActiveIndex, setCurrentActiveIndex] = useState(0);
 
   // Coach-editable movement guide stage image URLs (persisted across refresh)
   const [guideAssets, setGuideAssets] = useState(() => {
@@ -1120,6 +1135,13 @@ export default function App() {
 
   // Updated Safe Navigation Escape Route
   const handleReturnToCore = () => {
+    // Single assessment core → return to its originating suite index
+    if (viewState === 'view_single_assessment_core') {
+      setSelectedAssessmentData(null);
+      setViewState(assessmentReturnView || 'vital_flow');
+      return;
+    }
+
     // Coach admin return path: drop back into the command center roster
     if (viewState === 'client_profile' && isCoachMode) {
       setViewState('coach_menu');
@@ -1154,6 +1176,9 @@ export default function App() {
       'more_info',
       'more_info_hub',
       'info_hub',
+      'system_methodology_kinetics',
+      'master_assessment_directory',
+      'view_single_assessment_core',
       'package_detail',
       'client_profile',
     ]);
@@ -1437,9 +1462,11 @@ export default function App() {
       setViewState('posture_ergonomics');
       return;
     }
+    // 🟢 TRACK_01 // VITAL FLOW INITIALIZATION
+    // onClick={() => setCurrentScreen("VITAL_FLOW_DECOMPRESSION_MATRIX")}
     if (key === 'posture') {
       setSelectedAnalysis(ANALYSIS_VIEWS.posture.label);
-      setViewState('vital_flow');
+      handleTerminalNavigate('VITAL_FLOW_DECOMPRESSION_MATRIX');
       return;
     }
     if (key === 'alignment') {
@@ -1456,6 +1483,53 @@ export default function App() {
     setSelectedAnalysis(ANALYSIS_VIEWS[key].label || 'Biometrics Analysis');
     setBootProgress(0);
     setViewState('loading');
+  };
+
+  /** Master Assessment Directory → suite / module deep-link */
+  const handleSelectMasterAssessmentTrack = (track) => {
+    const payload = typeof track === 'string' ? { name: track } : track || {};
+    const name = String(payload.name || '').toLowerCase();
+    const category = String(payload.category || '').toLowerCase();
+    const suiteHint = String(payload.suite || '').toLowerCase();
+    const moduleId = payload.moduleId || null;
+
+    let suite = suiteHint;
+    if (!suite) {
+      if (category.includes('posture') || category.includes('ergonomic') || name.includes('thoracic')) {
+        suite = 'posture_ergonomics';
+      } else if (category.includes('athlete') || category.includes('acrobat') || name.includes('handstand') || name.includes('single leg')) {
+        suite = 'athlete_precision';
+      } else if (category.includes('kinetic') || category.includes('combat') || category.includes('power')) {
+        suite = 'kinetic_power';
+      } else {
+        suite = 'vital_flow';
+      }
+    }
+
+    setSelectedAnalysis(payload.name || 'Master Assessment Node');
+    setActivePostureModule(null);
+    setActiveVitalModule(null);
+    setActiveAthleteModule(null);
+    setActiveCombatModule(null);
+
+    if (suite === 'posture_ergonomics' || suite === 'mobility') {
+      if (moduleId) setActivePostureModule(moduleId);
+      setViewState('posture_ergonomics');
+      return;
+    }
+    if (suite === 'athlete_precision') {
+      if (moduleId) setActiveAthleteModule(moduleId);
+      setViewState('athlete_precision');
+      return;
+    }
+    if (suite === 'kinetic_power' || suite === 'kinetic_integrity') {
+      if (moduleId) setActiveCombatModule(moduleId);
+      setViewState('kinetic_power');
+      return;
+    }
+
+    if (moduleId) setActiveVitalModule(moduleId);
+    setViewState('vital_flow');
   };
 
   useEffect(() => {
@@ -1534,10 +1608,159 @@ export default function App() {
     );
   }
 
+  /** 🟢 PERFECTLY SEPARATED PRODUCTION INTERFACE LINKS */
+  const handleTerminalNavigate = (targetScreen) => {
+    // 🟢 Public portal landing — keep users off the coach deck
+    if (
+      targetScreen === 'CLIENT_PORTAL_LANDING_HOME' ||
+      targetScreen === 'LANDING' ||
+      targetScreen === 'PUBLIC_HOME'
+    ) {
+      setSelectedAssessmentData(null);
+      setSelectedBatchTracks([]);
+      setCurrentActiveIndex(0);
+      setViewState('landing');
+      return;
+    }
+    if (
+      targetScreen === 'COACH_DASHBOARD_HOME' ||
+      targetScreen === 'HOME' ||
+      targetScreen === 'ESC'
+    ) {
+      setIsCoachMode(true);
+      setViewState('coach_menu');
+      return;
+    }
+    if (
+      targetScreen === 'MASTER_ASSESSMENT_DIRECTORY_TERMINAL' ||
+      targetScreen === 'DIRECTORY_MASTER_INDEX'
+    ) {
+      setViewState('master_assessment_directory');
+      return;
+    }
+    if (targetScreen === 'VITAL_FLOW_DECOMPRESSION_MATRIX') {
+      setSelectedAssessmentData(null);
+      setViewState('vital_flow');
+      return;
+    }
+    if (targetScreen === 'ATHLETE_PRECISION') {
+      setViewState('athlete_precision');
+      return;
+    }
+    if (targetScreen === 'POSTURE_ERGONOMICS') {
+      setViewState('posture_ergonomics');
+      return;
+    }
+    if (targetScreen === 'KINETIC_POWER') {
+      setViewState('kinetic_power');
+      return;
+    }
+    if (targetScreen === 'VIEW_SINGLE_ASSESSMENT_CORE') {
+      setViewState('view_single_assessment_core');
+      return;
+    }
+    // 🟢 METHODOLOGY DISCLOSURE SHEET RESTORATION CASE
+    if (targetScreen === 'VIEW_SYSTEM_METHODOLOGY_KINETICS') {
+      setViewState('system_methodology_kinetics');
+      return;
+    }
+    // 🟢 BIOMECHANICAL PDF REPORT GENERATOR VIEW
+    if (targetScreen === 'REPORT_PDF_GENERATOR_VIEW') {
+      setViewState('report_pdf_generator');
+      return;
+    }
+  };
+
+  // 🟢 ROCK-SOLID PRODUCTION MATCHING STATE — hard track check FIRST
+  if (viewState === 'view_single_assessment_core' && selectedAssessmentData) {
+    return (
+      <UnifiedAssessmentLayout
+        trackName={selectedAssessmentData.name}
+        databaseRecord={selectedAssessmentData}
+        moduleId={`lib_${selectedAssessmentData.id}`}
+        athleteCode={accessCode || '000000'}
+        athleteName={
+          activeClientProfile?.name ||
+          (accessCode && localDatabase[accessCode]?.name) ||
+          'UNREGISTERED ATHLETE'
+        }
+        currentActiveIndex={currentActiveIndex}
+        totalSelectedTracksLength={
+          selectedBatchTracks.length > 0 ? selectedBatchTracks.length : 1
+        }
+        setCurrentActiveIndex={(updater) => {
+          setCurrentActiveIndex((prev) => {
+            const next = typeof updater === 'function' ? updater(prev) : updater;
+            const pool =
+              selectedBatchTracks.length > 0
+                ? selectedBatchTracks
+                : selectedAssessmentData
+                  ? [selectedAssessmentData]
+                  : [];
+            if (pool[next]) {
+              setSelectedAssessmentData(pool[next]);
+            }
+            return next;
+          });
+        }}
+        onNavigate={(targetScreen) => {
+          if (
+            targetScreen === 'CLIENT_PORTAL_LANDING_HOME' ||
+            targetScreen === 'COACH_DASHBOARD_HOME'
+          ) {
+            setSelectedAssessmentData(null);
+            setSelectedBatchTracks([]);
+            setCurrentActiveIndex(0);
+            // Complete stream → public landing only (never coach deck for clients)
+            if (targetScreen === 'CLIENT_PORTAL_LANDING_HOME') {
+              handleTerminalNavigate('CLIENT_PORTAL_LANDING_HOME');
+              return;
+            }
+            handleTerminalNavigate('COACH_DASHBOARD_HOME');
+            return;
+          }
+          // Escape goes right back to package grid (or originating suite)
+          setSelectedAssessmentData(null);
+          setSelectedBatchTracks([]);
+          setCurrentActiveIndex(0);
+          if (assessmentReturnView === 'master_assessment_directory') {
+            handleTerminalNavigate('MASTER_ASSESSMENT_DIRECTORY_TERMINAL');
+          } else {
+            handleTerminalNavigate('VITAL_FLOW_DECOMPRESSION_MATRIX');
+          }
+        }}
+      />
+    );
+  }
+
+  // 📁 STANDALONE DIRECTORY LIST (alphabetical local library loop)
+  if (viewState === 'master_assessment_directory') {
+    return (
+      <div className="h-screen bg-[#030712] font-mono text-white overflow-hidden flex flex-col">
+        {renderSystemHeader('MASTER_ASSESSMENT_DIRECTORY_TERMINAL')}
+        <MasterAssessmentDirectory
+          onSelectTrack={(trackObj) => {
+            setSelectedBatchTracks([trackObj]);
+            setCurrentActiveIndex(0);
+            setSelectedAssessmentData(trackObj);
+            setAssessmentReturnView('master_assessment_directory');
+            setViewState('view_single_assessment_core');
+          }}
+          onNavigate={handleTerminalNavigate}
+          setCurrentScreen={handleTerminalNavigate}
+        />
+      </div>
+    );
+  }
+
   if (
-    ['mobility', 'posture_ergonomics', 'vital_flow', 'athlete_precision', 'kinetic_power'].includes(
-      viewState
-    )
+    [
+      'vital_flow',
+      'mobility',
+      'posture_ergonomics',
+      'athlete_precision',
+      'kinetic_power',
+    ].includes(viewState)
   ) {
     return (
       <div className="relative w-screen h-screen overflow-hidden">
@@ -1628,9 +1851,44 @@ export default function App() {
     );
   }
 
+  // 🟢 METHODOLOGY DISCLOSURE SHEET RESTORATION CASE
+  if (viewState === 'system_methodology_kinetics') {
+    return (
+      <div className="min-h-screen bg-[#030712] font-mono text-white">
+        {renderSystemHeader('VIEW_SYSTEM_METHODOLOGY_KINETICS')}
+        <SystemMethodologyKinetics setCurrentScreen={handleTerminalNavigate} />
+      </div>
+    );
+  }
+
+  // 🟢 BIOMECHANICAL PDF REPORT GENERATOR VIEW
+  if (viewState === 'report_pdf_generator') {
+    const reportAthleteName =
+      activeClientProfile?.name ||
+      (accessCode && localDatabase[accessCode]?.name) ||
+      'Alex Rivera';
+    const reportAthleteCode = accessCode || '111111';
+
+    return (
+      <div className="min-h-screen bg-[#030712] font-mono text-white overflow-y-auto">
+        <BiomechanicalReportPDF
+          clientName={reportAthleteName}
+          clientCode={reportAthleteCode}
+          onNavigate={handleTerminalNavigate}
+        />
+      </div>
+    );
+  }
+
   // Flagship Master Information Hub — educational immersion deck
   if (viewState === 'info_hub') {
-    return <InfoHubView onReturn={() => setViewState('landing')} />;
+    return (
+      <InfoHubView
+        onReturn={() => handleTerminalNavigate('COACH_DASHBOARD_HOME')}
+        onNavigate={handleTerminalNavigate}
+        setCurrentScreen={handleTerminalNavigate}
+      />
+    );
   }
 
   // More Information Landing Page Hub — particle human doctrine deck (legacy)
@@ -1751,6 +2009,8 @@ export default function App() {
     displayClientName,
     guideAssets,
     setGuideAssets,
+    onNavigate: handleTerminalNavigate,
+    setCurrentScreen: handleTerminalNavigate,
   };
 
   // 2. Home portal shell: sphere + grid with landing chrome or stacked coach/client panels
@@ -1818,11 +2078,13 @@ export default function App() {
                     virtualAccessUnlocked={virtualAccessUnlocked || isPromoUnlocked}
                     isCoachMode={isCoachMode}
                     onLaunchAnalysis={handleLaunchAnalysis}
+                    onNavigate={handleTerminalNavigate}
+                    setCurrentScreen={handleTerminalNavigate}
+                    setSelectedAssessmentData={setSelectedAssessmentData}
                     onUnlockMembership={() => {
                       setSelectedAnalysis('Membership Portal Sync');
                       setViewState('pricing_matrix');
                     }}
-                    onViewMethodology={() => setViewState('info_hub')}
                   />
 
                   <RightSidebar
@@ -1881,6 +2143,44 @@ export default function App() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Master Directory — gated footer tab (right cluster) */}
+                  {(() => {
+                    const isAuthenticated = Boolean(
+                      isTokenValidated || isPromoUnlocked || virtualAccessUnlocked || isCoachMode
+                    );
+                    const hasValidClientCode = String(accessCode || '').replace(/\D/g, '').length === 6;
+                    const canOpenDirectory = Boolean(
+                      isCoachMode || (isAuthenticated && hasValidClientCode)
+                    );
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!canOpenDirectory) {
+                            alert(
+                              'ACCESS DISDENIED: Secure terminal credentials missing. Please enter your valid 6-digit passcode into the Assessment Reports node first.'
+                            );
+                            return;
+                          }
+                          setViewState('master_assessment_directory');
+                          console.log(
+                            `[ TERMINAL ROUTING SUCCESS: DEPLOYING MASTER DIRECTORY INDEX FOR CODE ${accessCode || 'COACH_BYPASS'} ]`
+                          );
+                        }}
+                        className={`font-mono text-[10px] tracking-widest font-bold uppercase transition-all duration-300 bg-transparent border-0 ${
+                          canOpenDirectory
+                            ? 'text-slate-500 hover:text-cyan-400 cursor-pointer'
+                            : 'text-slate-600 cursor-not-allowed opacity-50'
+                        }`}
+                      >
+                        {canOpenDirectory
+                          ? '↑ MASTER ASSESSMENT DIRECTORY //'
+                          : '🔒 MASTER DIRECTORY [ LOCKED ]'}
+                      </button>
+                    );
+                  })()}
+
                   <div>LENOVO LEGION PRO // RTX 4080 MODE ACTIVE</div>
                 </footer>
               </div>

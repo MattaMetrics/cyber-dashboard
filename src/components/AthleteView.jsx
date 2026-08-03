@@ -83,11 +83,11 @@ export default function AthleteView({ onViewSystemSpecs, onPaymentInitiated, onV
             </p>
             <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-slate-900">
               <li className="flex items-center gap-2 text-indigo-400">✓ 1-Hour In-Person Telemetry Assessment</li>
-              <li className="flex items-center gap-2 text-indigo-400">✓ Point Vulnerability Map (Joint Tracking Angles)</li>
+              <li className="flex items-center gap-2 text-indigo-400">✓ 4 Assessment Tests </li>
               <li className="flex items-center gap-2 text-indigo-400">✓ Decoded Longevity Lab Blueprint Report</li>
               <li className="flex items-center gap-2 text-indigo-400">✓ Video Degrees of Motion Overlays</li>
-              <li className="flex items-center gap-2 text-indigo-400">✓ 10B Parameter High-Art 3D Structural Mesh Render</li>
-              <li className="flex items-center gap-2 text-indigo-400">✓ 4-Week Custom Restorative Training Plan</li>
+              <li className="flex items-center gap-2 text-indigo-400">✓ High-Art Structure Photo</li>
+              <li className="flex items-center gap-2 text-indigo-400">✓ 4-Week Coaching, Restorative / Training Stategy Plan</li>
               <li className="flex items-center gap-2 text-indigo-400">✓ Secure Client Portal Access Token</li>
             </ul>
           </div>
@@ -128,12 +128,12 @@ export default function AthleteView({ onViewSystemSpecs, onPaymentInitiated, onV
             </p>
             <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-slate-900">
               <li className="flex items-center gap-2 text-cyan-400">✓ Continuous Biweekly Calibration Re-Scans</li>
-              <li className="flex items-center gap-2 text-cyan-400">✓ Adaptive Virtual Coaching PDF Reports</li>
-              <li className="flex items-center gap-2 text-cyan-400">✓ Tailored Tracks: Longevity, Precision, or Combat</li>
-              <li className="flex items-center gap-2 text-cyan-400">✓ Video Degrees of Motion Overlays Each Month</li>
-              <li className="flex items-center gap-2 text-cyan-400">✓ 10B Parameter High-Art 3D Structural Mesh Render</li>
-              <li className="flex items-center gap-2 text-cyan-400">✓ Unlimited Master Portal Diagnostic Access</li>
-              <li className="flex items-center gap-2 text-cyan-400">✓ Longevity Science Frontier Key (Nutrients &amp; Peptides)</li>
+              <li className="flex items-center gap-2 text-cyan-400">✓ Portal Acccess Personal Profile with updated PDF Reports</li>
+              <li className="flex items-center gap-2 text-cyan-400">✓ Tailored Tracks: Longevity, Precision, or Life Logevity</li>
+              <li className="flex items-center gap-2 text-cyan-400">✓ Video Degrees of Motion Overlays Each Month in Portal</li>
+              <li className="flex items-center gap-2 text-cyan-400">✓ High-Art Structural Mesh Render</li>
+              <li className="flex items-center gap-2 text-cyan-400">✓ Choice of 4 Assessment Tests per Month</li>
+              
             </ul>
           </div>
           <div className="mt-5">
@@ -168,10 +168,10 @@ export default function AthleteView({ onViewSystemSpecs, onPaymentInitiated, onV
               Contextual Skeletal Inference to map hidden limbs, eliminating injury risks before patterns calcify.
             </p>
             <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-slate-900">
-              <li className="flex items-center gap-2 text-amber-400">✓ 3 Custom Goal-Specific Assessment Tests</li>
-              <li className="flex items-center gap-2 text-amber-400">✓ On-Site or Fully Virtual Group Onboarding</li>
-              <li className="flex items-center gap-2 text-amber-400">✓ Point Vulnerability Map (Joint Tracking Angles)</li>
-              <li className="flex items-center gap-2 text-amber-400">✓ Video Degrees Motion Overlay Technology</li>
+              <li className="flex items-center gap-2 text-amber-400">✓ 3 Custom Goal-Specific Assessment</li>
+              <li className="flex items-center gap-2 text-amber-400">✓ On-Site or Fully Virtual Testing Options</li>
+              <li className="flex items-center gap-2 text-amber-400">✓ Point Vulnerability Map Video Overlays(Joint Tracking Angles)</li>
+            
               <li className="flex items-center gap-2 text-amber-400">✓ Decoded Longevity Lab PDF Blueprint Reports</li>
               <li className="flex items-center gap-2 text-amber-400">✓ Custom 2D Art of Their Biomechanical Structure</li>
             </ul>
@@ -209,10 +209,10 @@ export default function AthleteView({ onViewSystemSpecs, onPaymentInitiated, onV
             </p>
             <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-slate-900">
               <li className="flex items-center gap-2 text-emerald-400">✓ Non-Intrusive Desk Assessments (15-30 Mins)</li>
-              <li className="flex items-center gap-2 text-emerald-400">✓ 3 Specialized Workspace Wellness Assessment Tests</li>
-              <li className="flex items-center gap-2 text-emerald-400">✓ Point Vulnerability Map (Structural Energy Leaks)</li>
+              <li className="flex items-center gap-2 text-emerald-400">✓ 4 Specialized Workspace Wellness Tests</li>
+              <li className="flex items-center gap-2 text-emerald-400">✓ Point Vulnerability Map with Strategic</li>
               <li className="flex items-center gap-2 text-emerald-400">✓ Decoded Lab PDF Blueprint System Reports</li>
-              <li className="flex items-center gap-2 text-emerald-400">✓ Custom 2D Art of Their Biomechanical Structure</li>
+              <li className="flex items-center gap-2 text-emerald-400">✓ High Art of Their Biomechanical Structure</li>
               <li className="flex items-center gap-2 text-emerald-400">✓ Personalized Client Portal Access Token</li>
             </ul>
           </div>

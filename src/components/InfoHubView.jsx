@@ -8,7 +8,7 @@ function OrangeLock({ children }) {
 const TRACK_INDEX = [
   {
     id: 'track_01',
-    title: '// TRACK_01 // VITAL FLOW INITIALIZATION',
+    title: '// TRACK_01 // VITAL FLOW',
     body:
       'Our flagship all-around body blueprint diagnostic built for every individual. Access lab-grade telemetry across your global kinetic network to isolate hidden vulnerabilities before they manifest as chronic pain. Completely adaptable with seamless virtual or in-person tracking to fit your lifestyle.',
     benefit: (
@@ -61,15 +61,32 @@ const TRACK_INDEX = [
 /**
  * Flagship Master Information Hub — Longevity Laboratory Global Master Index.
  */
-export default function InfoHubView({ onReturn }) {
+export default function InfoHubView({ onReturn, onNavigate, setCurrentScreen }) {
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onReturn?.();
+      if (e.key === 'Escape') {
+        if (setCurrentScreen) setCurrentScreen('COACH_DASHBOARD_HOME');
+        else onReturn?.();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onReturn]);
+  }, [onReturn, setCurrentScreen]);
 
+  const handleTrackLaunch = (trackId) => {
+    if (trackId === 'track_02') {
+      onNavigate?.('ATHLETE_PRECISION');
+      return;
+    }
+    if (trackId === 'track_03') {
+      onNavigate?.('POSTURE_ERGONOMICS');
+      return;
+    }
+    if (trackId === 'track_04') {
+      onNavigate?.('KINETIC_POWER');
+      return;
+    }
+  };
   return (
     <div className="relative w-screen h-screen bg-[#01040a] text-white overflow-hidden animate-fade-in font-mono">
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(255,102,0,0.04),transparent_40%)]" />
@@ -79,7 +96,7 @@ export default function InfoHubView({ onReturn }) {
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <button
               type="button"
-              onClick={onReturn}
+              onClick={() => setCurrentScreen("COACH_DASHBOARD_HOME")}
               className="self-start px-3 py-1.5 border border-slate-800 hover:border-cyan-400 rounded-lg text-slate-400 hover:text-white bg-slate-900/40 hover:bg-slate-950 font-bold tracking-wider transition-all uppercase cursor-pointer active:scale-95 text-xs"
             >
               [ESC] RETURN TO DASHBOARD HOME
@@ -106,9 +123,18 @@ export default function InfoHubView({ onReturn }) {
             {/* Track index cards — ~80-char readable columns */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {TRACK_INDEX.map((track) => (
-                <article
+                <button
+                  type="button"
                   key={track.id}
-                  className="p-5 md:p-6 bg-slate-900/30 border border-slate-900 hover:border-cyan-500/20 rounded-xl space-y-3 transition-colors"
+                  onClick={() => {
+                    // 🟢 TRACK_01 // VITAL FLOW INITIALIZATION
+                    if (track.id === 'track_01') {
+                      onNavigate?.('VITAL_FLOW_DECOMPRESSION_MATRIX');
+                      return;
+                    }
+                    handleTrackLaunch(track.id);
+                  }}
+                  className="p-5 md:p-6 bg-slate-900/30 border border-slate-900 hover:border-cyan-500/20 rounded-xl space-y-3 transition-colors text-left cursor-pointer active:scale-[0.99]"
                 >
                   <h2 className="text-xs md:text-sm font-black tracking-widest uppercase text-cyan-400 border-b border-slate-800 pb-3">
                     {track.title}
@@ -122,7 +148,7 @@ export default function InfoHubView({ onReturn }) {
                     </span>
                     {track.benefit}
                   </p>
-                </article>
+                </button>
               ))}
             </section>
 
