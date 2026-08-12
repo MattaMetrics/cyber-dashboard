@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Life Longevity - Aikynetix Interceptor",
+  "version": "1.0.0",
+  "description": "Intercepts Aikynetix API responses for movement analysis",
+  "permissions": ["storage", "tabs", "scripting"],
+  "host_permissions": [
+    "*://*.aikynetix.com/*",
+    "*://*.aikyinetix.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.aikynetix.com/*", "*://*.aikyinetix.com/*"],
+      "js": ["interceptor-relay.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.aikynetix.com/*", "*://*.aikyinetix.com/*"],
+      "js": ["interceptor-page.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["dashboard-bridge.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LL Aikynetix Interceptor"
+  },
+  "externally_connectable": {
+    "matches": ["http://localhost/*", "http://127.0.0.1/*"]
+  }
+}

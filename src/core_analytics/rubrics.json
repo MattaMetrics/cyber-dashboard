@@ -1,0 +1,407 @@
+{
+  "global_config": {
+    "platform_mission": "Democratize elite sports science and advanced ergonomics for pain-free physical longevity",
+    "core_metrics": [
+      "energy_efficiency_score",
+      "muscle_activation_symmetry",
+      "kinetic_chain_integrity",
+      "compensation_risk_index",
+      "center_of_mass_stability"
+    ],
+    "scoring_system": {
+      "technique_score": { "weight": 0.35, "max": 100 },
+      "balance_score": { "weight": 0.25, "max": 100 },
+      "symmetry_score": { "weight": 0.2, "max": 100 },
+      "flexibility_score": { "weight": 0.1, "max": 100 },
+      "mobility_score": { "weight": 0.1, "max": 100 }
+    },
+    "age_metrics": {
+      "biological_movement_age": true,
+      "flexibility_age_index": true,
+      "mobility_age_index": true
+    },
+    "progress_tracking": {
+      "enable_retest_comparison": true,
+      "trend_analysis_windows": ["2_week", "4_week", "8_week"]
+    }
+  },
+  "assessments": [
+    {
+      "test_id": "LL001",
+      "name": "NECK MOBILITY MATRIX",
+      "category": "Mobility",
+      "packages": ["VITAL_FLOW", "ATHLETE_PRECISION", "POSTURE_ERGONOMICS"],
+      "biometric_photo_url": "https://i.imgur.com/USu4J77.png",
+      "phases": [
+        "neutral_calibration",
+        "flexion",
+        "extension",
+        "lateral_flexion_left",
+        "lateral_flexion_right"
+      ],
+      "metrics": {
+        "primary": {
+          "cervical_flexion_rom": {
+            "type": "angle",
+            "unit": "degrees",
+            "target_joint": "cervical_spine",
+            "description": "Chin-to-chest flexion range"
+          },
+          "cervical_extension_rom": {
+            "type": "angle",
+            "unit": "degrees",
+            "target_joint": "cervical_spine",
+            "description": "Upward gaze extension range"
+          },
+          "lateral_flexion_symmetry": {
+            "type": "symmetry_ratio",
+            "unit": "percentage",
+            "description": "Left vs right lateral flexion balance"
+          }
+        },
+        "secondary": {
+          "forward_head_displacement": {
+            "type": "distance",
+            "unit": "cm",
+            "description": "Anterior head translation from plumb line"
+          },
+          "shoulder_elevation_asymmetry": {
+            "type": "angle",
+            "unit": "degrees",
+            "description": "Shoulder hiking during movement"
+          }
+        }
+      },
+      "scoring_rules": [
+        {
+          "rule_id": "LL001_R1",
+          "metric": "cervical_flexion_rom",
+          "phase": "flexion",
+          "weight": 0.25,
+          "thresholds": {
+            "excellent": { "min": 45, "max": 60 },
+            "good": { "min": 35, "max": 44 },
+            "fair": { "min": 25, "max": 34 },
+            "poor": { "min": 0, "max": 24 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 },
+          "compensation_flags": [
+            {
+              "condition": "forward_head_displacement > 5",
+              "flag": "Cervical compensation detected - check thoracic mobility"
+            },
+            {
+              "condition": "shoulder_elevation > 10",
+              "flag": "Upper trapezius dominance - energy leak detected"
+            }
+          ]
+        },
+        {
+          "rule_id": "LL001_R2",
+          "metric": "cervical_extension_rom",
+          "phase": "extension",
+          "weight": 0.25,
+          "thresholds": {
+            "excellent": { "min": 50, "max": 70 },
+            "good": { "min": 40, "max": 49 },
+            "fair": { "min": 30, "max": 39 },
+            "poor": { "min": 0, "max": 29 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 }
+        },
+        {
+          "rule_id": "LL001_R3",
+          "metric": "lateral_flexion_symmetry",
+          "phase": "lateral_flexion",
+          "weight": 0.25,
+          "thresholds": {
+            "excellent": { "min": 90, "max": 100 },
+            "good": { "min": 80, "max": 89 },
+            "fair": { "min": 70, "max": 79 },
+            "poor": { "min": 0, "max": 69 }
+          },
+          "scoring": { "excellent": 100, "good": 80, "fair": 60, "poor": 30 }
+        },
+        {
+          "rule_id": "LL001_R4",
+          "metric": "forward_head_displacement",
+          "phase": "neutral_calibration",
+          "weight": 0.25,
+          "thresholds": {
+            "excellent": { "min": 0, "max": 2 },
+            "good": { "min": 2.1, "max": 4 },
+            "fair": { "min": 4.1, "max": 6 },
+            "poor": { "min": 6.1, "max": 99 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 },
+          "energy_leak_detection": {
+            "condition": "value > 4",
+            "message": "Forward head posture creating cervical energy leak - 15% efficiency loss in upper kinetic chain",
+            "affected_chain": ["cervical", "thoracic", "shoulder_complex"]
+          }
+        }
+      ],
+      "compensation_patterns": [
+        {
+          "pattern": "upper_trapezius_overactivation",
+          "detection": "shoulder_elevation > 10 AND lateral_flexion_asymmetry > 15",
+          "root_cause": "Deep neck flexor weakness",
+          "kinetic_chain_impact": "Energy leak at C4-C7 transferring to T1-T4",
+          "recommendation": "Deep neck flexor endurance training: Chin tuck holds 3x30sec, progressing to 3x60sec"
+        }
+      ],
+      "rehabilitation_plans": {
+        "2_week": [
+          "Daily chin tuck holds: 3 sets x 20 seconds",
+          "Gentle cervical mobilizations: 2x daily, 10 reps each direction",
+          "Upper trapezius self-release: 2 minutes each side"
+        ],
+        "4_week": [
+          "Progress to 3 sets x 45 seconds chin tucks",
+          "Add resisted cervical rotation with bands",
+          "Integration with thoracic mobility drills"
+        ],
+        "8_week": [
+          "Full cervical strength protocol",
+          "Integration with full-body kinetic chain exercises",
+          "Sport-specific neck conditioning"
+        ]
+      }
+    },
+    {
+      "test_id": "LL002",
+      "name": "BACK MOBILITY MATRIX // MULTI-PLANE SPINAL",
+      "category": "Mobility",
+      "packages": [
+        "VITAL_FLOW",
+        "POSTURE_ERGONOMICS",
+        "ATHLETE_PRECISION",
+        "KINETIC_POWER_INTEGRITY"
+      ],
+      "biometric_photo_url": "https://i.imgur.com/APLIpK7.jpeg",
+      "phases": ["prone_setup", "cobra_extension", "standing_flexion", "standing_extension"],
+      "metrics": {
+        "primary": {
+          "lumbar_extension_rom": {
+            "type": "angle",
+            "unit": "degrees",
+            "target_joint": "lumbar_spine",
+            "description": "Cobra pose extension range"
+          },
+          "thoracic_extension_rom": {
+            "type": "angle",
+            "unit": "degrees",
+            "target_joint": "thoracic_spine",
+            "description": "Upper back extension capacity"
+          },
+          "spinal_segmentation_index": {
+            "type": "ratio",
+            "unit": "percentage",
+            "description": "Distribution of movement across spinal segments"
+          }
+        },
+        "secondary": {
+          "hip_flexor_tension_index": {
+            "type": "composite",
+            "description": "Anterior hip tension limiting extension"
+          },
+          "shoulder_flexion_compensation": {
+            "type": "angle",
+            "unit": "degrees",
+            "description": "Shoulder elevation compensating for spinal restriction"
+          }
+        }
+      },
+      "scoring_rules": [
+        {
+          "rule_id": "LL002_R1",
+          "metric": "lumbar_extension_rom",
+          "phase": "cobra_extension",
+          "weight": 0.3,
+          "thresholds": {
+            "excellent": { "min": 25, "max": 35 },
+            "good": { "min": 20, "max": 24 },
+            "fair": { "min": 15, "max": 19 },
+            "poor": { "min": 0, "max": 14 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 }
+        },
+        {
+          "rule_id": "LL002_R2",
+          "metric": "spinal_segmentation_index",
+          "phase": "full_movement",
+          "weight": 0.3,
+          "thresholds": {
+            "excellent": { "min": 80, "max": 100 },
+            "good": { "min": 65, "max": 79 },
+            "fair": { "min": 50, "max": 64 },
+            "poor": { "min": 0, "max": 49 }
+          },
+          "scoring": { "excellent": 100, "good": 80, "fair": 60, "poor": 30 },
+          "kinetic_chain_analysis": {
+            "low_segmentation": "Spinal blocks detected - energy transfer interrupted at vertebral segments",
+            "hyper_mobile_segments": "Compensatory hypermobility detected - injury risk elevated"
+          }
+        },
+        {
+          "rule_id": "LL002_R3",
+          "metric": "hip_flexor_tension_index",
+          "phase": "cobra_extension",
+          "weight": 0.2,
+          "thresholds": {
+            "excellent": { "min": 0, "max": 10 },
+            "good": { "min": 11, "max": 20 },
+            "fair": { "min": 21, "max": 30 },
+            "poor": { "min": 31, "max": 100 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 }
+        },
+        {
+          "rule_id": "LL002_R4",
+          "metric": "shoulder_flexion_compensation",
+          "phase": "cobra_extension",
+          "weight": 0.2,
+          "thresholds": {
+            "excellent": { "min": 0, "max": 5 },
+            "good": { "min": 5.1, "max": 10 },
+            "fair": { "min": 10.1, "max": 15 },
+            "poor": { "min": 15.1, "max": 90 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 }
+        }
+      ],
+      "compensation_patterns": [
+        {
+          "pattern": "lumbar_dominant_extension",
+          "detection": "lumbar_extension > 30 AND thoracic_extension < 15",
+          "root_cause": "Thoracic spine stiffness with lumbar hypermobility",
+          "kinetic_chain_impact": "Force concentration at L4-L5-S1, energy dissipation at thoracolumbar junction",
+          "recommendation": "Thoracic mobility focus: Foam roller extensions, cat-cow segmentation drills"
+        }
+      ],
+      "rehabilitation_plans": {
+        "2_week": [
+          "Cat-cow segmentation: 3x10 reps, pausing at stiff segments",
+          "Foam roller thoracic extensions: 2 minutes daily",
+          "Hip flexor stretching: 3x30 seconds each side"
+        ],
+        "4_week": [
+          "Progress to active thoracic rotations",
+          "Add prone cobra holds with breathing",
+          "Integration with core stability work"
+        ],
+        "8_week": [
+          "Full spinal mobility flow",
+          "Loaded spinal articulation exercises",
+          "Sport-specific rotational power development"
+        ]
+      }
+    },
+    {
+      "test_id": "LL003",
+      "name": "TRUNK & THORACIC ROTATION MATRIX",
+      "category": "Mobility",
+      "packages": ["VITAL_FLOW"],
+      "biometric_photo_url": "https://i.imgur.com/FJsXrch.png",
+      "phases": ["neutral_setup", "rotation_right", "rotation_left"],
+      "metrics": {
+        "primary": {
+          "thoracic_rotation_rom": {
+            "type": "angle",
+            "unit": "degrees",
+            "description": "Total thoracic rotation range"
+          },
+          "rotation_symmetry": {
+            "type": "symmetry_ratio",
+            "unit": "percentage",
+            "description": "Left vs right rotation balance"
+          },
+          "hip_pelvic_stability": {
+            "type": "angle",
+            "unit": "degrees",
+            "description": "Pelvic rotation during trunk movement"
+          }
+        },
+        "secondary": {
+          "rib_cage_expansion_differential": {
+            "type": "distance",
+            "unit": "cm",
+            "description": "Side-to-side rib cage mobility"
+          },
+          "lumbar_compensation_rotation": {
+            "type": "angle",
+            "unit": "degrees",
+            "description": "Unwanted lumbar contribution"
+          }
+        }
+      },
+      "scoring_rules": [
+        {
+          "rule_id": "LL003_R1",
+          "metric": "thoracic_rotation_rom",
+          "phase": "rotation",
+          "weight": 0.35,
+          "thresholds": {
+            "excellent": { "min": 80, "max": 100 },
+            "good": { "min": 65, "max": 79 },
+            "fair": { "min": 50, "max": 64 },
+            "poor": { "min": 0, "max": 49 }
+          },
+          "scoring": { "excellent": 100, "good": 80, "fair": 60, "poor": 30 }
+        },
+        {
+          "rule_id": "LL003_R2",
+          "metric": "rotation_symmetry",
+          "phase": "rotation",
+          "weight": 0.35,
+          "thresholds": {
+            "excellent": { "min": 95, "max": 100 },
+            "good": { "min": 85, "max": 94 },
+            "fair": { "min": 75, "max": 84 },
+            "poor": { "min": 0, "max": 74 }
+          },
+          "scoring": { "excellent": 100, "good": 80, "fair": 60, "poor": 30 }
+        },
+        {
+          "rule_id": "LL003_R3",
+          "metric": "hip_pelvic_stability",
+          "phase": "rotation",
+          "weight": 0.3,
+          "thresholds": {
+            "excellent": { "min": 0, "max": 5 },
+            "good": { "min": 5.1, "max": 10 },
+            "fair": { "min": 10.1, "max": 15 },
+            "poor": { "min": 15.1, "max": 90 }
+          },
+          "scoring": { "excellent": 100, "good": 75, "fair": 50, "poor": 25 }
+        }
+      ],
+      "compensation_patterns": [
+        {
+          "pattern": "lumbar_rotation_dominance",
+          "detection": "lumbar_compensation_rotation > 15 AND thoracic_rotation < 60",
+          "root_cause": "Thoracic stiffness forcing rotation to lumbar spine",
+          "kinetic_chain_impact": "Shear forces at L3-L4, rotational energy leak at thoracolumbar junction",
+          "recommendation": "Seated thoracic rotation drills, rib cage mobilization with breathing"
+        }
+      ],
+      "rehabilitation_plans": {
+        "2_week": [
+          "Seated thoracic rotations: 3x10 each side",
+          "Rib cage breathing expansion: 5 minutes daily",
+          "Hip stability holds during rotation"
+        ],
+        "4_week": [
+          "Standing rotational reaches with resistance",
+          "Integration of core anti-rotation strength",
+          "Dynamic trunk control exercises"
+        ],
+        "8_week": [
+          "Full rotational power development",
+          "Sport-specific throwing/striking rotation",
+          "Advanced proprioceptive rotation drills"
+        ]
+      }
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import React from 'react';
-import { DEFAULT_STANDING_HOLOGRAM_PANEL } from '../constants/guideAssets';
+import { POSTURE_ERGONOMICS_HOLOGRAM_PANEL } from '../constants/guideAssets';
 import SecurityLockOverlay from './SecurityLockOverlay';
 import TelemetryPipelineUplink from './TelemetryPipelineUplink';
+import TitleWithCyberSphere from './TitleWithCyberSphere';
 
 const POSTURE_ERGONOMICS_CARDS = [
   {
@@ -142,16 +143,18 @@ export default function PostureErgonomicsTerminal({
             <p className="text-sm font-bold tracking-widest text-emerald-400 uppercase mb-1">
               // POSTURE & ERGONOMICS // CLINICAL EVALUATION SUB-TERMINAL
             </p>
-            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
-              Corporate Desk Compression Defense Suite
-            </h2>
+            <TitleWithCyberSphere size="md">
+              <h2 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
+                Corporate Desk Compression Defense Suite
+              </h2>
+            </TitleWithCyberSphere>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start max-w-7xl mx-auto pt-6 font-mono">
             <div className="lg:col-span-4 flex justify-center sticky top-6">
               <div className="w-full bg-slate-950/40 border border-slate-900 rounded-xl p-3 flex items-center justify-center">
                 <img
-                  src={DEFAULT_STANDING_HOLOGRAM_PANEL || 'https://i.imgur.com/TL3ptqN.png'}
+                  src={POSTURE_ERGONOMICS_HOLOGRAM_PANEL}
                   alt="Standing holographic telemetry anchor"
                   className="w-full h-auto object-contain rounded-xl max-h-[750px] opacity-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.12)]"
                 />
@@ -181,9 +184,11 @@ export default function PostureErgonomicsTerminal({
                         <p className="text-[10px] font-bold tracking-wider text-emerald-400 uppercase">
                           {card.tag}
                         </p>
-                        <h3 className="text-lg font-black text-white tracking-wider uppercase leading-snug">
-                          {card.title}
-                        </h3>
+                        <TitleWithCyberSphere size="xs">
+                          <h3 className="text-lg font-black text-white tracking-wider uppercase leading-snug">
+                            {card.title}
+                          </h3>
+                        </TitleWithCyberSphere>
                       </div>
 
                       {card.blocks.map((block) => {

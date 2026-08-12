@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>LL Aikynetix Interceptor</title>
+    <style>
+      body {
+        font-family: ui-monospace, monospace;
+        width: 320px;
+        margin: 0;
+        padding: 14px;
+        background: #030712;
+        color: #e2e8f0;
+      }
+      h1 {
+        font-size: 12px;
+        color: #00ffff;
+        margin: 0 0 8px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      p {
+        font-size: 11px;
+        color: #94a3b8;
+        line-height: 1.5;
+        margin: 0 0 10px;
+      }
+      .status {
+        border: 1px solid #1e293b;
+        background: #0f172a;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 10px;
+      }
+      .ok {
+        color: #34d399;
+      }
+      .warn {
+        color: #fbbf24;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>// Aikynetix Interceptor</h1>
+    <p>
+      Arm a session from the Life Longevity Assessment Pipeline, then run an analysis inside
+      the Aikynetix web app. JSON responses are captured automatically.
+    </p>
+    <div id="session" class="status">Loading session...</div>
+    <script src="popup.js"></script>
+  </body>
+</html>

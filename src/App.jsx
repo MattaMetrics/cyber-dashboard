@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import IntroScreen from './IntroScreen';
 import CenterSphere from './components/CenterSphere';
@@ -13,10 +13,28 @@ import IntakeTerminal from './components/IntakeTerminal';
 import IntakeCalibrationLoader from './components/IntakeCalibrationLoader';
 import MoreInfoHub from './components/MoreInfoHub';
 import InfoHubView from './components/InfoHubView';
-import SystemMethodologyKinetics from './components/SystemMethodologyKinetics';
-import BiomechanicalReportPDF from './components/BiomechanicalReportPDF';
+import ViewSystemMethodologyKinetics from './components/ViewSystemMethodologyKinetics';
+import ClientReportView from './components/ClientReportView';
+import {
+  buildLongevityReportFromClient,
+  applyPipelineResultsToClient,
+  serializeLongevityReport,
+  createClientDossierFromTemplate,
+  mergeDossierFieldsForSave,
+  normalizeClientDossier,
+} from './utils/longevityReportData';
+import BlueprintAssessments from './BlueprintAssessments';
+import {
+  attachPersistedVideoToClient,
+  attachCloudVideoToClient,
+  purgeClientVideo,
+  downloadMovementVideo,
+  clientHasMovementVideo,
+} from './utils/clientVideoService';
 import MasterAssessmentDirectory from './components/MasterAssessmentDirectory';
 import UnifiedAssessmentLayout from './components/UnifiedAssessmentLayout';
+import AssessmentPipeline from './components/AssessmentPipeline';
+import YOLOLivePipeline from './components/YOLOLivePipeline';
 import PromoInterceptModal from './components/PromoInterceptModal';
 import { ANALYSIS_VIEWS } from './constants/analysisViews';
 import { DEFAULT_GUIDE_ASSETS, mergeGuideAssets } from './constants/guideAssets';
@@ -67,8 +85,13 @@ const resolveInitialViewState = () => {
       /* storage may be blocked */
     }
 
-    // Dashboard route — only restore when Master Coach session is still active
+    // Coach dashboard — restore when Master Coach session is active
     if (cached === 'coach_menu') {
+      return coachSession ? 'coach_menu' : 'landing';
+    }
+
+    // Never cold-open the intercept pipeline on reload — return to coach dashboard
+    if (cached === 'assessment_pipeline') {
       return coachSession ? 'coach_menu' : 'landing';
     }
 
@@ -105,6 +128,8 @@ const PROTECTED_SESSION_VIEWS = new Set([
   'info_hub',
   'system_methodology_kinetics',
   'report_pdf_generator',
+  'assessment_pipeline',
+  'yolo_live_pipeline',
   'master_assessment_directory',
   'mobility',
   'posture_ergonomics',
@@ -357,6 +382,14 @@ const ENGINEER_AI_PROFILE = {
 const CLIENT_DATABASE = {
   '111111': {
     name: 'Alex Rivera',
+    clientAge: 62,
+    clientGender: 'Male',
+    clientHeight: '5ft 10in',
+    clientWeight: '185 lbs',
+    coach_plan_text: '',
+    trainingLogPhase1: '',
+    trainingLogPhase2: '',
+    somaticHealthTips: '',
     birthdate: '04/12/1992',
     email: 'alex.rivera@kineticmail.com',
     phone: '(555) 234-5678',
@@ -563,38 +596,7 @@ export default function App() {
   }, [localDatabase]);
 
   // Rehydrate client dossier after refresh when a protected profile session is cached
-  useEffect(() => {
-    if (viewState !== 'client_profile' || activeClientProfile) return;
-    try {
-      const code = localStorage.getItem(LAB_LS_ACCESS_CODE) || '';
-      const client = code ? localDatabase[code] : null;
-      if (!client) {
-        const cached = readCachedLabView();
-        if (cached && PROTECTED_SESSION_VIEWS.has(cached) && cached !== 'client_profile') {
-          setViewState(cached);
-          return;
-        }
-        setViewState('landing');
-        return;
-      }
-      setAccessCode(code);
-      setActiveClientProfile(client);
-      setEditNotes(client.notes);
-      setEditDesc(client.desc);
-      setEditMetrics({ ...client.metrics });
-      setEditBirthdate(client.birthdate);
-      setEditEmail(client.email);
-      setEditPhone(client.phone);
-      setEditTier(client.matrixTier || 'Vector Tier');
-      setEditJoinedDate(client.joinedDate || '');
-      setEditReportUrl(client.reportUrl || '');
-      setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
-      setSelectedAnalysis('Client Telemetry Portfolio');
-    } catch {
-      setViewState('landing');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // (registered after syncEditFieldsFromClient — see below)
 
   /** Pulse terminal feedback in the right sidebar, then execute the route after delay. */
   const schedulePasscodeRoute = (alertMessage, routeFn, delayMs = 2500) => {
@@ -620,6 +622,65 @@ export default function App() {
   const [editJoinedDate, setEditJoinedDate] = useState('');
   const [editReportUrl, setEditReportUrl] = useState('');
   const [editAssessmentPhoto, setEditAssessmentPhoto] = useState('');
+  const [editReportNarrativeLayout, setEditReportNarrativeLayout] = useState('separate');
+  const [editPhase1Program, setEditPhase1Program] = useState('');
+  const [editPhase2Program, setEditPhase2Program] = useState('');
+  const [editSomaticTips, setEditSomaticTips] = useState('');
+  const [editClientAge, setEditClientAge] = useState('');
+  const [editClientGender, setEditClientGender] = useState('');
+  const [editClientHeight, setEditClientHeight] = useState('');
+  const [editClientWeight, setEditClientWeight] = useState('');
+  const [editCoachPlanText, setEditCoachPlanText] = useState('');
+
+  const syncEditFieldsFromClient = useCallback((client, code = accessCode) => {
+    if (!client) return;
+    const normalized = normalizeClientDossier(client, code);
+    setEditNotes(client.notes || '');
+    setEditDesc(client.desc || '');
+    setEditMetrics({ ...(client.metrics || {}) });
+    setEditBirthdate(client.birthdate || '');
+    setEditEmail(client.email || '');
+    setEditPhone(client.phone || '');
+    setEditTier(client.matrixTier || 'Vector Tier');
+    setEditJoinedDate(client.joinedDate || '');
+    setEditReportUrl(client.reportUrl || '');
+    setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
+    setEditReportNarrativeLayout(client.longevityReport?.narrativeLayout || 'separate');
+    setEditClientAge(
+      normalized.clientAge === '' || normalized.clientAge == null ? '' : String(normalized.clientAge)
+    );
+    setEditClientGender(normalized.clientGender || '');
+    setEditClientHeight(normalized.clientHeight || '');
+    setEditClientWeight(normalized.clientWeight || '');
+    setEditCoachPlanText(normalized.coach_plan_text || '');
+    setEditPhase1Program(normalized.trainingLogPhase1 || '');
+    setEditPhase2Program(normalized.trainingLogPhase2 || '');
+    setEditSomaticTips(normalized.somaticHealthTips || '');
+  }, [accessCode]);
+
+  useEffect(() => {
+    if (viewState !== 'client_profile' || activeClientProfile) return;
+    try {
+      const code = localStorage.getItem(LAB_LS_ACCESS_CODE) || '';
+      const client = code ? localDatabase[code] : null;
+      if (!client) {
+        const cached = readCachedLabView();
+        if (cached && PROTECTED_SESSION_VIEWS.has(cached) && cached !== 'client_profile') {
+          setViewState(cached);
+          return;
+        }
+        setViewState('landing');
+        return;
+      }
+      setAccessCode(code);
+      setActiveClientProfile(client);
+      syncEditFieldsFromClient(client);
+      setSelectedAnalysis('Client Telemetry Portfolio');
+    } catch {
+      setViewState('landing');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Full Screen Focus Window Tracker States
   const [activeFocusField, setActiveFocusField] = useState(null);
@@ -720,17 +781,7 @@ export default function App() {
         setIsTokenValidated(true);
         setVirtualAccessUnlocked(true);
         setActiveClientProfile(client);
-        setEditNotes(client.notes);
-        setEditDesc(client.desc);
-        setEditMetrics({ ...client.metrics });
-
-        setEditBirthdate(client.birthdate);
-        setEditEmail(client.email);
-        setEditPhone(client.phone);
-        setEditTier(client.matrixTier || 'Vector Tier');
-        setEditJoinedDate(client.joinedDate || '');
-        setEditReportUrl(client.reportUrl || '');
-        setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
+        syncEditFieldsFromClient(client);
 
         setSelectedAnalysis('Client Telemetry Portfolio');
         setTerminalAlert('');
@@ -758,16 +809,7 @@ export default function App() {
     setIsTokenValidated(true);
     setVirtualAccessUnlocked(true);
     setActiveClientProfile(client);
-    setEditNotes(client.notes);
-    setEditDesc(client.desc);
-    setEditMetrics({ ...client.metrics });
-    setEditBirthdate(client.birthdate);
-    setEditEmail(client.email);
-    setEditPhone(client.phone);
-    setEditTier(client.matrixTier || 'Vector Tier');
-    setEditJoinedDate(client.joinedDate || '');
-    setEditReportUrl(client.reportUrl || '');
-    setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
+    syncEditFieldsFromClient(client);
     setSelectedAnalysis('Client Telemetry Portfolio');
     setViewState('client_profile');
   };
@@ -778,19 +820,22 @@ export default function App() {
     setIsCoachMode(true);
     setAccessCode(code);
     setActiveClientProfile(client);
-    setEditNotes(client.notes);
-    setEditDesc(client.desc);
-    setEditMetrics({ ...client.metrics });
-
-    setEditBirthdate(client.birthdate);
-    setEditEmail(client.email);
-    setEditPhone(client.phone);
-    setEditTier(client.matrixTier || 'Vector Tier');
-    setEditJoinedDate(client.joinedDate || '');
-    setEditReportUrl(client.reportUrl || '');
-    setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
+    syncEditFieldsFromClient(client, code);
 
     setViewState('client_profile');
+  };
+
+  /** Open CleanLongevityReport for a dossier — coach roster or client self-service */
+  const handleOpenClientReport = (code) => {
+    const resolvedCode = String(code || accessCode || '').trim();
+    const client = localDatabase[resolvedCode];
+    if (!client) {
+      alert('REPORT UPLINK FAILED // NO DOSSIER MATCH FOR ACCESS CODE');
+      return;
+    }
+    setAccessCode(resolvedCode);
+    setActiveClientProfile(client);
+    setViewState('report_pdf_generator');
   };
 
   const handleOpenCoachMenu = () => {
@@ -845,16 +890,8 @@ export default function App() {
         setAccessCode(pin || '888888');
         setIsCoachMode(false);
         setActiveClientProfile(client);
-        setEditNotes(client.notes);
-        setEditDesc(client.desc);
-        setEditMetrics({ ...client.metrics });
-        setEditBirthdate(client.birthdate);
-        setEditEmail(client.email);
-        setEditPhone(client.phone);
-        setEditTier(client.matrixTier || 'INFINITE APEX MATRIX ENGINE');
-        setEditJoinedDate(client.joinedDate || '');
-        setEditReportUrl(client.reportUrl || '');
-        setEditAssessmentPhoto(client.biometricPhotoUrl || client.assessmentPhoto || '');
+        syncEditFieldsFromClient(client);
+        setEditTier('INFINITE APEX MATRIX ENGINE');
         setSelectedAnalysis('Master Engineer AI Client Card');
         setViewState('client_profile');
         return;
@@ -869,7 +906,8 @@ export default function App() {
 
   useEffect(() => () => clearBreachTimeouts(), []);
 
-  const handleDeleteClientFromRoster = (code) => {
+  const handleDeleteClientFromRoster = async (code) => {
+    await purgeClientVideo(code);
     setLocalDatabase((prev) => {
       const updated = { ...prev };
       delete updated[code];
@@ -890,16 +928,17 @@ export default function App() {
       return;
     }
 
-    const brandNewProfile = {
-      name: newClientName,
+    const brandNewProfile = createClientDossierFromTemplate({
+      clientName: newClientName,
+      accessCode: newClientCode,
       birthdate: 'PENDING ENTRY',
       email: 'pending@kineticmail.com',
       phone: '(555) 000-0000',
       avatar: '/client1.png',
       archetype: newClientArchetype,
-      joinedDate: 'NEW_07_2026', // Formats automatically to the current session sequence
+      joinedDate: 'NEW_07_2026',
       matrixTier:
-        newClientArchetype === 'Acrobatics & Hand Balance' ? 'Tensegrity Tier' : 'Vector Tier', // Assigns tier based on style hook
+        newClientArchetype === 'Acrobatics & Hand Balance' ? 'Tensegrity Tier' : 'Vector Tier',
       streamStatus: 'AWAITING SCAN',
       waiverSigned: new Date().toISOString().slice(0, 19).replace('T', ' '),
       reportUrl: 'https://dropbox.com',
@@ -909,7 +948,7 @@ export default function App() {
       notes:
         'Baseline movement capture scheduled for this week. Focus testing on left/right kinetic shifts.',
       metrics: { squat: '00/100', land: '00/100', cmj: '00/100', agility: '00/100' },
-    };
+    });
 
     setLocalDatabase((prev) => ({
       ...prev,
@@ -947,6 +986,15 @@ export default function App() {
       ...activeClientProfile,
       assessmentPhoto: nextPhoto,
       biometricPhotoUrl: nextPhoto,
+      longevityReport: serializeLongevityReport({
+        ...(localDatabase[clientKey]?.longevityReport ||
+          activeClientProfile?.longevityReport ||
+          {}),
+        profilePhotoUrl: nextPhoto,
+        archetypeVector: activeClientProfile?.desc || editDesc,
+        caseLog: activeClientProfile?.notes || editNotes,
+        narrativeLayout: editReportNarrativeLayout || 'separate',
+      }),
     };
 
     setLocalDatabase((prev) => ({
@@ -966,20 +1014,52 @@ export default function App() {
     const nextPhoto =
       normalizedPhoto || (String(editAssessmentPhoto || '').trim() ? String(editAssessmentPhoto).trim() : '');
 
-    const updatedProfile = {
-      ...activeClientProfile,
-      desc: editDesc,
-      notes: editNotes,
-      birthdate: editBirthdate,
-      email: editEmail,
-      phone: editPhone,
-      matrixTier: editTier,
-      joinedDate: editJoinedDate,
-      reportUrl: editReportUrl,
-      assessmentPhoto: nextPhoto,
-      biometricPhotoUrl: nextPhoto,
-      metrics: { ...editMetrics },
-    };
+    const updatedProfile = mergeDossierFieldsForSave(
+      {
+        ...activeClientProfile,
+        desc: editDesc,
+        notes: editNotes,
+        birthdate: editBirthdate,
+        email: editEmail,
+        phone: editPhone,
+        matrixTier: editTier,
+        joinedDate: editJoinedDate,
+        reportUrl: editReportUrl,
+        assessmentPhoto: nextPhoto,
+        biometricPhotoUrl: nextPhoto,
+        metrics: { ...editMetrics },
+        clientAge: editClientAge === '' ? '' : Number(editClientAge) || editClientAge,
+        clientGender: editClientGender,
+        clientHeight: editClientHeight,
+        clientWeight: editClientWeight,
+        coach_plan_text: editCoachPlanText,
+        trainingLogPhase1: editPhase1Program,
+        trainingLogPhase2: editPhase2Program,
+        somaticHealthTips: editSomaticTips,
+        longevityReport: serializeLongevityReport({
+          ...(activeClientProfile?.longevityReport || localDatabase[accessCode]?.longevityReport || {}),
+          profilePhotoUrl: nextPhoto,
+          archetypeVector: editDesc,
+          caseLog: editNotes,
+          trainingLogPhase1: editPhase1Program,
+          trainingLogPhase2: editPhase2Program,
+          somaticHealthTips: editSomaticTips,
+          narrativeLayout: editReportNarrativeLayout || 'separate',
+          trainingProfile: editTier || activeClientProfile?.archetype,
+          lastUpdated: new Date().toISOString(),
+        }),
+      },
+      {
+        clientAge: editClientAge === '' ? '' : Number(editClientAge) || editClientAge,
+        clientGender: editClientGender,
+        clientHeight: editClientHeight,
+        clientWeight: editClientWeight,
+        coach_plan_text: editCoachPlanText,
+        trainingLogPhase1: editPhase1Program,
+        trainingLogPhase2: editPhase2Program,
+        somaticHealthTips: editSomaticTips,
+      }
+    );
 
     setEditAssessmentPhoto(nextPhoto);
     setLocalDatabase((prev) => ({
@@ -994,8 +1074,94 @@ export default function App() {
     saveClientRecord(accessCode, updatedProfile);
   };
 
+  /** Auto-attach Aikynetix pipeline results to the client longevity report */
+  const handlePipelineAssessmentComplete = async (results) => {
+    const clientId = String(results?.client_id || accessCode || '').trim();
+    if (!clientId || !localDatabase[clientId]) {
+      alert(
+        '⚡ PIPELINE COMPLETE // NO MATCHING DOSSIER FOR CLIENT ID. Enter a valid 6-digit access code before arming intercept.'
+      );
+      return;
+    }
+
+    const client = localDatabase[clientId];
+    let updatedProfile = applyPipelineResultsToClient(client, clientId, results);
+    updatedProfile = await attachPersistedVideoToClient(updatedProfile, clientId, results);
+
+    setLocalDatabase((prev) => ({
+      ...prev,
+      [clientId]: updatedProfile,
+    }));
+    saveClientRecord(clientId, updatedProfile);
+
+    if (accessCode === clientId) {
+      setActiveClientProfile(updatedProfile);
+      setEditMetrics({ ...updatedProfile.metrics });
+      setEditReportNarrativeLayout(
+        updatedProfile.longevityReport?.narrativeLayout || 'separate'
+      );
+      setEditReportUrl(updatedProfile.reportUrl || '');
+    }
+  };
+
+  /** Coach manual save from CleanLongevityReport editor */
+  const handleSaveLongevityReport = (reportDraft) => {
+    if (!accessCode || !localDatabase[accessCode]) return;
+
+    const normalizedPhoto = normalizeBiometricPhotoUrl(
+      reportDraft.profilePhotoUrl || editAssessmentPhoto || ''
+    );
+    const nextPhoto =
+      normalizedPhoto ||
+      (String(reportDraft.profilePhotoUrl || '').trim()
+        ? String(reportDraft.profilePhotoUrl).trim()
+        : '');
+
+    const updatedProfile = {
+      ...localDatabase[accessCode],
+      desc: reportDraft.archetypeVector ?? editDesc,
+      notes: reportDraft.caseLog ?? editNotes,
+      assessmentPhoto: nextPhoto,
+      biometricPhotoUrl: nextPhoto,
+      longevityReport: serializeLongevityReport({
+        ...(localDatabase[accessCode].longevityReport || {}),
+        ...reportDraft,
+        profilePhotoUrl: nextPhoto,
+        modelDataPhases: reportDraft.modelDataPhases,
+        videoUrl: reportDraft.videoUrl,
+        totalFrames: reportDraft.totalFrames,
+        mainTitle: reportDraft.mainTitle,
+        testConfigKey: reportDraft.testConfigKey,
+        aikynetixSourceUrl: reportDraft.aikynetixSourceUrl,
+        pipelineSnapshot: reportDraft.pipelineSnapshot,
+        videoStorageKey: reportDraft.videoStorageKey,
+        hasLocalVideo: reportDraft.hasLocalVideo,
+        diagnostics: reportDraft.diagnostics,
+        trainingProfile: reportDraft.trainingProfile,
+        verificationBars: reportDraft.verificationBars,
+        coreMetrics: reportDraft.coreMetrics,
+        lastUpdated: new Date().toISOString(),
+        source: 'manual',
+      }),
+    };
+
+    setEditDesc(updatedProfile.desc);
+    setEditNotes(updatedProfile.notes);
+    setEditAssessmentPhoto(nextPhoto);
+    setEditReportNarrativeLayout(
+      reportDraft.narrativeLayout || updatedProfile.longevityReport?.narrativeLayout || 'separate'
+    );
+    setLocalDatabase((prev) => ({
+      ...prev,
+      [accessCode]: updatedProfile,
+    }));
+    setActiveClientProfile(updatedProfile);
+    saveAthletePhotoVector(accessCode, nextPhoto);
+    saveClientRecord(accessCode, updatedProfile);
+  };
+
   // Client cloud uplink: stage Drive/Dropbox video link onto the active dossier entry
-  const handleTransmitCloudVideo = (rawUrl) => {
+  const handleTransmitCloudVideo = async (rawUrl) => {
     if (!accessCode || !localDatabase[accessCode]) return;
     const nextUrl = String(rawUrl || '').trim();
     if (!nextUrl) {
@@ -1003,19 +1169,30 @@ export default function App() {
       return;
     }
 
-    const updatedProfile = {
+    const baseProfile = {
       ...activeClientProfile,
       ...localDatabase[accessCode],
-      reportUrl: nextUrl,
     };
+    const updatedProfile = await attachCloudVideoToClient(baseProfile, accessCode, nextUrl);
 
     setLocalDatabase((prev) => ({
       ...prev,
       [accessCode]: updatedProfile,
     }));
     setActiveClientProfile(updatedProfile);
-    setEditReportUrl(nextUrl);
-    alert('✓ RAW VIDEO VECTORS TRANSMITTED // CLOUD TELEMETRY STAGED FOR COACH REVIEW');
+    setEditReportUrl(updatedProfile.reportUrl || nextUrl);
+    saveClientRecord(accessCode, updatedProfile);
+    alert('✓ RAW VIDEO VECTORS TRANSMITTED // MOVEMENT REEL STAGED FOR REPORT + DOWNLOAD');
+  };
+
+  const handleDownloadMovementVideo = async (code) => {
+    const clientCode = String(code || accessCode || '').trim();
+    const client = localDatabase[clientCode];
+    if (!client || !clientHasMovementVideo(client)) {
+      alert('⚡ NO MOVEMENT VIDEO ON FILE // COMPLETE ASSESSMENT OR UPLINK CLOUD REEL FIRST');
+      return;
+    }
+    await downloadMovementVideo(clientCode, client);
   };
 
   // Keep legacy analysis loading path; client pin login lands on profile after sync
@@ -1146,6 +1323,22 @@ export default function App() {
     if (viewState === 'client_profile' && isCoachMode) {
       setViewState('coach_menu');
       setIsEditMode(false);
+      return;
+    }
+
+    if (
+      (viewState === 'assessment_pipeline' ||
+        viewState === 'yolo_live_pipeline' ||
+        viewState === 'blueprint_assessments' ||
+        viewState === 'report_pdf_generator') &&
+      isCoachMode
+    ) {
+      setViewState('coach_menu');
+      return;
+    }
+
+    if (viewState === 'report_pdf_generator' && !isCoachMode) {
+      setViewState('client_profile');
       return;
     }
 
@@ -1432,13 +1625,15 @@ export default function App() {
   };
 
   // NEW: Secure Dossier Removal Handler
-  const handleDeleteClientRecord = () => {
+  const handleDeleteClientRecord = async () => {
     if (!accessCode || !localDatabase[accessCode]) return;
 
     const confirmation = window.confirm(
       `CRITICAL WARNING // PERMANENTLY PURGE ALL BIOMETRIC FILES FOR: ${activeClientProfile.name}?\n\nTHIS OPERATION IS IRREVERSIBLE.`
     );
     if (!confirmation) return;
+
+    await purgeClientVideo(accessCode);
 
     setLocalDatabase((prev) => {
       const updated = { ...prev };
@@ -1540,7 +1735,8 @@ export default function App() {
       viewState !== 'athlete_precision' &&
       viewState !== 'kinetic_power' &&
       viewState !== 'client_profile' &&
-      viewState !== 'coach_menu'
+      viewState !== 'coach_menu' &&
+      viewState !== 'report_pdf_generator'
     )
       return;
     const onKeyDown = (e) => {
@@ -1624,6 +1820,7 @@ export default function App() {
     }
     if (
       targetScreen === 'COACH_DASHBOARD_HOME' ||
+      targetScreen === 'coach_menu' ||
       targetScreen === 'HOME' ||
       targetScreen === 'ESC'
     ) {
@@ -1667,6 +1864,46 @@ export default function App() {
     // 🟢 BIOMECHANICAL PDF REPORT GENERATOR VIEW
     if (targetScreen === 'REPORT_PDF_GENERATOR_VIEW') {
       setViewState('report_pdf_generator');
+      return;
+    }
+    if (targetScreen === 'CLIENT_LONGEVITY_REPORT_VIEW') {
+      handleOpenClientReport(accessCode);
+      return;
+    }
+    if (targetScreen === 'CLIENT_PROFILE_HOME') {
+      setViewState('client_profile');
+      return;
+    }
+    // 🟢 COACH VIDEO ASSESSMENT PIPELINE (Aikynetix → AI interpreter)
+    if (
+      targetScreen === 'ASSESSMENT_PIPELINE_VIEW' ||
+      targetScreen === 'VIEW_ASSESSMENT_PIPELINE'
+    ) {
+      if (!isCoachMode && !readMasterCoachSession()) {
+        setViewState('landing');
+        return;
+      }
+      setViewState('assessment_pipeline');
+      return;
+    }
+    // 🟢 YOLO LIVE BIOMECHANICS STREAM (WebSocket + local pose engine)
+    if (targetScreen === 'YOLO_LIVE_PIPELINE_VIEW') {
+      if (!isCoachMode && !readMasterCoachSession()) {
+        setViewState('landing');
+        return;
+      }
+      setViewState('yolo_live_pipeline');
+      return;
+    }
+    if (
+      targetScreen === 'BLUEPRINT_ASSESSMENTS_VIEW' ||
+      targetScreen === 'LONGEVITY_BLUEPRINT_ASSESSMENTS'
+    ) {
+      if (!isCoachMode && !readMasterCoachSession()) {
+        setViewState('landing');
+        return;
+      }
+      setViewState('blueprint_assessments');
       return;
     }
   };
@@ -1851,29 +2088,122 @@ export default function App() {
     );
   }
 
-  // 🟢 METHODOLOGY DISCLOSURE SHEET RESTORATION CASE
+  // View System Methodology & Kinetic Research (home sidebar)
   if (viewState === 'system_methodology_kinetics') {
     return (
-      <div className="min-h-screen bg-[#030712] font-mono text-white">
-        {renderSystemHeader('VIEW_SYSTEM_METHODOLOGY_KINETICS')}
-        <SystemMethodologyKinetics setCurrentScreen={handleTerminalNavigate} />
+      <ViewSystemMethodologyKinetics onNavigate={handleTerminalNavigate} />
+    );
+  }
+
+  // 🟢 COACH ASSESSMENT PIPELINE — video upload → FastAPI → AI report
+  if (viewState === 'assessment_pipeline') {
+    if (!isCoachMode && !readMasterCoachSession()) {
+      return (
+        <div className="min-h-screen bg-[#030712] font-mono text-white flex items-center justify-center p-8">
+          <p className="text-slate-500 text-xs uppercase tracking-widest">
+            [ ACCESS DENIED // COACH CREDENTIALS REQUIRED ]
+          </p>
+        </div>
+      );
+    }
+
+    const pipelineClientId =
+      accessCode ||
+      activeClientProfile?.accessCode ||
+      activeClientProfile?.code ||
+      '';
+    const pipelineBirthdate =
+      activeClientProfile?.birthdate ||
+      (accessCode && localDatabase[accessCode]?.birthdate) ||
+      '';
+    let pipelineClientAge = 35;
+    if (pipelineBirthdate) {
+      const parts = String(pipelineBirthdate).split('/');
+      if (parts.length === 3) {
+        const birthYear = parseInt(parts[2], 10);
+        if (birthYear > 1900) {
+          pipelineClientAge = new Date().getFullYear() - birthYear;
+        }
+      }
+    }
+
+    return (
+      <div className="min-h-screen bg-[#030712] font-mono text-white overflow-y-auto">
+        {renderSystemHeader('ASSESSMENT_PIPELINE_TERMINAL')}
+        <AssessmentPipeline
+          defaultClientId={pipelineClientId}
+          clientAge={pipelineClientAge}
+          onComplete={handlePipelineAssessmentComplete}
+        />
       </div>
     );
   }
 
-  // 🟢 BIOMECHANICAL PDF REPORT GENERATOR VIEW
+  if (viewState === 'yolo_live_pipeline') {
+    return (
+      <YOLOLivePipeline
+        onNavigate={handleTerminalNavigate}
+        accessCode={accessCode}
+        localDatabase={localDatabase}
+        setLocalDatabase={setLocalDatabase}
+        saveClientRecord={saveClientRecord}
+        applyPipelineResultsToClient={applyPipelineResultsToClient}
+      />
+    );
+  }
+
+  if (viewState === 'blueprint_assessments') {
+    return (
+      <div className="h-screen bg-[#030712] font-mono text-white overflow-hidden flex flex-col">
+        {renderSystemHeader('LONGEVITY_BLUEPRINT_ASSESSMENT_SUITE')}
+        <div className="flex-1 min-h-0 flex flex-col p-3 md:p-4 overflow-hidden">
+          <div className="mb-2 flex items-center justify-between max-w-[1600px] mx-auto w-full shrink-0">
+            <button
+              type="button"
+              onClick={() => handleTerminalNavigate('COACH_DASHBOARD_HOME')}
+              className="text-[10px] uppercase tracking-widest text-slate-500 hover:text-cyan-400 border border-slate-800 hover:border-cyan-500/40 px-3 py-2 rounded-lg transition-colors"
+            >
+              ← Back to Coach Terminal
+            </button>
+            {accessCode ? (
+              <span className="text-[10px] text-cyan-500/80 uppercase tracking-widest">
+                Active dossier // #{accessCode}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden max-w-[1600px] mx-auto w-full">
+            <BlueprintAssessments
+              accessCode={accessCode}
+              onClientCodeChange={(code) => {
+                setAccessCode(code);
+                if (code && localDatabase[code]) {
+                  setActiveClientProfile(localDatabase[code]);
+                  syncEditFieldsFromClient(localDatabase[code], code);
+                }
+              }}
+              localDatabase={localDatabase}
+              setLocalDatabase={setLocalDatabase}
+              onNavigate={handleTerminalNavigate}
+              onOpenClientReport={handleOpenClientReport}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (viewState === 'report_pdf_generator') {
-    const reportAthleteName =
-      activeClientProfile?.name ||
-      (accessCode && localDatabase[accessCode]?.name) ||
-      'Alex Rivera';
-    const reportAthleteCode = accessCode || '111111';
+    const reportCode = accessCode || '111111';
+    const reportClient =
+      activeClientProfile || localDatabase[reportCode] || null;
 
     return (
-      <div className="min-h-screen bg-[#030712] font-mono text-white overflow-y-auto">
-        <BiomechanicalReportPDF
-          clientName={reportAthleteName}
-          clientCode={reportAthleteCode}
+      <div className="h-screen w-screen overflow-hidden print:h-auto print:min-h-screen print:overflow-visible print:bg-white">
+        <ClientReportView
+          reportClient={reportClient}
+          reportCode={reportCode}
+          isCoachMode={isCoachMode}
+          onSaveReport={handleSaveLongevityReport}
           onNavigate={handleTerminalNavigate}
         />
       </div>
@@ -1982,6 +2312,24 @@ export default function App() {
     setEditJoinedDate,
     editReportUrl,
     setEditReportUrl,
+    editReportNarrativeLayout,
+    setEditReportNarrativeLayout,
+    editPhase1Program,
+    setEditPhase1Program,
+    editPhase2Program,
+    setEditPhase2Program,
+    editSomaticTips,
+    setEditSomaticTips,
+    editClientAge,
+    setEditClientAge,
+    editClientGender,
+    setEditClientGender,
+    editClientHeight,
+    setEditClientHeight,
+    editClientWeight,
+    setEditClientWeight,
+    editCoachPlanText,
+    setEditCoachPlanText,
     editAssessmentPhoto,
     setEditAssessmentPhoto,
     handleAssessmentPhotoUrlChange,
@@ -1989,6 +2337,7 @@ export default function App() {
     setActiveFocusField,
     handleSaveProfileChanges,
     handleTransmitCloudVideo,
+    handleDownloadMovementVideo,
     handleChangeClientCode,
     handleDeleteClientRecord,
     localDatabase,
@@ -2011,6 +2360,8 @@ export default function App() {
     setGuideAssets,
     onNavigate: handleTerminalNavigate,
     setCurrentScreen: handleTerminalNavigate,
+    onOpenClientReport: handleOpenClientReport,
+    setActiveClientProfile,
   };
 
   // 2. Home portal shell: sphere + grid with landing chrome or stacked coach/client panels

@@ -1,0 +1,90 @@
+{
+  "assessment_id": "LL_YOLO_20260807_120101",
+  "test_id": "LL001",
+  "client_id": "YOLO_CLIENT",
+  "header": {
+    "test_name": "YOLO Local Biomechanics Scan",
+    "overall_score": 44.5,
+    "grade": "F",
+    "performance_level": "Needs Improvement"
+  },
+  "scores": {
+    "technique_score": 9.2,
+    "balance_score": 91.9,
+    "symmetry_score": 32.4,
+    "flexibility_score": 58.9,
+    "mobility_score": 34.1
+  },
+  "enhanced_metrics": {
+    "energy_analysis": {
+      "energy_leaks": [
+        {
+          "message": "Knee misalignment detected (left side)",
+          "efficiency_loss": 12,
+          "location": "left_knee"
+        },
+        {
+          "message": "Knee misalignment detected (right side)",
+          "efficiency_loss": 12,
+          "location": "right_knee"
+        },
+        {
+          "message": "Hip asymmetry detected (left side)",
+          "efficiency_loss": 10,
+          "location": "left_hip"
+        },
+        {
+          "message": "Hip asymmetry detected (right side)",
+          "efficiency_loss": 10,
+          "location": "right_hip"
+        },
+        {
+          "message": "Shoulder imbalance detected (left side)",
+          "efficiency_loss": 8,
+          "location": "left_shoulder"
+        },
+        {
+          "message": "Shoulder imbalance detected (right side)",
+          "efficiency_loss": 8,
+          "location": "right_shoulder"
+        },
+        {
+          "message": "Forward head posture",
+          "efficiency_loss": 5,
+          "location": "cervical"
+        }
+      ],
+      "total_efficiency": 35,
+      "risk_level": "HIGH"
+    },
+    "movement_age": {
+      "overall_movement_age": 51.8
+    }
+  },
+  "angles": {
+    "left_elbow": 13.2,
+    "right_elbow": 11.8,
+    "left_knee": 51.1,
+    "right_knee": 156.9,
+    "left_hip": 26.4,
+    "right_hip": 111.1,
+    "left_shoulder": 142.1,
+    "right_shoulder": 107.5,
+    "neck_flexion": 24.7,
+    "neck_lateral": 82.1,
+    "forward_head": 83.0
+  },
+  "neck_metrics": {
+    "forward_head_mm": 46.17498779296875,
+    "forward_head_score": 7.6500244140625,
+    "neck_flexion_angle": 24.741034291851598,
+    "neck_flexion_score": 50.517931416296804,
+    "neck_lateral_angle": 82.07169278986166,
+    "neck_lateral_score": 88.10753918479249
+  },
+  "metadata": {
+    "source": "YOLO11-Pose + MediaPipe Hands",
+    "processed_at": "2026-08-07T12:01:01.550610",
+    "gpu": "NVIDIA RTX 4080"
+  }
+}

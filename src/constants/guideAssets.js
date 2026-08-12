@@ -5,6 +5,18 @@
  */
 export const DEFAULT_STANDING_HOLOGRAM_PANEL = 'https://i.imgur.com/jbkxKoD.png';
 
+/** Kinetic Power Integrity suite left-anchor hologram only. */
+export const KINETIC_POWER_HOLOGRAM_PANEL = 'https://i.imgur.com/8x6scMT.png';
+
+/** Posture & Ergonomics suite left-anchor hologram only. */
+export const POSTURE_ERGONOMICS_HOLOGRAM_PANEL = 'https://i.imgur.com/wlXWReb.png';
+
+/** Athlete Precision suite left-anchor hologram only. */
+export const ATHLETE_PRECISION_HOLOGRAM_PANEL = 'https://i.imgur.com/aUXGsnr.png';
+
+/** Vital Flow suite left-anchor hologram only. */
+export const VITAL_FLOW_HOLOGRAM_PANEL = 'https://i.imgur.com/14vABDo.png';
+
 /** Default draft image shown in the coach Telemetry Uplink modulator. */
 export const DEFAULT_PANEL_DRAFT_URL = 'https://i.imgur.com/m0UrRMJ.png';
 

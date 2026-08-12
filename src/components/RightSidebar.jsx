@@ -70,7 +70,7 @@ export default function RightSidebar({
             onClick={handleDeployClick}
             className="w-full border border-slate-700 hover:border-[#00FFFF] bg-slate-900/50 hover:bg-[#00FFFF]/10 text-slate-400 hover:text-[#00FFFF] text-[10px] tracking-widest font-bold uppercase py-4 rounded transition-all duration-300 cursor-pointer active:scale-[0.99]"
           >
-            [ Deploy Personal Client Card // ]
+            [ Deploy Personal Client Card Report ]
           </button>
         ) : terminalAlert ? (
           <div className="w-full p-3 border border-cyan-500/30 bg-cyan-950/20 text-[#00FFFF] font-mono text-[10px] tracking-wider rounded text-center animate-pulse">

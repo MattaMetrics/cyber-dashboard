@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+google-genai
+reportlab
+python-multipart
+python-dotenv
+moviepy
+opencv-python
+mediapipe
+ultralytics
+numpy

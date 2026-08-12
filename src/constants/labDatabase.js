@@ -79,6 +79,11 @@ export async function broadcastClientMatrixToCloud(athleteCode, updatedData = {}
           alignment_text: updatedData.alignment ?? '',
           pipeline_status: updatedData.status ?? updatedData.streamStatus ?? '',
           waiver_signed: updatedData.waiverSigned ?? updatedData.waiver_signed ?? null,
+          coach_plan_text: updatedData.coach_plan_text ?? '',
+          kinetic_directives: updatedData.notes ?? '',
+          training_log_phase1: updatedData.trainingLogPhase1 ?? '',
+          training_log_phase2: updatedData.trainingLogPhase2 ?? '',
+          somatic_health_tips: updatedData.somaticHealthTips ?? '',
           updated_at: new Date().toISOString(),
         }),
       }

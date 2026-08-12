@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
+import { assessmentEvaluateMiddleware } from './src/api/assessment_endpoint.js'
 
 const BLUEPRINT_EXPORT_DIR = 'C:\\Users\\Legion\\Desktop\\Temp Client Blueprints'
 
@@ -9,6 +10,7 @@ function blueprintExportPlugin() {
   return {
     name: 'blueprint-export-api',
     configureServer(server) {
+      server.middlewares.use(assessmentEvaluateMiddleware())
       server.middlewares.use('/api/export-blueprint', (req, res, next) => {
         if (req.method !== 'POST') {
           next()
@@ -47,4 +49,12 @@ function blueprintExportPlugin() {
 
 export default defineConfig({
   plugins: [react(), blueprintExportPlugin()],
+  server: {
+    proxy: {
+      '/api/assess': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

@@ -1,7 +1,8 @@
 import React from 'react';
-import { DEFAULT_STANDING_HOLOGRAM_PANEL } from '../constants/guideAssets';
+import { VITAL_FLOW_HOLOGRAM_PANEL } from '../constants/guideAssets';
 import SecurityLockOverlay from './SecurityLockOverlay';
 import TelemetryPipelineUplink from './TelemetryPipelineUplink';
+import TitleWithCyberSphere from './TitleWithCyberSphere';
 
 const VITAL_FLOW_CARDS = [
   {
@@ -166,9 +167,11 @@ export default function VitalFlowTerminal({
             <p className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-1">
               // VITAL FLOW // CLINICAL EVALUATION SUB-TERMINAL
             </p>
-            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
-              Longevity Blueprint // 6-Assessment Suite
-            </h2>
+            <TitleWithCyberSphere size="md">
+              <h2 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
+                Longevity Blueprint // 6-Assessment Suite
+              </h2>
+            </TitleWithCyberSphere>
           </div>
 
           {/* Split-screen laboratory command center */}
@@ -177,7 +180,7 @@ export default function VitalFlowTerminal({
             <div className="lg:col-span-4 flex justify-center sticky top-6">
               <div className="w-full bg-slate-950/40 border border-slate-900 rounded-xl p-3 flex items-center justify-center">
                 <img
-                  src={DEFAULT_STANDING_HOLOGRAM_PANEL}
+                  src={VITAL_FLOW_HOLOGRAM_PANEL}
                   alt="Standing holographic telemetry anchor"
                   className="w-full h-auto object-contain rounded-xl max-h-[750px] opacity-90 drop-shadow-[0_0_15px_rgba(6,182,212,0.1)]"
                 />
@@ -208,14 +211,18 @@ export default function VitalFlowTerminal({
                         <p className="text-[10px] font-bold tracking-wider text-cyan-400 uppercase">
                           {card.tag}
                         </p>
-                        <h3 className="text-lg font-black text-white tracking-wider uppercase leading-snug">
-                          {card.title}
-                        </h3>
-                        {card.subtitle ? (
-                          <p className="text-[9px] text-slate-500 font-bold tracking-[0.2em] uppercase">
-                            {card.subtitle}
-                          </p>
-                        ) : null}
+                        <TitleWithCyberSphere size="xs">
+                          <div>
+                            <h3 className="text-lg font-black text-white tracking-wider uppercase leading-snug">
+                              {card.title}
+                            </h3>
+                            {card.subtitle ? (
+                              <p className="text-[9px] text-slate-500 font-bold tracking-[0.2em] uppercase">
+                                {card.subtitle}
+                              </p>
+                            ) : null}
+                          </div>
+                        </TitleWithCyberSphere>
                       </div>
 
                       {card.blocks.map((block) => {

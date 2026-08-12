@@ -1,4 +1,5 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { clientHasMovementVideo } from '../utils/clientVideoService';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import {
@@ -12,13 +13,75 @@ import {
   CheckSquare,
   Upload,
 } from 'lucide-react';
-import CenterSphere from './CenterSphere';
-import ClientBiometricArtBox from './ClientBiometricArtBox';
-import CyberDnaMatrixScene from './CyberDnaMatrixScene';
+import ClientDossierPremiumLayout from './ClientDossierPremiumLayout';
 import AccessCodeGenerator from './AccessCodeGenerator';
+import CoachGeminiChatDeck from './CoachGeminiChatDeck';
+import TacticalWorkflowButtonStack from './TacticalWorkflowButtonStack';
 import { AssessmentMorphScene } from './AssessmentMorphScene';
 import { DEFAULT_GUIDE_ASSETS } from '../constants/guideAssets';
 import { getLabEngineMetrics } from '../data/assessmentLibrary';
+import {
+  applyPipelineResultsToClient,
+  clientHasLongevityReport,
+  buildPdfPlanFromClient,
+  normalizeClientDossier,
+  buildGeminiMetricsPayload,
+  extractPremiumBlockFromGemini,
+  applyPremiumBlockToClient,
+} from '../utils/longevityReportData';
+import { saveClientRecord } from '../constants/labDatabase';
+import {
+  COACH_PERSONA_OPTIONS,
+  COACH_VOICE_GREETINGS,
+  getCoachPersonaLabel,
+  getCoachVoiceEngineLabel,
+  isLegacyCoachFeedbackPlaceholder,
+  normalizeCoachPersonaKey,
+  speakCoachText,
+} from '../constants/coachPersonas';
+
+const YOLO_API_BASE = 'http://localhost:8001';
+const GEMINI_API_BASE = 'http://localhost:8000';
+
+function getCoPilotMatrixTag(coachKey) {
+  const key = normalizeCoachPersonaKey(coachKey);
+  const tags = {
+    gideon: 'GIDEON_MATRIX_V3.5',
+    combat_coach: 'COMBAT_COACH_MATRIX_V3.5',
+    yoga_spirit: 'YOGA_SPIRIT_MATRIX_V3.5',
+  };
+  return tags[key] || `${key.toUpperCase()}_MATRIX_V3.5`;
+}
+
+/** Pull joint angles + asymmetry from YOLO dashboard JSON for coach terminal display */
+function extractYoloTelemetry(results) {
+  if (!results || results.error || typeof results !== 'object') return null;
+
+  const jointAngles = results.angles || {};
+  if (!Object.keys(jointAngles).length && !results.scores) return null;
+
+  const symmetryScore = results.scores?.symmetry_score;
+  const asymmetryIndex =
+    symmetryScore != null
+      ? Math.max(0, Math.round((100 - symmetryScore) * 10) / 10)
+      : null;
+
+  return {
+    jointAngles,
+    asymmetryIndex,
+    meta: {
+      testName: results.header?.test_name || 'YOLO Lab Scan',
+      overallScore: results.header?.overall_score,
+      grade: results.header?.grade,
+      framesAnalyzed: results.frames_analyzed,
+    },
+  };
+}
+
+/** Build ReportLab payload from active client dossier (delegates to longevityReportData) */
+function buildCoachPdfPlanFromClient(client) {
+  return buildPdfPlanFromClient(client);
+}
 
 /** Color-coded terminal status badges for Secure System Database Archives rows */
 function ArchiveStatusBadge({ status }) {
@@ -210,6 +273,24 @@ export default function CoachDashboard({
   setEditJoinedDate,
   editReportUrl,
   setEditReportUrl,
+  editReportNarrativeLayout,
+  setEditReportNarrativeLayout,
+  editPhase1Program,
+  setEditPhase1Program,
+  editPhase2Program,
+  setEditPhase2Program,
+  editSomaticTips,
+  setEditSomaticTips,
+  editClientAge,
+  setEditClientAge,
+  editClientGender,
+  setEditClientGender,
+  editClientHeight,
+  setEditClientHeight,
+  editClientWeight,
+  setEditClientWeight,
+  editCoachPlanText,
+  setEditCoachPlanText,
   editAssessmentPhoto,
   setEditAssessmentPhoto,
   handleAssessmentPhotoUrlChange, // App.jsx: normalize Drive ID + persist to localDatabase immediately
@@ -217,6 +298,7 @@ export default function CoachDashboard({
   setActiveFocusField,
   handleSaveProfileChanges,
   handleTransmitCloudVideo,
+  handleDownloadMovementVideo,
   handleChangeClientCode,
   handleDeleteClientRecord,
   localDatabase,
@@ -239,10 +321,10 @@ export default function CoachDashboard({
   setGuideAssets,
   onNavigate,
   setCurrentScreen,
+  onOpenClientReport,
+  setActiveClientProfile,
 }) {
   const [cloudVideoInput, setCloudVideoInput] = useState('');
-  const [pipelineRecipientCode, setPipelineRecipientCode] = useState('');
-  const [pipelineStatus, setPipelineStatus] = useState('AWAITING UPLINK');
   const [archiveFilter, setArchiveFilter] = useState('ALL');
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [groupRosters, setGroupRosters] = useState(() =>
@@ -258,7 +340,181 @@ export default function CoachDashboard({
   const [groupExpandAdd, setGroupExpandAdd] = useState(false);
   const [groupExpandBatch, setGroupExpandBatch] = useState(false);
   const [groupExpandManifest, setGroupExpandManifest] = useState(true);
-  const [assetBroadcastPhase, setAssetBroadcastPhase] = useState(''); // '' | 'transmitting' | 'success'
+  const [yoloJointAngles, setYoloJointAngles] = useState({});
+  const [yoloAsymmetryIndex, setYoloAsymmetryIndex] = useState(null);
+  const [yoloLabMeta, setYoloLabMeta] = useState(null);
+  const [yoloLoadStatus, setYoloLoadStatus] = useState('');
+  const [isLoadingYolo, setIsLoadingYolo] = useState(false);
+  const [isCompilingPdf, setIsCompilingPdf] = useState(false);
+  const [compilingPremiumBlock, setCompilingPremiumBlock] = useState(null);
+  const [compileMatrixStatus, setCompileMatrixStatus] = useState('');
+  const [selectedCoach, setSelectedCoach] = useState('gideon');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const voiceEnabledRef = useRef(false);
+  const speechSynth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+
+  const speakAsCoach = useCallback(
+    (text, coachKey = 'gideon', { force = false } = {}) => {
+      speakCoachText(speechSynth, text, coachKey, {
+        force,
+        voiceEnabled: voiceEnabledRef.current,
+      });
+    },
+    [speechSynth]
+  );
+
+  useEffect(() => {
+    const storedPersona =
+      activeClientProfile?.longevityReport?.coachPlan?.coach_persona ||
+      activeClientProfile?.longevityReport?.geminiPlan?.coach_persona;
+    if (storedPersona) {
+      setSelectedCoach(normalizeCoachPersonaKey(storedPersona));
+    }
+  }, [accessCode, activeClientProfile]);
+
+  useEffect(() => {
+    if (!speechSynth) return;
+    const loadVoices = () => speechSynth.getVoices();
+    loadVoices();
+    speechSynth.addEventListener('voiceschanged', loadVoices);
+    return () => speechSynth.removeEventListener('voiceschanged', loadVoices);
+  }, [speechSynth]);
+
+  const dossierCoachFeedback = useMemo(() => {
+    const raw =
+      activeClientProfile?.longevityReport?.coachPlan?.gideon_assessment_summary ||
+      activeClientProfile?.coach_plan_text ||
+      '';
+    const text = (raw || '').trim();
+    if (!text || isLegacyCoachFeedbackPlaceholder(text)) return '';
+    return text;
+  }, [activeClientProfile]);
+
+  const coachFeedbackDisplay = isCompilingPdf ? '' : dossierCoachFeedback;
+
+  const dossierChatContext = useMemo(() => {
+    const dossier = normalizeClientDossier(activeClientProfile || {}, accessCode);
+    const plan =
+      activeClientProfile?.longevityReport?.coachPlan ||
+      activeClientProfile?.longevityReport?.geminiPlan ||
+      {};
+
+    return {
+      client_dossier: {
+        access_code: accessCode || dossier.accessCode,
+        name: activeClientProfile?.name || dossier.name,
+        client_age: dossier.clientAge,
+        client_gender: dossier.clientGender,
+        client_height: dossier.clientHeight,
+        client_weight: dossier.clientWeight,
+        archetype: activeClientProfile?.archetype || activeClientProfile?.desc,
+        coach_plan_text: dossier.coach_plan_text || dossierCoachFeedback,
+        training_log_phase1: dossier.trainingLogPhase1,
+        training_log_phase2: dossier.trainingLogPhase2,
+        somatic_health_tips: dossier.somaticHealthTips,
+        kinetic_notes: activeClientProfile?.notes,
+        matrix_tier: activeClientProfile?.matrixTier,
+      },
+      coach_summary: dossierCoachFeedback,
+      joint_angles: yoloJointAngles,
+      asymmetry_index: yoloAsymmetryIndex,
+      yolo_meta: yoloLabMeta,
+      right_now_adjustment: plan.right_now_adjustment || [],
+      two_week_protocol: plan.two_week_protocol || {},
+      four_week_protocol: plan.four_week_protocol || {},
+      long_term_vision: plan.long_term_vision || [],
+      somatic_health_tips: plan.somatic_health_tips || dossier.somaticHealthTips,
+    };
+  }, [
+    activeClientProfile,
+    accessCode,
+    dossierCoachFeedback,
+    yoloJointAngles,
+    yoloAsymmetryIndex,
+    yoloLabMeta,
+  ]);
+
+  useEffect(() => {
+    if (!accessCode) {
+      setChatMessages([]);
+      setChatInput('');
+      return;
+    }
+
+    const client = localDatabase?.[accessCode] || activeClientProfile || {};
+    const thread =
+      client?.longevityReport?.coachPlan?.chat_thread ||
+      client?.longevityReport?.geminiPlan?.chat_thread;
+    const raw =
+      client?.longevityReport?.coachPlan?.gideon_assessment_summary ||
+      client?.coach_plan_text ||
+      '';
+    const summary =
+      (raw || '').trim() && !isLegacyCoachFeedbackPlaceholder(raw) ? raw.trim() : '';
+
+    if (Array.isArray(thread) && thread.length) {
+      setChatMessages(
+        thread.map((m, i) => ({
+          id: `${accessCode}-${i}`,
+          role: m.role,
+          content: m.content,
+        }))
+      );
+    } else if (summary) {
+      setChatMessages([
+        { id: `${accessCode}-seed`, role: 'assistant', content: summary },
+      ]);
+    } else {
+      setChatMessages([]);
+    }
+    setChatInput('');
+  }, [accessCode]);
+
+  const handleSendChatMessage = useCallback(async () => {
+    const text = chatInput.trim();
+    if (!text || isChatLoading) return;
+
+    const userMsg = { id: Date.now(), role: 'user', content: text };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const response = await fetch(
+        `${GEMINI_API_BASE}/api/coach/chat?coach=${selectedCoach}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: chatMessages.map(({ role, content }) => ({ role, content })),
+            metrics_context: dossierChatContext,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Chat uplink failed');
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, role: 'assistant', content: data.reply },
+      ]);
+      speakAsCoach(data.reply, selectedCoach);
+    } catch (err) {
+      setChatMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, role: 'assistant', content: `Uplink error: ${err.message}` },
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  }, [chatInput, isChatLoading, chatMessages, selectedCoach, dossierChatContext, speakAsCoach]);
 
   const activeGroup = ARCHIVE_GROUP_ROWS.find((g) => g.id === activeGroupId) || null;
   const activeGroupRoster = activeGroupId ? groupRosters[activeGroupId] || [] : [];
@@ -274,6 +530,186 @@ export default function CoachDashboard({
     setGroupExpandBatch(false);
     setGroupExpandManifest(true);
   };
+
+  /** Function A — informational fetch: YOLO numeric telemetry only (port 8001) */
+  const handleLoadYoloResults = async () => {
+    setIsLoadingYolo(true);
+    setYoloLoadStatus('Fetching latest YOLO telemetry from port 8001...');
+
+    try {
+      const response = await fetch(`${YOLO_API_BASE}/api/yolo/results/latest`);
+      if (!response.ok) throw new Error('YOLO telemetry out of sync.');
+
+      const latestMetrics = await response.json();
+      if (!latestMetrics || latestMetrics.error || !Object.keys(latestMetrics).length) {
+        throw new Error('No YOLO results cached yet. Run the live lab or process an uploaded video first.');
+      }
+
+      const telemetry = extractYoloTelemetry(latestMetrics);
+      if (!telemetry) throw new Error('YOLO payload has no angle or score data.');
+
+      setYoloJointAngles(telemetry.jointAngles);
+      setYoloAsymmetryIndex(telemetry.asymmetryIndex);
+      setYoloLabMeta(telemetry.meta);
+
+      if (accessCode && setLocalDatabase) {
+        const client = localDatabase[accessCode] || {};
+        const updated = applyPipelineResultsToClient(client, accessCode, latestMetrics);
+        setLocalDatabase((prev) => ({ ...prev, [accessCode]: updated }));
+        saveClientRecord(accessCode, updated);
+      }
+
+      setYoloLoadStatus(
+        `✓ ${Object.keys(telemetry.jointAngles).length} joint angles synced · asymmetry ${telemetry.asymmetryIndex ?? '—'}%`
+      );
+    } catch (error) {
+      console.error('Failed to load local laboratory file caches:', error);
+      setYoloLoadStatus(error.message || 'YOLO load failed');
+    } finally {
+      setIsLoadingYolo(false);
+    }
+  };
+
+  /** Function B — document stream: Gemini/ReportLab PDF compile only (port 8000) */
+  const handleCompilePDFReport = async () => {
+    const client = activeClientProfile || localDatabase[accessCode] || {};
+    const recipientName = client.name || displayClientName || 'Client';
+    const suiteNum = accessCode ? `#${accessCode}` : '#000000';
+    const googleDriveLink = client.reportUrl || editReportUrl || cloudVideoInput || '';
+
+    setIsCompilingPdf(true);
+
+    try {
+      const pdfPayload = {
+        recipient_name: recipientName,
+        suite_num: suiteNum,
+        google_drive_link: googleDriveLink,
+        plan_data: buildCoachPdfPlanFromClient(client),
+      };
+
+      const response = await fetch(`${GEMINI_API_BASE}/api/generate-report-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pdfPayload),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `PDF compile failed (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download',
+        `Life_Longevity_Report_${recipientName.replace(/\s+/g, '_')}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF engine matrix compile failure:', error);
+      alert(
+        `PDF compile failed: ${error.message}. Start Gemini server on port 8000 (uvicorn main:app --reload --port 8000).`
+      );
+    } finally {
+      setIsCompilingPdf(false);
+    }
+  };
+
+  /** Generate a single premium block (phase1 | phase2 | somatic) via port 8000 and persist */
+  const handleCompileMatrix = useCallback(
+    async (block) => {
+      if (!accessCode || !isCoachMode) return;
+
+      setCompilingPremiumBlock(block);
+      setCompileMatrixStatus('');
+      setIsEditMode(true);
+
+      try {
+        let jointAngles = { ...yoloJointAngles };
+        let asymmetryIndex = yoloAsymmetryIndex;
+
+        if (!Object.keys(jointAngles).length) {
+          try {
+            const yoloRes = await fetch(`${YOLO_API_BASE}/api/yolo/results/latest`);
+            if (yoloRes.ok) {
+              const latest = await yoloRes.json();
+              const telemetry = extractYoloTelemetry(latest);
+              if (telemetry) {
+                jointAngles = telemetry.jointAngles;
+                asymmetryIndex = telemetry.asymmetryIndex;
+                setYoloJointAngles(telemetry.jointAngles);
+                setYoloAsymmetryIndex(telemetry.asymmetryIndex);
+                setYoloLabMeta(telemetry.meta);
+              }
+            }
+          } catch {
+            /* YOLO lab optional — dossier baseline still compiles */
+          }
+        }
+
+        const metricsPayload = buildGeminiMetricsPayload(activeClientProfile, accessCode, {
+          jointAngles,
+          asymmetryIndex: asymmetryIndex ?? 0,
+          request_two_week_plan: block === 'phase1',
+          request_four_week_plan: block === 'phase2',
+          request_health_tips: block === 'somatic',
+        });
+
+        const response = await fetch(
+          `${GEMINI_API_BASE}/api/analyze-biometrics?coach=${selectedCoach}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(metricsPayload),
+          }
+        );
+
+        if (!response.ok) {
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.detail || 'Premium matrix compile failed on port 8000.');
+        }
+
+        const plan = await response.json();
+        const blockText = extractPremiumBlockFromGemini(plan, block);
+        if (!blockText.trim()) {
+          throw new Error('Gemini returned an empty block — check API key and port 8000 logs.');
+        }
+
+        if (block === 'phase1') setEditPhase1Program(blockText);
+        if (block === 'phase2') setEditPhase2Program(blockText);
+        if (block === 'somatic') setEditSomaticTips(blockText);
+
+        const savedClient = applyPremiumBlockToClient(activeClientProfile, block, blockText);
+        setLocalDatabase((prev) => ({ ...prev, [accessCode]: savedClient }));
+        setActiveClientProfile?.(savedClient);
+        saveClientRecord(accessCode, savedClient);
+        setCompileMatrixStatus(`✓ ${block.toUpperCase()} matrix compiled and saved to dossier #${accessCode}`);
+      } catch (err) {
+        setCompileMatrixStatus(`⚠ ${err.message || 'Matrix compile uplink severed.'}`);
+      } finally {
+        setCompilingPremiumBlock(null);
+      }
+    },
+    [
+      accessCode,
+      isCoachMode,
+      yoloJointAngles,
+      yoloAsymmetryIndex,
+      activeClientProfile,
+      selectedCoach,
+      setEditPhase1Program,
+      setEditPhase2Program,
+      setEditSomaticTips,
+      setLocalDatabase,
+      setActiveClientProfile,
+      setIsEditMode,
+    ]
+  );
 
   const handleAppendGroupMember = () => {
     if (!activeGroupId || !groupMemberName.trim()) {
@@ -320,341 +756,265 @@ export default function CoachDashboard({
     );
   };
 
-  // Keep recipient selector pointed at a live archive row
-  useEffect(() => {
-    const codes = Object.keys(localDatabase || {});
-    if (!codes.length) {
-      setPipelineRecipientCode('');
-      return;
-    }
-    if (!pipelineRecipientCode || !localDatabase[pipelineRecipientCode]) {
-      setPipelineRecipientCode(codes[0]);
-    }
-  }, [localDatabase, pipelineRecipientCode]);
-
-  // Mirror selected athlete's current stream badge into the override dropdown
-  useEffect(() => {
-    if (!pipelineRecipientCode || !localDatabase?.[pipelineRecipientCode]) return;
-    const raw = String(localDatabase[pipelineRecipientCode].streamStatus || 'AWAITING SCAN').toUpperCase();
-    if (raw === 'STREAM CALIBRATED' || raw === 'STREAM LOCKED') {
-      setPipelineStatus('STREAM LOCKED');
-    } else if (raw === 'COMPILING BLU') {
-      setPipelineStatus('COMPILING BLU');
-    } else {
-      setPipelineStatus('AWAITING UPLINK');
-    }
-  }, [pipelineRecipientCode, localDatabase]);
-
-  const handleSyncAthleteStatus = () => {
-    if (typeof setLocalDatabase !== 'function' || !pipelineRecipientCode || assetBroadcastPhase) return;
-
-    setLocalDatabase((prev) => {
-      if (!prev?.[pipelineRecipientCode]) return prev;
-      return {
-        ...prev,
-        [pipelineRecipientCode]: {
-          ...prev[pipelineRecipientCode],
-          streamStatus: pipelineStatus,
-        },
-      };
-    });
-
-    setAssetBroadcastPhase('transmitting');
-    window.setTimeout(() => {
-      setAssetBroadcastPhase('success');
-      window.setTimeout(() => setAssetBroadcastPhase(''), 2000);
-    }, 800);
-  };
-
   // SYSTEM FRAME B: Premium Biometric Client Profile Portal Hub
   if (viewState === 'client_profile' && activeClientProfile) {
     return (
+      <>
       <div className="w-full h-full bg-[#020617]/95 text-white font-mono flex flex-col overflow-hidden relative backdrop-blur-xl">
         {renderSystemHeader(`CLIENT_DOSSIER // ${activeClientProfile.name.toUpperCase()}`)}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center">
-          {/* Your main active card panel framework remains perfectly safe inside here */}
-          <div className="w-full max-w-7xl bg-slate-950/90 border border-cyan-500/20 rounded-2xl backdrop-blur-xl p-6 md:p-8 shadow-2xl relative">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="w-full max-w-full mx-auto bg-slate-950/90 border border-cyan-500/20 rounded-2xl backdrop-blur-xl p-5 md:p-7 shadow-2xl">
 
-            {/* Dossier Header — centered biometric profile system title */}
-            <div className="border-b border-slate-900 pb-6 mb-6 text-center">
-              <h2 className="font-mono text-2xl font-black text-white tracking-widest uppercase text-center w-full block">
-                {activeClientProfile.name}
-              </h2>
-              <p className="font-mono text-sm font-black text-cyan-400 tracking-wider uppercase mt-2 animate-[pulse_4s_ease-in-out_infinite] drop-shadow-[0_0_8px_rgba(34,211,238,0.2)]">
-                // ACTIVE BIOMETRIC PROFILE SYSTEM //
-              </p>
-            </div>
-
-            {/* Grid Separation Layout — matched left art / middle notes / right globe symmetry */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-              {/* Left Column: Blueprint Art (matches globe height) + subscription banners */}
-              <div className="flex flex-col gap-4 h-full min-h-[460px]">
-                <div className="flex-1 min-h-[400px]">
-                  <ClientBiometricArtBox clientData={activeClientProfile} />
-                </div>
-
-                <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl shrink-0">
-                  <div className="mb-3 text-xs font-bold text-cyan-400 uppercase tracking-widest px-2.5 py-0.5 bg-slate-950 rounded-full border border-slate-800 inline-block">
-                    {activeClientProfile.archetype}
-                  </div>
-                  <span className="text-[9px] text-slate-600 block uppercase font-bold tracking-wider mb-1">
-                    CURRENT MATRIX SUBSCRIPTION
-                  </span>
-                  {isEditMode && isCoachMode ? (
-                    <select
-                      value={editTier}
-                      onChange={(e) => setEditTier(e.target.value)}
-                      className="w-full bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 text-cyan-400 font-mono text-xs rounded px-2 py-1.5 outline-none tracking-wide cursor-pointer font-bold uppercase shadow-inner"
-                    >
-                      <option value="Vector Tier">Vector Tier</option>
-                      <option value="Tensegrity Tier">Tensegrity Tier</option>
-                      <option value="Infinite Matrix Tier">Infinite Matrix Tier</option>
-                      <option value="INFINITE APEX MATRIX ENGINE">INFINITE APEX MATRIX ENGINE</option>
-                    </select>
-                  ) : (
-                    <span
-                      className={`text-sm font-black tracking-wide uppercase font-mono block mt-0.5
-                        ${activeClientProfile.matrixTier === 'Infinite Matrix Tier' ? 'text-amber-400' : ''}
-                        ${activeClientProfile.matrixTier === 'INFINITE APEX MATRIX ENGINE' ? 'text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.45)]' : ''}
-                        ${activeClientProfile.matrixTier === 'Tensegrity Tier' ? 'text-cyan-400' : ''}
-                        ${activeClientProfile.matrixTier === 'Vector Tier' ? 'text-indigo-400' : ''}
-                      `}
-                    >
-                      {activeClientProfile.matrixTier || 'Vector Tier'}
-                    </span>
-                  )}
-                </div>
+            {/* --- THE ADVANCED CYBERNETIC SPECIFICATION TITLE BAR --- */}
+            <div className="relative w-full bg-slate-950 border-b-2 border-purple-500/50 p-4 overflow-hidden mb-6 rounded-t-xl shadow-[0_0_20px_rgba(168,85,247,0.15)] -mx-5 -mt-5 md:-mx-7 md:-mt-7">
+              {/* The Live Pulse Monitor Backdrop Vector */}
+              <div className="absolute inset-0 opacity-20 pointer-events-none flex items-center">
+                <svg
+                  className="w-full h-12 stroke-current text-blue-500/40"
+                  viewBox="0 0 100 20"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M0,10 L30,10 L33,4 L36,16 L39,10 L45,10 L48,2 L51,18 L54,10 L70,10 L73,6 L76,14 L79,10 L100,10"
+                    strokeWidth="0.5"
+                    fill="none"
+                  />
+                </svg>
+                {/* Animated laser tracker sweeping across the EKG wave */}
+                <div className="absolute inset-0 glowing-ekg-line h-full w-1/3 blur-sm" aria-hidden="true" />
               </div>
 
-              {/* Middle Column: Case logs (top) → Identity Specs (bottom) */}
-              <div className="space-y-4 flex flex-col justify-start h-full min-h-[460px]">
-                <div
-                  onClick={() => isEditMode && setActiveFocusField('desc')}
-                  className={`p-5 bg-slate-900/40 border border-slate-900 rounded-xl transition-all duration-200
-                    ${isEditMode ? 'hover:bg-slate-900 hover:border-cyan-500/50 cursor-zoom-in group shadow-lg shadow-cyan-950/20' : ''}
-                  `}
-                >
-                  <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest flex items-center justify-between mb-2.5">
-                    <span className="flex items-center gap-1.5">
-                      <FileText className="w-4 h-4" /> Biomechanical Archetype Vector
-                    </span>
-                    {isEditMode && (
-                      <span className="text-[9px] text-cyan-500 font-black animate-pulse tracking-wider bg-slate-950 px-2 py-0.5 border border-slate-800 rounded">
-                        ⛶ CLICK TO EXPAND
-                      </span>
-                    )}
+              {/* Main Header Container Content */}
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-y-3">
+                {/* Left Side: Biometric Geometry Badge + Name Profile */}
+                <div className="flex items-center space-x-4">
+                  {/* Dynamic Geometric Identity Badge */}
+                  <div className="relative w-12 h-12 flex items-center justify-between border-2 border-blue-400 rotate-45 bg-slate-900 shadow-[0_0_10px_rgba(59,130,246,0.5)] shrink-0">
+                    <span className="text-purple-400 font-mono text-xs font-bold -rotate-45 m-auto">🧬</span>
+                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-400" />
+                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-purple-500" />
                   </div>
-                  <p className="text-sm font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-6">
-                    {isEditMode ? editDesc || 'No narrative logged yet.' : activeClientProfile.desc}
-                  </p>
-                </div>
 
-                <div
-                  onClick={() => isEditMode && setActiveFocusField('notes')}
-                  className={`p-5 bg-slate-900/40 border border-slate-900 rounded-xl transition-all duration-200
-                    ${isEditMode ? 'hover:bg-slate-900 hover:border-indigo-500/50 cursor-zoom-in group shadow-lg shadow-indigo-950/20' : ''}
-                  `}
-                >
-                  <div className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest flex items-center justify-between mb-2.5">
-                    <span className="flex items-center gap-1.5">
-                      <ClipboardList className="w-4 h-4" /> Kinetic Directives & Case Log
-                    </span>
-                    {isEditMode && (
-                      <span className="text-[9px] text-indigo-500 font-black animate-pulse tracking-wider bg-slate-950 px-2 py-0.5 border border-slate-800 rounded">
-                        ⛶ CLICK TO EXPAND
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm font-sans text-slate-200 leading-relaxed font-normal tracking-wide whitespace-pre-wrap line-clamp-6">
-                    {isEditMode ? editNotes || 'No directives logged yet.' : activeClientProfile.notes}
-                  </p>
-                </div>
-
-                {Array.isArray(activeClientProfile.diagnosticBlocks) &&
-                  activeClientProfile.diagnosticBlocks.length > 0 && (
-                    <div className="p-5 bg-slate-900/40 border border-amber-500/25 rounded-xl space-y-3 shadow-[0_0_24px_rgba(245,158,11,0.08)]">
-                      <div className="text-[11px] text-amber-300 font-bold uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                        <span>🧬 System Diagnostics // PROTOCOL_0X-BA</span>
-                      </div>
-                      {activeClientProfile.diagnosticBlocks.map((block) => (
-                        <div
-                          key={block.label}
-                          className="border border-slate-800/80 rounded-lg bg-slate-950/50 px-3 py-2.5 space-y-1"
-                        >
-                          <p className="text-[10px] font-black tracking-wider text-cyan-400 uppercase font-mono">
-                            {block.label}
-                          </p>
-                          <p className="text-xs font-mono text-amber-200/90 tracking-wide uppercase">
-                            {block.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                <div className="border-t border-slate-800 pt-4 mt-auto">
-                  <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 text-xs font-medium text-slate-300">
-                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-950 pb-1.5">
-                      // IDENTITY SPECIFICATIONS
-                    </div>
-
-                    <div className="space-y-1 font-mono">
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <Mail className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-bold tracking-wider uppercase">Email Contact</span>
-                      </div>
-                      {!isCoachMode || (isEditMode && isCoachMode) ? (
-                        <input
-                          type="email"
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm outline-none font-sans truncate"
-                          placeholder="name@email.com"
-                        />
-                      ) : (
-                        <div className="text-sm font-semibold text-slate-200 pl-5 truncate max-w-full font-sans">
-                          {activeClientProfile.email}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 font-mono">
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <Phone className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-bold tracking-wider uppercase">Phone Terminal</span>
-                      </div>
-                      {!isCoachMode || (isEditMode && isCoachMode) ? (
-                        <input
-                          type="text"
-                          value={editPhone}
-                          onChange={(e) => setEditPhone(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-sm outline-none font-sans"
-                          placeholder="(555) 000-0000"
-                        />
-                      ) : (
-                        <div className="text-sm font-semibold text-slate-200 pl-5">{activeClientProfile.phone}</div>
-                      )}
-                    </div>
-
-                    {isCoachMode && (
-                      <div className="space-y-1 font-mono">
-                        <div className="flex items-center gap-2 text-slate-500">
-                          <Upload className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="text-[9px] font-bold tracking-wider uppercase text-cyan-400">
-                            Google Drive Report URL
-                          </span>
-                        </div>
-                        {isEditMode ? (
-                          <input
-                            type="text"
-                            value={editReportUrl}
-                            onChange={(e) => setEditReportUrl(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-cyan-400 text-xs outline-none font-sans shadow-inner"
-                            placeholder="Paste Google Drive share link here..."
-                          />
-                        ) : activeClientProfile.reportUrl && activeClientProfile.reportUrl !== '' ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              window.open(activeClientProfile.reportUrl, '_blank', 'noopener,noreferrer')
-                            }
-                            className="inline-flex items-center gap-1.5 mt-0.5 px-3 py-1.5 bg-slate-950 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 hover:text-cyan-300 rounded-full text-[9px] font-black tracking-[0.16em] uppercase transition-all cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.15)] active:scale-95"
-                          >
-                            [ OPEN CLIENT MOVEMENT REEL ↗ ]
-                          </button>
-                        ) : (
-                          <div className="text-xs text-slate-400 font-sans pl-5 truncate max-w-full italic">
-                            No link connected // Compiling state
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {isCoachMode && (
-                      <div className="space-y-1 font-mono">
-                        <div className="flex items-center gap-2 text-slate-500">
-                          <Upload className="w-3.5 h-3.5 text-cyan-500" />
-                          <span className="text-[9px] font-bold tracking-wider uppercase text-cyan-400">
-                            🧬 [ UPDATE CORE BIOMETRIC PHOTO URL ]
-                          </span>
-                        </div>
-                        {isEditMode ? (
-                          <input
-                            type="text"
-                            value={editAssessmentPhoto ?? ''}
-                            onChange={(e) => {
-                              const pasted = e.target.value;
-                              if (typeof handleAssessmentPhotoUrlChange === 'function') {
-                                handleAssessmentPhotoUrlChange(pasted);
-                                return;
-                              }
-                              setEditAssessmentPhoto?.(pasted);
-                            }}
-                            onBlur={(e) => {
-                              if (typeof handleAssessmentPhotoUrlChange === 'function') {
-                                handleAssessmentPhotoUrlChange(e.target.value);
-                              }
-                            }}
-                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-cyan-400 text-xs outline-none font-sans shadow-inner"
-                            placeholder="Paste direct PNG/JPEG/Imgur image URL..."
-                          />
-                        ) : (
-                          <div className="text-xs text-slate-400 font-sans pl-5 truncate max-w-full italic">
-                            {activeClientProfile.biometricPhotoUrl ||
-                              activeClientProfile.assessmentPhoto ||
-                              'No art linked // awaiting coach transmission'}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between text-slate-400 font-mono">
-                      <span className="font-bold text-[10px] tracking-wider text-slate-500 uppercase">SYS_ACCESS_PIN:</span>
-                      <span className="text-sm font-black text-cyan-400 tracking-widest bg-slate-950 px-2 py-0.5 border border-slate-900 rounded">
-                        {accessCode}
+                  {/* Profile Specifications */}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <h1 className="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white neon-cyber-text uppercase truncate">
+                        {activeClientProfile.name}
+                      </h1>
+                      <span className="bg-purple-950 border border-purple-500 text-purple-400 font-mono text-xs px-2 py-0.5 rounded-full shadow-[0_0_5px_rgba(168,85,247,0.5)] shrink-0">
+                        ID//{accessCode}
                       </span>
                     </div>
+                    <p className="text-xs font-mono text-blue-400/80 tracking-widest mt-0.5 uppercase">
+                      // STATUS:{' '}
+                      {(compilingPremiumBlock
+                        ? 'COMPILING_DOSSIER'
+                        : activeClientProfile.streamStatus || 'DOSSIER_ACTIVE'
+                      )
+                        .replace(/\s+/g, '_')
+                        .toUpperCase()}{' '}
+                      // ACCESS_TIER:{' '}
+                      {(isEditMode ? editTier : activeClientProfile.matrixTier) || 'Vector Tier'}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: Core Vector Deck — always mounts spinning CenterSphere globe */}
-              <div className="flex flex-col h-full min-h-[460px] relative">
-                <div className="w-full h-full min-h-[460px] bg-slate-950/70 border border-cyan-500/20 rounded-xl p-4 backdrop-blur-xl flex flex-col shadow-2xl animate-fade-in">
-                  <div className="flex justify-between items-center mb-3 border-b border-slate-900 pb-2.5 shrink-0">
-                    <div>
-                      <p className="text-[10px] tracking-widest text-cyan-400 font-mono uppercase">// TENSEGRITY LAYER</p>
-                      <h3 className="text-sm font-bold tracking-wider text-slate-200 uppercase">CORE VECTOR DECK</h3>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[9px] font-mono block text-slate-500 uppercase tracking-widest">ACTIVE ARCHIVE</span>
-                      <span className="text-xs font-mono text-cyan-400 font-bold">
-                        {activeClientProfile.name.split(' ')[0].toUpperCase()}_SYS
-                      </span>
-                    </div>
-                  </div>
-
-                  <div
-                    data-rodin-biometric-slot="standing-back"
-                    className="flex-1 w-full bg-[#030d1e]/40 border border-cyan-950/60 rounded-lg overflow-hidden relative inner-shadow min-h-[300px] flex flex-col"
-                  >
-                    <div className="absolute top-2 left-2 z-10 pointer-events-none">
-                      <span className="text-[8px] font-mono font-bold tracking-[0.18em] uppercase text-slate-600 bg-slate-950/70 border border-slate-800/80 px-2 py-0.5 rounded">
-                        // CORE VECTOR DECK // GEOMETRIC TERMINAL GLOBE
-                      </span>
-                    </div>
-                    <div className="relative flex-1 w-full min-h-[300px] overflow-hidden">
-                      <CenterSphere viewState="landing" />
-                    </div>
-                  </div>
+                {/* Right Side: Master Fleet / Core Workspace Connectivity Specs */}
+                <div className="text-right font-mono text-[10px] sm:text-xs text-slate-500 space-y-0.5 shrink-0 ml-4">
+                  <p className="text-purple-400/80 tracking-wide">// CO-PILOT: {getCoPilotMatrixTag(selectedCoach)}</p>
+                  <p className="text-emerald-400/80 tracking-wide">// CLOUD_LINK: SUPABASE_ONLINE</p>
+                  <p className="text-blue-400/80 tracking-wide">// SYS_INTEGRITY: PRO_LEGION_4080</p>
                 </div>
               </div>
             </div>
+
+            <ClientDossierPremiumLayout
+              activeClientProfile={activeClientProfile}
+              accessCode={accessCode}
+              isCoachMode={isCoachMode}
+              isEditMode={isEditMode}
+              editDesc={editDesc}
+              setEditDesc={setEditDesc}
+              editCoachPlanText={editCoachPlanText}
+              setEditCoachPlanText={setEditCoachPlanText}
+              editNotes={editNotes}
+              setEditNotes={setEditNotes}
+              editPhase1Program={editPhase1Program}
+              setEditPhase1Program={setEditPhase1Program}
+              editPhase2Program={editPhase2Program}
+              setEditPhase2Program={setEditPhase2Program}
+              editSomaticTips={editSomaticTips}
+              setEditSomaticTips={setEditSomaticTips}
+              editClientAge={editClientAge}
+              setEditClientAge={setEditClientAge}
+              editClientGender={editClientGender}
+              setEditClientGender={setEditClientGender}
+              editClientHeight={editClientHeight}
+              setEditClientHeight={setEditClientHeight}
+              editClientWeight={editClientWeight}
+              setEditClientWeight={setEditClientWeight}
+              editEmail={editEmail}
+              setEditEmail={setEditEmail}
+              editPhone={editPhone}
+              setEditPhone={setEditPhone}
+              editTier={editTier}
+              setEditTier={setEditTier}
+              editReportUrl={editReportUrl}
+              setEditReportUrl={setEditReportUrl}
+              editAssessmentPhoto={editAssessmentPhoto}
+              setEditAssessmentPhoto={setEditAssessmentPhoto}
+              editReportNarrativeLayout={editReportNarrativeLayout}
+              setEditReportNarrativeLayout={setEditReportNarrativeLayout}
+              handleAssessmentPhotoUrlChange={handleAssessmentPhotoUrlChange}
+              onOpenClientReport={onOpenClientReport}
+              onCompileMatrix={handleCompileMatrix}
+              compilingPremiumBlock={compilingPremiumBlock}
+              compileMatrixStatus={compileMatrixStatus}
+            />
+
+            {isCoachMode && (
+              <div className="mt-6 pt-6 border-t border-purple-900/30">
+                <p className="text-[10px] font-mono text-purple-400 uppercase tracking-[0.22em] mb-4">
+                  // COACH COMMAND WORKSPACE — FULL WIDTH UPLINK //
+                </p>
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+                  <div className="xl:col-span-4 space-y-4 min-w-0">
+                    <div className="p-4 bg-slate-900/40 border border-purple-500/25 rounded-xl space-y-2">
+                      <div className="text-[9px] text-purple-400 font-bold uppercase tracking-widest">
+                        🤖 Active Coach Persona (port 8000)
+                      </div>
+                      <select
+                        value={selectedCoach}
+                        onChange={(e) => {
+                          const nextCoach = normalizeCoachPersonaKey(e.target.value);
+                          setSelectedCoach(nextCoach);
+                          if (voiceEnabledRef.current) {
+                            speakAsCoach(
+                              COACH_VOICE_GREETINGS[nextCoach] || COACH_VOICE_GREETINGS.gideon,
+                              nextCoach,
+                              { force: true }
+                            );
+                          }
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-[10px] rounded-lg p-2 outline-none focus:border-purple-500"
+                      >
+                        {COACH_PERSONA_OPTIONS.map(({ value, label }) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!voiceEnabled) {
+                            voiceEnabledRef.current = true;
+                            setVoiceEnabled(true);
+                            speakAsCoach(
+                              COACH_VOICE_GREETINGS[selectedCoach] || COACH_VOICE_GREETINGS.gideon,
+                              selectedCoach,
+                              { force: true }
+                            );
+                          } else {
+                            voiceEnabledRef.current = false;
+                            setVoiceEnabled(false);
+                            speechSynth?.cancel();
+                          }
+                        }}
+                        className={`w-full text-[9px] font-bold py-2 rounded-lg transition-all uppercase tracking-wider ${
+                          voiceEnabled
+                            ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.45)]'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                        }`}
+                      >
+                        🎤 {getCoachVoiceEngineLabel(selectedCoach)} Voice: {voiceEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl">
+                      <TacticalWorkflowButtonStack
+                        onMasterDirectory={() => setCurrentScreen('MASTER_ASSESSMENT_DIRECTORY_TERMINAL')}
+                        onOpenReportViewer={() => onOpenClientReport?.(accessCode)}
+                        onUploadLab={() =>
+                          (onNavigate || setCurrentScreen)?.('BLUEPRINT_ASSESSMENTS_VIEW')
+                        }
+                        onFetchYolo={handleLoadYoloResults}
+                        onCompilePdf={handleCompilePDFReport}
+                        isFetchingYolo={isLoadingYolo}
+                        isCompilingPdf={isCompilingPdf}
+                        yoloTelemetryPanel={
+                          Object.keys(yoloJointAngles).length > 0 || yoloLoadStatus ? (
+                            <div className="p-3 bg-slate-950/80 border border-purple-500/25 rounded-lg space-y-2 text-[10px] font-mono">
+                              <div className="text-purple-400 uppercase tracking-widest font-bold">
+                                // YOLO TELEMETRY CACHE
+                              </div>
+                              {yoloLabMeta && (
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-slate-400">
+                                  <span className="text-cyan-400">{yoloLabMeta.testName}</span>
+                                  {yoloLabMeta.overallScore != null && (
+                                    <span>Score: {Number(yoloLabMeta.overallScore).toFixed(1)}%</span>
+                                  )}
+                                  {yoloLabMeta.grade && <span>Grade: {yoloLabMeta.grade}</span>}
+                                  {yoloAsymmetryIndex != null && (
+                                    <span className="text-amber-400">Asymmetry: {yoloAsymmetryIndex}%</span>
+                                  )}
+                                </div>
+                              )}
+                              {Object.keys(yoloJointAngles).length > 0 && (
+                                <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto text-[9px]">
+                                  {Object.entries(yoloJointAngles).slice(0, 8).map(([key, val]) => (
+                                    <div key={key} className="text-slate-500 truncate">
+                                      <span className="text-purple-400/90">{key}:</span>{' '}
+                                      {typeof val === 'number' ? val.toFixed(1) : val}°
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {yoloLoadStatus && (
+                                <p
+                                  className={`text-[9px] uppercase tracking-wider ${yoloLoadStatus.startsWith('✓') ? 'text-emerald-400' : 'text-slate-500'}`}
+                                >
+                                  {yoloLoadStatus}
+                                </p>
+                              )}
+                            </div>
+                          ) : null
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="xl:col-span-8 min-w-0">
+                    <CoachGeminiChatDeck
+                      expanded
+                      messages={chatMessages}
+                      chatInput={chatInput}
+                      onChatInputChange={setChatInput}
+                      onSubmit={handleSendChatMessage}
+                      isChatLoading={isChatLoading}
+                      isAnalyzing={isCompilingPdf}
+                      seedAssistantMessage={coachFeedbackDisplay}
+                      selectedCoach={selectedCoach}
+                      voiceEnabled={voiceEnabled}
+                      onReplayLast={(text) => speakAsCoach(text, selectedCoach)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Dossier Actions Terminal */}
             <div className="pt-5 border-t border-slate-900 mt-5 flex flex-wrap justify-between items-center gap-4">
               {isCoachMode ? (
                 <div className="flex flex-wrap gap-2 animate-fade-in ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => onOpenClientReport?.(accessCode)}
+                    className="px-3 py-1.5 bg-indigo-950 text-indigo-300 border border-indigo-500/40 hover:border-indigo-400 rounded font-mono font-bold text-[10px] tracking-wider uppercase transition-all cursor-pointer"
+                  >
+                    📋 View Longevity Report
+                  </button>
                   <button
                     onClick={() => {
                       const reportText = `==================================================\nLONGEVITY BLUEPRINT OBJECTIVE BIOMETRIC REPORT\n==================================================\nATHLETE DOSSIER: ${activeClientProfile.name.toUpperCase()}\nARCHETYPE:       ${activeClientProfile.archetype.toUpperCase()}\nPASSCODE KEY:    [ ${accessCode} ]\nRECORDED DOB:    ${activeClientProfile.birthdate}\nCONTACT LINE:    ${activeClientProfile.email}\n--------------------------------------------------\n BIOMECHANICAL ARCHETYPE VECTOR LOG:\n${editDesc}\n KINETIC DIRECTIVES & CASE COACH NOTES:\n${editNotes}\n-------------------------------------------------- VERIFIED METRIC CALIBRATION RATINGS:\n- Deep Squat Mobility Matrix:    ${editMetrics.squat}\n- Single-Leg Land Stability:     ${editMetrics.land}\n- Kinetic Power Extension (CMJ): ${editMetrics.cmj}\n- Multi-Plane Deceleration (505): ${editMetrics.agility}\n==================================================\nSECURE BLUEPRINT GENERATION // SYSTEMS ENGINE v4.8\n==================================================`;
@@ -718,35 +1078,29 @@ export default function CoachDashboard({
                     </button>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  {handleDownloadMovementVideo && clientHasMovementVideo(activeClientProfile) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadMovementVideo(accessCode)}
+                      className="px-4 py-1.5 bg-slate-950 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 font-bold rounded text-[10px] tracking-widest uppercase transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-1.5"
+                    >
+                      ⬇ Download Movement Video
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => {
-                      // Pull the shared folder path string directly from memory
-                      const destinationUrl = activeClientProfile.reportUrl;
-
-                      if (destinationUrl && destinationUrl !== '') {
-                        // Launches their Dropbox/Drive folder in a clean separate window tab
-                        window.open(destinationUrl, '_blank', 'noopener,noreferrer');
-                      } else {
-                        // Fallback warning if you haven't assigned a cloud path yet
-                        alert(
-                          '⚡ TELEMETRY COMPILING // COACH IS REFINING YOUR OBJECTIVE BIOMECHANICAL REPORT. REGISTRATION LINK COMING SOON.'
-                        );
-                      }
-                    }}
+                    onClick={() => onOpenClientReport?.(accessCode)}
                     className="px-4 py-1.5 bg-slate-950 hover:bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 font-bold rounded text-[10px] tracking-widest uppercase transition-all cursor-pointer active:scale-95 shadow-md flex items-center gap-1.5"
                   >
-                    📥 Download Report
+                    📥 Download Longevity Report
                   </button>
                   <div className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase bg-slate-950 px-3 py-1.5 border border-emerald-900/40 rounded shadow-md">
                     ✓ SECURE CLIENT READ-ONLY PATHWAY ENFORCED
                   </div>
                   </div>
-                  {activeClientProfile.reportUrl ? (
-                    <div className="w-full text-[9px] text-emerald-400/80 tracking-wider uppercase truncate">
-                      ✓ UPLINK STAGED // LINK LOCKED TO DOSSIER
-                    </div>
-                  ) : null}
+                  <div className="w-full text-[9px] text-emerald-400/80 tracking-wider uppercase">
+                    ✓ LONGEVITY LAB REPORT LINKED TO DOSSIER // USE EXPORT PDF IN REPORT VIEW
+                  </div>
                 </div>
               )}
             </div>
@@ -762,64 +1116,8 @@ export default function CoachDashboard({
 
           </div>
         </div>
-
-        {/* Dynamic Focus Pad Overlay Area Component */}
-        {activeFocusField && (
-          <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md z-50 flex items-center justify-center p-4 md:p-8 animate-fade-in font-mono">
-            <div
-              className={`w-full max-w-5xl h-[90vh] bg-slate-950 border rounded-2xl p-6 md:p-8 flex flex-col justify-between shadow-2xl transition-all duration-300 ${
-                activeFocusField === 'desc' ? 'border-cyan-500/40' : 'border-indigo-500/40'
-              }`}
-            >
-              <div>
-                <div className="flex justify-between items-center border-b border-slate-900 pb-4 mb-5">
-                  <div>
-                    <span className="text-[10px] text-slate-500 font-bold block">// HIGH-CAPACITY TEXT FOCUS WRITER</span>
-                    <h3
-                      className={`text-lg font-black uppercase mt-0.5 ${
-                        activeFocusField === 'desc' ? 'text-cyan-400' : 'text-indigo-400'
-                      }`}
-                    >
-                      {activeFocusField === 'desc'
-                        ? 'Biomechanical Archetype Editor'
-                        : 'Kinetic Directives Case Logger'}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setActiveFocusField(null)}
-                    className="px-3.5 py-1.5 border border-slate-800 hover:border-slate-600 rounded-lg text-slate-400 text-xs bg-slate-900 font-bold tracking-widest uppercase cursor-pointer active:scale-95"
-                  >
-                    ✕ Close Pad [ESC]
-                  </button>
-                </div>
-                <textarea
-                  autoFocus
-                  readOnly={!isCoachMode}
-                  value={activeFocusField === 'desc' ? editDesc : editNotes}
-                  onChange={(e) =>
-                    isCoachMode &&
-                    (activeFocusField === 'desc' ? setEditDesc(e.target.value) : setEditNotes(e.target.value))
-                  }
-                  className={`w-full h-[62vh] bg-[#030712] border border-slate-900 rounded-xl p-6 text-base text-slate-200 font-sans focus:outline-none resize-none ${
-                    activeFocusField === 'desc' ? 'focus:border-cyan-500/60' : 'focus:border-indigo-500/60'
-                  }`}
-                />
-              </div>
-              <div className="border-t border-slate-900 pt-4 flex justify-between items-center">
-                <div className="text-[11px] text-slate-600">MATRIX CELL: {activeFocusField.toUpperCase()}_LOG_BUFFER</div>
-                <button
-                  onClick={() => setActiveFocusField(null)}
-                  className={`px-5 py-2.5 rounded-lg text-slate-950 font-bold text-xs tracking-widest uppercase cursor-pointer active:scale-95 ${
-                    activeFocusField === 'desc' ? 'bg-cyan-400' : 'bg-indigo-400'
-                  }`}
-                >
-                  ✓ Close & Minimize
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+      </>
     );
   }
 
@@ -954,32 +1252,6 @@ export default function CoachDashboard({
                   </div>
                 </div>
               </div>
-
-              <AccessCodeGenerator />
-
-              {/* DASHBOARD TO MASTER DIRECTORY CONNECT LINK */}
-              <div className="mt-6 font-mono">
-                <button
-                  type="button"
-                  onClick={() => setCurrentScreen("MASTER_ASSESSMENT_DIRECTORY_TERMINAL")}
-                  className="w-full text-center border border-[#00FFFF] bg-[#00FFFF]/5 hover:bg-[#00FFFF]/20 text-[#00FFFF] text-[10px] tracking-widest font-bold uppercase py-4 rounded transition-all duration-300 shadow-[0_0_15px_rgba(0,255,255,0.1)]"
-                >
-                  ⚙️ [ Run Master Assessment Directory View // ]
-                </button>
-              </div>
-
-              {/* DYNAMIC BIOMETRIC PDF REPORT LAB LINK */}
-              <div className="mt-4 font-mono">
-                <button
-                  type="button"
-                  onClick={() =>
-                    (onNavigate || setCurrentScreen)?.('REPORT_PDF_GENERATOR_VIEW')
-                  }
-                  className="w-full text-center border border-[#00FFFF] bg-[#00FFFF]/5 hover:bg-[#00FFFF]/20 text-[#00FFFF] text-[10px] tracking-widest font-bold uppercase py-3.5 rounded transition-all duration-300 shadow-[0_0_15px_rgba(0,255,255,0.08)] cursor-pointer"
-                >
-                  📋 [ Compile Biomechanical PDF Report // ]
-                </button>
-              </div>
             </div>
 
             {/* Column 2: Secure System Database Archives */}
@@ -1066,8 +1338,25 @@ export default function CoachDashboard({
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-1.5 md:justify-end">
                           <ArchiveStatusBadge status={client.streamStatus} />
+                          {clientHasLongevityReport(client) ? (
+                            <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-wider">
+                              | REPORT READY
+                            </span>
+                          ) : null}
                         </div>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenClientReport?.(code);
+                        }}
+                        className="p-2 bg-indigo-950/60 border border-indigo-900/80 hover:border-indigo-400 text-indigo-300 hover:text-indigo-200 rounded-lg transition-all cursor-pointer active:scale-90 shrink-0"
+                        title="Open Longevity Report"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
 
                       <button
                         type="button"
@@ -1312,62 +1601,216 @@ export default function CoachDashboard({
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 min-w-0">
-                <CyberDnaMatrixScene />
-
-                {/* Local athlete stream-status override (dossier vault) */}
-                <div className="p-5 bg-slate-900/40 border border-cyan-500/20 rounded-xl space-y-3">
-                  <p className="text-[10px] font-mono tracking-widest text-cyan-400/80 uppercase">
-                    [ OVERRIDE ATHLETE DATASTREAM PROFILE STATE ]
-                  </p>
-                  <div className="space-y-1.5">
-                    <label className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block">
-                      Recipient Athlete Matrix
-                    </label>
+              <div className="flex flex-col min-w-0 min-h-full">
+                <div className="space-y-4 min-w-0 flex-1">
+                {/* Command rail — tactical buttons first, DNA matrix graphic below */}
+                <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-3">
+                  <div className="p-3 bg-slate-950/60 border border-purple-500/25 rounded-lg space-y-2">
+                    <div className="text-[9px] text-purple-400 font-bold uppercase tracking-widest">
+                      🤖 Active Coach Persona (port 8000)
+                    </div>
                     <select
-                      value={pipelineRecipientCode}
-                      onChange={(e) => setPipelineRecipientCode(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 text-slate-300 font-mono text-[11px] p-2 rounded w-full focus:border-cyan-500/40 outline-none cursor-pointer"
+                      value={selectedCoach}
+                      onChange={(e) => {
+                        const nextCoach = normalizeCoachPersonaKey(e.target.value);
+                        setSelectedCoach(nextCoach);
+                        if (voiceEnabledRef.current) {
+                          speakAsCoach(
+                            COACH_VOICE_GREETINGS[nextCoach] || COACH_VOICE_GREETINGS.gideon,
+                            nextCoach,
+                            { force: true }
+                          );
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-[10px] rounded-lg p-2 outline-none focus:border-purple-500"
                     >
-                      {Object.entries(localDatabase || {}).map(([code, client]) => (
-                        <option key={code} value={code}>
-                          {client.name} // {code}
+                      {COACH_PERSONA_OPTIONS.map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
                         </option>
                       ))}
                     </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block">
-                      Update Recipient Operational Status
-                    </label>
-                    <select
-                      value={pipelineStatus}
-                      onChange={(e) => setPipelineStatus(e.target.value)}
-                      className="bg-slate-950 border border-cyan-500/30 text-cyan-300 font-mono text-[11px] p-2 rounded w-full focus:border-cyan-400 outline-none cursor-pointer"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!voiceEnabled) {
+                          voiceEnabledRef.current = true;
+                          setVoiceEnabled(true);
+                          speakAsCoach(
+                            COACH_VOICE_GREETINGS[selectedCoach] || COACH_VOICE_GREETINGS.gideon,
+                            selectedCoach,
+                            { force: true }
+                          );
+                        } else {
+                          voiceEnabledRef.current = false;
+                          setVoiceEnabled(false);
+                          speechSynth?.cancel();
+                        }
+                      }}
+                      className={`w-full text-[9px] font-bold py-2 rounded-lg transition-all uppercase tracking-wider ${
+                        voiceEnabled
+                          ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.45)]'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      }`}
                     >
-                      <option value="AWAITING UPLINK">AWAITING UPLINK</option>
-                      <option value="COMPILING BLU">COMPILING BLU</option>
-                      <option value="STREAM LOCKED">STREAM LOCKED</option>
-                    </select>
+                      🎤 {getCoachVoiceEngineLabel(selectedCoach)} Voice:{' '}
+                      {voiceEnabled ? 'ON' : 'OFF'}
+                    </button>
+                    <p className="text-[9px] text-slate-500 font-mono tracking-wide">
+                      API key: <span className="text-cyan-400">?coach={selectedCoach}</span>
+                      {activeClientProfile?.longevityReport?.coachPlan?.coach_persona ? (
+                        <>
+                          {' '}
+                          · dossier:{' '}
+                          {getCoachPersonaLabel(
+                            activeClientProfile.longevityReport.coachPlan.coach_persona
+                          )}
+                        </>
+                      ) : null}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleSyncAthleteStatus}
-                    disabled={Boolean(assetBroadcastPhase)}
-                    className={`w-full px-4 py-2.5 bg-slate-950 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 font-mono font-bold text-[10px] tracking-widest uppercase rounded transition-all cursor-pointer active:scale-[0.98] ${
-                      assetBroadcastPhase === 'transmitting'
-                        ? 'animate-pulse cursor-wait opacity-90'
-                        : assetBroadcastPhase === 'success'
-                          ? 'border-emerald-500/40 text-emerald-400 cursor-default'
-                          : ''
-                    }`}
-                  >
-                    {assetBroadcastPhase === 'transmitting'
-                      ? '[ TRANSMITTING STATUS PACKET... ]'
-                      : assetBroadcastPhase === 'success'
-                        ? '[ ATHLETE STATUS STREAM UPDATED ]'
-                        : '⚡ SYNC ATHLETE STATUS OVERRIDE //'}
-                  </button>
+
+                  {accessCode && (
+                    <div className="p-3 bg-slate-950/60 border border-cyan-500/25 rounded-lg space-y-2">
+                      <div className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest">
+                        📋 Client Physical Baseline
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                            Age
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={editClientAge}
+                            onChange={(e) => setEditClientAge(e.target.value)}
+                            placeholder="62"
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-[11px] outline-none font-sans"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                            Gender
+                          </label>
+                          <select
+                            value={editClientGender}
+                            onChange={(e) => setEditClientGender(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-[11px] outline-none font-sans"
+                          >
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Non-binary">Non-binary</option>
+                            <option value="Prefer not to say">Prefer not to say</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                            Height
+                          </label>
+                          <input
+                            type="text"
+                            value={editClientHeight}
+                            onChange={(e) => setEditClientHeight(e.target.value)}
+                            placeholder="5ft 10in"
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-[11px] outline-none font-sans"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                            Weight
+                          </label>
+                          <input
+                            type="text"
+                            value={editClientWeight}
+                            onChange={(e) => setEditClientWeight(e.target.value)}
+                            placeholder="185 lbs"
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded p-1.5 text-slate-200 text-[11px] outline-none font-sans"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSaveProfileChanges}
+                        className="w-full py-2 bg-cyan-600/20 hover:bg-cyan-600/35 border border-cyan-500/40 text-cyan-300 font-mono font-bold text-[9px] uppercase tracking-widest rounded-lg transition-all"
+                      >
+                        💾 Save Baseline to Dossier
+                      </button>
+                      <p className="text-[8px] text-slate-600 font-mono tracking-wide">
+                        Feeds Gemini demographic benchmarks · dossier #{accessCode}
+                      </p>
+                    </div>
+                  )}
+
+                  <CoachGeminiChatDeck
+                    expanded
+                    messages={chatMessages}
+                    chatInput={chatInput}
+                    onChatInputChange={setChatInput}
+                    onSubmit={handleSendChatMessage}
+                    isChatLoading={isChatLoading}
+                    isAnalyzing={isCompilingPdf}
+                    seedAssistantMessage={coachFeedbackDisplay}
+                    selectedCoach={selectedCoach}
+                    voiceEnabled={voiceEnabled}
+                    onReplayLast={(text) => speakAsCoach(text, selectedCoach)}
+                  />
+
+                  <TacticalWorkflowButtonStack
+                    onMasterDirectory={() => setCurrentScreen('MASTER_ASSESSMENT_DIRECTORY_TERMINAL')}
+                    onOpenReportViewer={() => onOpenClientReport?.(accessCode)}
+                    onUploadLab={() =>
+                      (onNavigate || setCurrentScreen)?.('BLUEPRINT_ASSESSMENTS_VIEW')
+                    }
+                    onFetchYolo={handleLoadYoloResults}
+                    onCompilePdf={handleCompilePDFReport}
+                    isFetchingYolo={isLoadingYolo}
+                    isCompilingPdf={isCompilingPdf}
+                    yoloTelemetryPanel={
+                      Object.keys(yoloJointAngles).length > 0 || yoloLoadStatus ? (
+                        <div className="p-3 bg-slate-950/80 border border-purple-500/25 rounded-lg space-y-2 text-[10px] font-mono">
+                          <div className="text-purple-400 uppercase tracking-widest font-bold">
+                            // YOLO TELEMETRY CACHE
+                          </div>
+                          {yoloLabMeta && (
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-slate-400">
+                              <span className="text-cyan-400">{yoloLabMeta.testName}</span>
+                              {yoloLabMeta.overallScore != null && (
+                                <span>Score: {Number(yoloLabMeta.overallScore).toFixed(1)}%</span>
+                              )}
+                              {yoloLabMeta.grade && <span>Grade: {yoloLabMeta.grade}</span>}
+                              {yoloAsymmetryIndex != null && (
+                                <span className="text-amber-400">Asymmetry: {yoloAsymmetryIndex}%</span>
+                              )}
+                            </div>
+                          )}
+                          {Object.keys(yoloJointAngles).length > 0 && (
+                            <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto text-[9px]">
+                              {Object.entries(yoloJointAngles).slice(0, 8).map(([key, val]) => (
+                                <div key={key} className="text-slate-500 truncate">
+                                  <span className="text-purple-400/90">{key}:</span>{' '}
+                                  {typeof val === 'number' ? val.toFixed(1) : val}°
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {yoloLoadStatus && (
+                            <p
+                              className={`text-[9px] uppercase tracking-wider ${yoloLoadStatus.startsWith('✓') ? 'text-emerald-400' : 'text-slate-500'}`}
+                            >
+                              {yoloLoadStatus}
+                            </p>
+                          )}
+                        </div>
+                      ) : null
+                    }
+                  />
+                </div>
+                </div>
+
+                <div className="mt-auto pt-3 shrink-0">
+                  <AccessCodeGenerator variant="statusBar" />
                 </div>
               </div>
             )}
