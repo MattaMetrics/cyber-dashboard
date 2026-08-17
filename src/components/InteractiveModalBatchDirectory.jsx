@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 // Import your stable, hardcoded local movement inventory library file
-import { staticAssessmentLibrary } from '../data/assessmentLibrary';
+import { DEFAULT_PANEL_DRAFT_URL } from '../constants/guideAssets';
 
 export default function InteractiveModalBatchDirectory({
   onNavigate,
@@ -139,7 +139,7 @@ export default function InteractiveModalBatchDirectory({
 
           <div className="flex-1 flex justify-center items-center overflow-hidden min-h-[350px]">
             <img
-              src={previewTrack?.biometric_photo_url || 'https://imgur.com'}
+              src={previewTrack?.biometric_photo_url || DEFAULT_PANEL_DRAFT_URL}
               alt="Telemetry Mesh Asset"
               className="w-full h-auto object-contain max-h-[50vh] rounded transition-all duration-300"
             />

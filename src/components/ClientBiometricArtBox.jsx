@@ -7,8 +7,7 @@ import { DEFAULT_STANDING_HOLOGRAM_PANEL } from '../constants/guideAssets';
  */
 export default function ClientBiometricArtBox({ clientData }) {
   // Absolute master fallback — standing telemetry wireframe graphic
-  const GLOBAL_DEFAULT_TEMPLATE_URL =
-    DEFAULT_STANDING_HOLOGRAM_PANEL || 'https://i.imgur.com/TL3ptqN.png';
+  const GLOBAL_DEFAULT_TEMPLATE_URL = DEFAULT_STANDING_HOLOGRAM_PANEL;
 
   // Coach panel image URL, or template if the dossier row is empty
   const activeArtSource = clientData?.biometricPhotoUrl || GLOBAL_DEFAULT_TEMPLATE_URL;

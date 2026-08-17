@@ -32,7 +32,7 @@ export default function UnifiedAssessmentLayout({
     databaseRecord?.biometric_photo_url ||
     databaseRecord?.biometricPhotoUrl ||
     databaseRecord?.imageUrl ||
-    'https://imgur.com';
+    '';
   const imageSource = isAssignedPanelUrl(rawImage)
     ? rawImage
     : DEFAULT_PROTOCOL_FALLBACK.imageUrl;

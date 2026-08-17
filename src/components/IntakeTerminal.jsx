@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import OnboardingIntakeGate from './OnboardingIntakeGate';
+import { DEFAULT_STANDING_HOLOGRAM_PANEL } from '../constants/guideAssets';
 
 const ARCHIVE_EMAIL_TARGET = import.meta.env.VITE_APP_EMAIL_TARGET;
 
@@ -317,7 +318,7 @@ export default function IntakeTerminal({
           {/* Left: biometric hologram asset */}
           <div className="lg:col-span-5 flex flex-col items-center justify-center min-h-[450px]">
             <img
-              src="https://i.imgur.com/TL3ptqN.png"
+              src={DEFAULT_STANDING_HOLOGRAM_PANEL}
               alt="Biometric Vector Analysis"
               className="w-full h-auto object-contain rounded-xl drop-shadow-[0_0_20px_rgba(6,182,212,0.15)] select-none pointer-events-none"
             />

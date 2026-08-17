@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, FileJson } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import ReportViewModeToggle from './ReportViewModeToggle';
 import { AIKYNETIX_WEB_URL } from '../utils/aikynetixReportUrl';
 
@@ -51,7 +51,7 @@ export default function AikynetixOriginalReportView({
   const hasSnapshot = Boolean(pipelineSnapshot && Object.keys(pipelineSnapshot).length > 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-900 print:p-4 print:pr-8">
+    <div className="min-h-screen h-auto bg-slate-50 p-6 md:p-8 font-sans text-slate-900 print:p-4 print:pr-8 overflow-y-visible">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
           <div>
@@ -107,18 +107,12 @@ export default function AikynetixOriginalReportView({
           />
 
           <p className="text-[10px] text-slate-500 font-mono mt-3 uppercase tracking-wider">
-            If the frame stays blank, Aikynetix may block embedding — use Open In New Tab or review
-            the intercept snapshot below.
+            If the frame stays blank, Aikynetix may block embedding — use Open In New Tab.
           </p>
         </div>
 
         {hasSnapshot ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-              <FileJson size={14} className="text-amber-500" />
-              Intercept Snapshot // Captured Pipeline JSON
-            </div>
-
             <SnapshotSection title="Assessment Header">
               <MetricGrid
                 entries={Object.entries({
@@ -157,12 +151,7 @@ export default function AikynetixOriginalReportView({
               </SnapshotSection>
             ) : null}
           </div>
-        ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs font-mono text-amber-900">
-            No intercept snapshot on file yet. Run an assessment through the pipeline to capture
-            original Aikynetix telemetry for side-by-side review.
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

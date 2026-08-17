@@ -31,7 +31,7 @@
       "name": "NECK MOBILITY MATRIX",
       "category": "Mobility",
       "packages": ["VITAL_FLOW", "ATHLETE_PRECISION", "POSTURE_ERGONOMICS"],
-      "biometric_photo_url": "https://i.imgur.com/USu4J77.png",
+      "biometric_photo_url": "node_1_neck_mobility.png",
       "phases": [
         "neutral_calibration",
         "flexion",
@@ -178,7 +178,7 @@
         "ATHLETE_PRECISION",
         "KINETIC_POWER_INTEGRITY"
       ],
-      "biometric_photo_url": "https://i.imgur.com/APLIpK7.jpeg",
+      "biometric_photo_url": "node_2_back_mobility.png",
       "phases": ["prone_setup", "cobra_extension", "standing_flexion", "standing_extension"],
       "metrics": {
         "primary": {
@@ -302,7 +302,7 @@
       "name": "TRUNK & THORACIC ROTATION MATRIX",
       "category": "Mobility",
       "packages": ["VITAL_FLOW"],
-      "biometric_photo_url": "https://i.imgur.com/FJsXrch.png",
+      "biometric_photo_url": "node_3_trunk_thoracic_rotation.png",
       "phases": ["neutral_setup", "rotation_right", "rotation_left"],
       "metrics": {
         "primary": {

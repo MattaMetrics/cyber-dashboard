@@ -2198,7 +2198,7 @@ export default function App() {
       activeClientProfile || localDatabase[reportCode] || null;
 
     return (
-      <div className="h-screen w-screen overflow-hidden print:h-auto print:min-h-screen print:overflow-visible print:bg-white">
+      <div className="min-h-screen w-screen h-auto overflow-y-auto report-viewer-scroll-root print:h-auto print:min-h-screen print:overflow-visible print:bg-white">
         <ClientReportView
           reportClient={reportClient}
           reportCode={reportCode}

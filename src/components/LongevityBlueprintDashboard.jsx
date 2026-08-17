@@ -14,6 +14,7 @@ import VideoFramePanel from './VideoFramePanel';
 import ReportViewModeToggle from './ReportViewModeToggle';
 import DynamicBlueprintChart from './DynamicBlueprintChart';
 import HorizontalPhaseSelector from './HorizontalPhaseSelector';
+import UnifiedReportCards from './UnifiedReportCards';
 
 const DEFAULT_FRAME_MAX = 128;
 
@@ -98,6 +99,8 @@ export default function LongevityBlueprintDashboard({
   printAllPhases = false,
   pipelineSnapshot = null,
   escapeTarget = 'COACH_DASHBOARD_HOME',
+  layoutMode = 'phases',
+  reportClient = null,
 }) {
   const fallbackPhases = useMemo(
     () => buildModelDataPhases({ profilePhotoUrl }),
@@ -411,9 +414,23 @@ export default function LongevityBlueprintDashboard({
     setIsEditing(false);
   };
 
+  const isUnifiedLayout = layoutMode === 'unified';
+
   return (
-    <div className="h-full w-full min-h-0 bg-slate-50 p-6 md:p-8 font-sans text-slate-900 flex flex-col overflow-hidden selection:bg-cyan-500 selection:text-white print:h-auto print:min-h-screen print:overflow-visible print:p-4 print:pr-8">
-      <div className="max-w-6xl mx-auto flex flex-col flex-1 min-h-0 w-full overflow-hidden">
+    <div
+      className={`w-full bg-slate-50 p-6 md:p-8 font-sans text-slate-900 selection:bg-cyan-500 selection:text-white print:h-auto print:min-h-screen print:overflow-visible print:p-4 print:pr-8 ${
+        isUnifiedLayout
+          ? 'h-auto min-h-full overflow-y-visible'
+          : 'h-full min-h-0 flex flex-col overflow-hidden'
+      }`}
+    >
+      <div
+        className={`max-w-6xl mx-auto w-full ${
+          isUnifiedLayout
+            ? 'h-auto overflow-y-visible'
+            : 'flex flex-col flex-1 min-h-0 overflow-hidden'
+        }`}
+      >
         {/* 1. Main Application Header */}
         <div className="flex-none">
         {showTestSimulator && (
@@ -573,47 +590,55 @@ export default function LongevityBlueprintDashboard({
         )}
         </div>
 
-        {/* 2. Dynamic horizontal phases bar */}
-        {!useExternalPhaseNav ? (
-          <div className="flex-none mt-2">
-            <HorizontalPhaseSelector
-              activePhase={activePhase}
-              setActivePhase={setActivePhase}
-              phases={selectorPhases}
-            />
+        {isUnifiedLayout ? (
+          <div className="mt-4 h-auto max-h-none overflow-y-visible">
+            <UnifiedReportCards client={reportClient} variant="light" />
           </div>
         ) : (
-          <div className="flex-none mt-2 mb-2 print:hidden">
-            <p className="text-[10px] font-mono font-bold text-cyan-600 uppercase tracking-wider">
-              {activePhase.toUpperCase()} // {currentPhase.name}
-            </p>
-          </div>
+          <>
+            {/* 2. Dynamic horizontal phases bar */}
+            {!useExternalPhaseNav ? (
+              <div className="flex-none mt-2">
+                <HorizontalPhaseSelector
+                  activePhase={activePhase}
+                  setActivePhase={setActivePhase}
+                  phases={selectorPhases}
+                />
+              </div>
+            ) : (
+              <div className="flex-none mt-2 mb-2 print:hidden">
+                <p className="text-[10px] font-mono font-bold text-cyan-600 uppercase tracking-wider">
+                  {activePhase.toUpperCase()} // {currentPhase.name}
+                </p>
+              </div>
+            )}
+
+            {/* 3. Main dashboard columns frame (no video in unified report mode) */}
+            <div
+              className={`flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2 overflow-hidden min-h-0 ${
+                printAllPhases ? 'print:hidden' : ''
+              }`}
+            >
+              {renderPhaseGridChildren(activePhase, {
+                forPrint: false,
+                embedSupplementsInRightColumn: true,
+              })}
+            </div>
+
+            {/* Print: all phase pages for client PDF export */}
+            {printAllPhases
+              ? phaseKeys.map((pKey) => renderPhaseContent(pKey, { forPrint: true }))
+              : null}
+
+            <div className="flex-none shrink-0 print:max-h-none print:overflow-visible">
+              <NarrativeBlocks
+                layout={isEditing ? draftNarrative.narrativeLayout : narrativeLayout}
+                archetypeVector={isEditing ? draftNarrative.archetypeVector : archetypeVector}
+                caseLog={isEditing ? draftNarrative.caseLog : caseLog}
+              />
+            </div>
+          </>
         )}
-
-        {/* 3. Main 2-column dashboard columns frame */}
-        <div
-          className={`flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2 overflow-hidden min-h-0 ${
-            printAllPhases ? 'print:hidden' : ''
-          }`}
-        >
-          {renderPhaseGridChildren(activePhase, {
-            forPrint: false,
-            embedSupplementsInRightColumn: true,
-          })}
-        </div>
-
-        {/* Print: all phase pages for client PDF export */}
-        {printAllPhases
-          ? phaseKeys.map((pKey) => renderPhaseContent(pKey, { forPrint: true }))
-          : null}
-
-        <div className="flex-none shrink-0 print:max-h-none print:overflow-visible">
-          <NarrativeBlocks
-            layout={isEditing ? draftNarrative.narrativeLayout : narrativeLayout}
-            archetypeVector={isEditing ? draftNarrative.archetypeVector : archetypeVector}
-            caseLog={isEditing ? draftNarrative.caseLog : caseLog}
-          />
-        </div>
       </div>
     </div>
   );

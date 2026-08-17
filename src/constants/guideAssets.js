@@ -1,24 +1,29 @@
+import {
+  buildDefaultGuideAssetUrls,
+  getPanelAsset,
+} from '../utils/assessmentAssetUrl';
+
 /**
- * Photo 3 — upright standing holographic male model (live Imgur graphic).
+ * Photo 3 — upright standing holographic male model.
  * Used as the suite left anchor and as the instruction-panel fallback
  * when a test has no custom panel URL assigned.
  */
-export const DEFAULT_STANDING_HOLOGRAM_PANEL = 'https://i.imgur.com/jbkxKoD.png';
+export const DEFAULT_STANDING_HOLOGRAM_PANEL = getPanelAsset('defaultStanding');
 
 /** Kinetic Power Integrity suite left-anchor hologram only. */
-export const KINETIC_POWER_HOLOGRAM_PANEL = 'https://i.imgur.com/8x6scMT.png';
+export const KINETIC_POWER_HOLOGRAM_PANEL = getPanelAsset('kineticPower');
 
 /** Posture & Ergonomics suite left-anchor hologram only. */
-export const POSTURE_ERGONOMICS_HOLOGRAM_PANEL = 'https://i.imgur.com/wlXWReb.png';
+export const POSTURE_ERGONOMICS_HOLOGRAM_PANEL = getPanelAsset('postureErgonomics');
 
 /** Athlete Precision suite left-anchor hologram only. */
-export const ATHLETE_PRECISION_HOLOGRAM_PANEL = 'https://i.imgur.com/aUXGsnr.png';
+export const ATHLETE_PRECISION_HOLOGRAM_PANEL = getPanelAsset('athletePrecision');
 
 /** Vital Flow suite left-anchor hologram only. */
-export const VITAL_FLOW_HOLOGRAM_PANEL = 'https://i.imgur.com/14vABDo.png';
+export const VITAL_FLOW_HOLOGRAM_PANEL = getPanelAsset('vitalFlow');
 
 /** Default draft image shown in the coach Telemetry Uplink modulator. */
-export const DEFAULT_PANEL_DRAFT_URL = 'https://i.imgur.com/m0UrRMJ.png';
+export const DEFAULT_PANEL_DRAFT_URL = getPanelAsset('draftDefault');
 
 /**
  * Streamlit-parity assessment fallbacks — used when coach has not broadcast
@@ -64,38 +69,7 @@ export function normalizeGuideProtocolLeaf(leaf) {
  * (or protocol packet `{ imageUrl, execution, alignment }`).
  * Coaches overwrite leaves live via the Telemetry Uplink Modulator.
  */
-export const DEFAULT_GUIDE_ASSETS = {
-  vital_flow: {
-    neck_mobility: 'https://imgur.com',
-    back_mobility: 'https://imgur.com',
-    thoracic_dissociation: 'https://imgur.com',
-    deep_squat: 'https://imgur.com',
-    single_leg_hold: 'https://imgur.com',
-    shoulder_girdle: 'https://imgur.com',
-  },
-  athlete_precision: {
-    neck_mobility: 'https://imgur.com',
-    dynamic_single_leg_squat: 'https://imgur.com',
-    back_mobility: 'https://imgur.com',
-    shoulder_girdle: 'https://imgur.com',
-    overhead_bilateral_squat: 'https://imgur.com',
-  },
-  posture_ergonomics: {
-    seated_desk_neck: 'https://imgur.com',
-    posture_axis: 'https://imgur.com',
-    single_leg_hold: 'https://imgur.com',
-    lumbar_spine: 'https://imgur.com',
-    shoulder_rotation: 'https://imgur.com',
-  },
-  kinetic_integrity: {
-    back_mobility: 'https://imgur.com',
-    neck_mobility: 'https://imgur.com',
-    deep_squat_overhead_bar: 'https://imgur.com',
-    fight_stance: 'https://imgur.com',
-    shoulder_mobility: 'https://imgur.com',
-    striking_analysis: 'https://imgur.com',
-  },
-};
+export const DEFAULT_GUIDE_ASSETS = buildDefaultGuideAssetUrls();
 
 /**
  * Flat coach asset-matrix select — value is suite.slot nested path.

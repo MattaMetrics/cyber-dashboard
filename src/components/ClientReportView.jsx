@@ -59,13 +59,13 @@ export default function ClientReportView({
 
   return (
     <div
-      className={`h-full w-full min-h-0 flex flex-col overflow-hidden${
+      className={`w-full min-h-0 flex flex-col h-auto overflow-y-visible report-viewer-scroll-root${
         isCoachMode ? ' coach-report-export' : ''
       }`}
     >
       <div
         id="report-section-blueprint"
-        className={`report-print-section flex-1 min-h-0 flex flex-col overflow-hidden ${
+        className={`report-print-section h-auto max-h-none overflow-y-visible flex flex-col ${
           blueprintVisible ? 'block' : 'hidden print:block'
         }`}
       >
@@ -103,6 +103,8 @@ export default function ClientReportView({
           onSaveReport={onSaveReport}
           escapeTarget={isCoachMode ? 'COACH_DASHBOARD_HOME' : 'CLIENT_PROFILE_HOME'}
           onNavigate={onNavigate}
+          layoutMode="unified"
+          reportClient={reportClient}
           {...comparisonProps}
         />
       </div>
@@ -110,7 +112,7 @@ export default function ClientReportView({
       {isCoachMode ? (
         <div
           id="report-section-original"
-          className={`report-print-section flex-1 min-h-0 flex flex-col overflow-hidden coach-only-aikynetix-section ${
+          className={`report-print-section h-auto max-h-none overflow-y-visible flex flex-col coach-only-aikynetix-section ${
             originalVisible ? 'block' : 'hidden print:block'
           }`}
         >

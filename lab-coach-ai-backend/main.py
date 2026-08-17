@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import random
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Dict, Optional
 from google import genai
 from google.genai import types
+from google.genai import errors as genai_errors
 from pdf_generator import build_cyber_coaching_pdf
 
 try:
@@ -317,6 +319,82 @@ def _parse_gemini_json(text: str) -> dict:
     return json.loads(raw)
 
 
+_RETRYABLE_GEMINI_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def _is_retryable_gemini_error(exc: BaseException) -> bool:
+    """True for transient Google overload / rate-limit failures worth retrying."""
+    code = getattr(exc, "code", None)
+    if isinstance(code, int) and code in _RETRYABLE_GEMINI_STATUS_CODES:
+        return True
+    if isinstance(exc, genai_errors.ServerError):
+        return True
+
+    message = str(exc).lower()
+    return any(
+        token in message
+        for token in (
+            "429",
+            "503",
+            "overloaded",
+            "rate limit",
+            "resource exhausted",
+            "temporarily unavailable",
+            "service unavailable",
+            "deadline exceeded",
+        )
+    )
+
+
+async def _generate_gemini_content_with_retry(
+    *,
+    contents: str,
+    config: types.GenerateContentConfig,
+    model: str = "gemini-3.5-flash",
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+):
+    """Call Gemini with exponential backoff on transient overload (429/503)."""
+    if client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="GEMINI_API_KEY not set. Add it to lab-coach-ai-backend/.env and restart uvicorn.",
+        )
+
+    delay = initial_delay
+    last_error: Optional[BaseException] = None
+
+    for attempt in range(max_retries):
+        try:
+            return client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            last_error = exc
+            if not _is_retryable_gemini_error(exc) or attempt >= max_retries - 1:
+                break
+            await asyncio.sleep(delay)
+            delay *= 2
+
+    if last_error is None:
+        raise HTTPException(status_code=500, detail="Gideon Telemetry Grid Link Severed: unknown error.")
+
+    if _is_retryable_gemini_error(last_error):
+        raise HTTPException(
+            status_code=503,
+            detail="Gideon Telemetry Grid Link overloaded. Please try again.",
+        )
+
+    raise HTTPException(
+        status_code=500,
+        detail=f"Gideon Telemetry Grid Link Severed: {last_error}",
+    )
+
+
 # --- GIDEON IMMERSIVE DIALOGUE BANK (Laboratory Matrix) ---
 GIDEON_GREETINGS = [
     "Initializing course plotting... Full bio-spectral scan of the kinetic zone is active. Welcome back Captain,  all systems locked and loaded ready for your commands.",
@@ -603,8 +681,7 @@ async def analyze_biometrics(metrics: YoloMetrics, coach: str = "gideon"):
                 session_signoff,
             )
 
-        response = client.models.generate_content(
-            model="gemini-3.5-flash",
+        response = await _generate_gemini_content_with_retry(
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -628,19 +705,66 @@ async def analyze_biometrics(metrics: YoloMetrics, coach: str = "gideon"):
 
         return plan.model_dump()
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gideon Telemetry Grid Link Severed: {str(e)}")
 
 
 @app.post("/api/coach/chat")
 async def coach_chat(payload: CoachChatRequest, coach: str = "gideon"):
+    if not (payload.message or "").strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+    user_message_clean = payload.message.strip().lower()
+
+    # 🛸 EASTER EGG PROTOCOL_01: The "Not Trying" Low-Gravity Eviction
+    if (
+        "not looking like they are trying" in user_message_clean
+        or "does not look like they are trying" in user_message_clean
+        or "idk" in user_message_clean
+    ):
+        return {
+            "reply": (
+                "Diagnostic sweep complete Captain. If I may suggest an analytical course correction... "
+                "If this specimen is finding basic terrestrial physics too demanding, we might consider "
+                "deploying the jumpship to drop them off at a lower-gravity timeline. A less unhabituated "
+                "moon with precisely 0.16g of gravitational pull could accommodate their lack of metabolic effort."
+            ),
+            "role": "assistant",
+        }
+
+    # 🌌 EASTER EGG PROTOCOL_02: The Galactic Potential Interception
+    if "looks good to me" in user_message_clean or "are they a keeper" in user_message_clean:
+        return {
+            "reply": (
+                "Analyzing local present timeline trajectory... Captain if I may intervene, my telemetry "
+                "indicators are glowing on several fronts. Distinct unique, galactic potential to handle time "
+                "change reality warps. I advise we integrate them into protocols and advance their training speeds. "
+                "The future shows great precision and is a 'yes' from me Captain. Shall i move them to bridge level "
+                "status , just say the word ."
+            ),
+            "role": "assistant",
+        }
+
+    # 🥊 EASTER EGG PROTOCOL_03: The Combat Coach Gym Code (Bonus Vegas Hook!)
+    if "they are soft" in user_message_clean or "weak" in user_message_clean:
+        return {
+            "reply": (
+                "For real Coach, you know i dont care who hears me, im not a tourist. If they're crying about a sore, "
+                "pack can ship 'em to a luxury spa to eat bon bons. We build forged in fires preciscion here. "
+                "If they can't train like they are losing in the deep water and have the heart to always get back up. "
+                "Next! there are others or they can step it up and show us what they really got on the inside to bring out"
+            ),
+            "role": "assistant",
+        }
+
+    # --- Standard Gemini processing continues below if no hooks match ---
     if client is None:
         raise HTTPException(
             status_code=503,
             detail="GEMINI_API_KEY not set. Add it to lab-coach-ai-backend/.env and restart uvicorn.",
         )
-    if not (payload.message or "").strip():
-        raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
     try:
         coach_key = _normalize_coach_key(coach)

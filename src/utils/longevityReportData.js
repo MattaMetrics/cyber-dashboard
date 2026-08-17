@@ -350,21 +350,146 @@ export function buildSomaticHealthBlock(plan) {
   return [...new Set(parts.filter(Boolean))].join('\n\n');
 }
 
-/** Premium tier dossier card labels (CoachDashboard 6-card stack) */
+/** Unified report + dossier card labels (5-card professional layout) */
 export const DOSSIER_CARD_LABELS = {
-  archetype: '[ BIOMECHANICAL ARCHETYPE VECTOR // ]',
-  coachPlan: '[ IMMEDIATE COACH PLAN & "RIGHT NOW" CUES // ]',
-  kinetic: '[ KINETIC DIRECTIVES & GLOBAL RE-TEST LOG // ]',
-  phase1: '[ PREMIUM UPGRADE: PHASE 1 // 2-WEEK ACTIVATION PROGRAM ]',
-  phase2: '[ PREMIUM UPGRADE: PHASE 2 // 4-WEEK STABILIZATION PROGRAM ]',
-  somatic: '[ SOMATIC HEALTH & THERAPEUTIC STRATEGIES // ]',
+  archetype: 'BIOMECHANICAL ARCHETYPE VECTOR',
+  quickResults: 'QUICK RESULTS OVERVIEW',
+  awareness: 'THINGS TO BE AWARE OF',
+  periodization: 'KINETIC PERIODIZATION PLAN',
+  somatic: 'SOMATIC HEALTH & THERAPEUTICS',
+  period1: '2-WEEK ACTIVATION PROGRAM',
+  period2: '4-WEEK STABILIZATION PROGRAM',
+  coachCues: 'IMMEDIATE COACH CUES',
+  kineticDirectives: 'KINETIC DIRECTIVES & RE-TEST LOG',
 };
 
-export const PREMIUM_LOCK_BANNER =
-  '// AUTOMATED UPLINK STAGED // CLOAKING SHIELD LOCKED. DEPLOY PREMIUM UPGRADE BLOCK TO GENERATE REHAB REGIMENT.';
+/** @deprecated — lock banners removed; cards always render editable/read-only fields */
+export const PREMIUM_LOCK_BANNER = '';
+
+/** Card 2 — YOLO scores, pipeline metrics, and summary indices */
+export function buildQuickResultsOverview(client) {
+  const lr = client?.longevityReport || {};
+  const snap = lr.pipelineSnapshot || {};
+  const header = snap.header || {};
+  const scores = snap.scores || {};
+  const rules = Array.isArray(snap.rule_results) ? snap.rule_results : [];
+  const metrics = client?.metrics || {};
+  const summaryItems = lr.summaryItems || buildSummaryFromMetrics(metrics);
+  const lines = [];
+
+  if (header.test_name || snap.testId) {
+    lines.push(`Assessment: ${header.test_name || snap.testId}`);
+  }
+  if (header.overall_score != null) {
+    lines.push(`Overall Score: ${formatPipelineScore(header.overall_score)}`);
+  }
+  if (header.grade) lines.push(`Grade: ${header.grade}`);
+  if (header.performance_level) lines.push(`Performance: ${header.performance_level}`);
+
+  Object.entries(scores).forEach(([key, val]) => {
+    lines.push(`${key.replace(/_/g, ' ').toUpperCase()}: ${formatPipelineScore(val)}`);
+  });
+
+  summaryItems.forEach(({ label, val }) => {
+    if (label && val) lines.push(`${label}: ${val}`);
+  });
+
+  rules.slice(0, 16).forEach((rule) => {
+    const metric = String(rule.metric || 'METRIC').replace(/_/g, ' ').toUpperCase();
+    const band = rule.band || rule.status || '';
+    lines.push(`${metric}: ${rule.raw_score ?? '—'}${band ? ` (${band})` : ''}`);
+  });
+
+  const angles = snap.angles || snap.joint_angles || lr.yoloAngles || {};
+  Object.entries(angles)
+    .slice(0, 12)
+    .forEach(([key, val]) => {
+      const formatted = typeof val === 'number' ? val.toFixed(1) : String(val ?? '—');
+      lines.push(`${key.replace(/_/g, ' ').toUpperCase()}: ${formatted}°`);
+    });
+
+  return lines.join('\n') || 'Awaiting YOLO lab telemetry sync.';
+}
+
+/** Card 3 — compensations, kinetic directives, and immediate coach cues */
+export function buildThingsToBeAwareOf(client) {
+  const notes = (client?.notes || '').trim();
+  const coachPlan = buildImmediateCoachPlanBlock(client);
+  const parts = [];
+
+  if (notes) parts.push(notes);
+
+  if (coachPlan && coachPlan !== notes) {
+    if (parts.length) parts.push('');
+    parts.push(`${DOSSIER_CARD_LABELS.coachCues}:`);
+    parts.push(coachPlan);
+  }
+
+  const snap = client?.longevityReport?.pipelineSnapshot || {};
+  const compensations = snap.compensations || snap.compensation_flags || [];
+  if (Array.isArray(compensations) && compensations.length) {
+    parts.push('');
+    parts.push('COMPENSATION TARGETS:');
+    compensations.forEach((entry) => parts.push(`• ${entry}`));
+  }
+
+  return parts.join('\n').trim();
+}
+
+/** Card 4 — active edited training schedule (phase 1 + phase 2) */
+export function buildKineticPeriodizationPlan(client) {
+  const d = normalizeClientDossier(client);
+  const parts = [];
+  const phase1 = (d.trainingLogPhase1 || '').trim();
+  const phase2 = (d.trainingLogPhase2 || '').trim();
+
+  if (phase1) {
+    parts.push(DOSSIER_CARD_LABELS.period1);
+    parts.push(phase1);
+  }
+  if (phase2) {
+    if (parts.length) parts.push('');
+    parts.push(DOSSIER_CARD_LABELS.period2);
+    parts.push(phase2);
+  }
+
+  return parts.join('\n').trim();
+}
+
+/** Build exactly 5 unified report rows from active client dossier state */
+export function buildUnifiedReportCards(client) {
+  const d = normalizeClientDossier(client);
+  return [
+    {
+      key: 'archetype',
+      title: DOSSIER_CARD_LABELS.archetype,
+      body: (client?.desc || '').trim(),
+    },
+    {
+      key: 'quickResults',
+      title: DOSSIER_CARD_LABELS.quickResults,
+      body: buildQuickResultsOverview(client),
+    },
+    {
+      key: 'awareness',
+      title: DOSSIER_CARD_LABELS.awareness,
+      body: buildThingsToBeAwareOf(client),
+    },
+    {
+      key: 'periodization',
+      title: DOSSIER_CARD_LABELS.periodization,
+      body: buildKineticPeriodizationPlan(client),
+    },
+    {
+      key: 'somatic',
+      title: DOSSIER_CARD_LABELS.somatic,
+      body: (d.somaticHealthTips || '').trim(),
+    },
+  ];
+}
 
 const DOSSIER_TEXTAREA_CLASS =
-  'w-full min-h-[140px] bg-slate-950/80 border border-slate-800 rounded-lg p-4 text-base md:text-[17px] font-sans font-medium text-slate-100 leading-relaxed resize-y focus:outline-none focus:border-cyan-500/40 custom-scrollbar';
+  'w-full min-h-[140px] bg-slate-950/80 border border-slate-800 rounded-lg p-4 text-base md:text-[17px] lg:text-[18px] font-sans font-bold text-slate-50 leading-relaxed resize-y focus:outline-none focus:border-cyan-500/40 custom-scrollbar';
 
 export { DOSSIER_TEXTAREA_CLASS };
 
@@ -575,39 +700,11 @@ export function applyGeminiCoachPlanToClient(
   };
 }
 
-/** Build ReportLab plan_data from dossier (top-level tracking row + longevityReport coachPlan) */
+/** Build ReportLab plan_data — 5 unified cards synced to client dossier fields */
 export function buildPdfPlanFromClient(client) {
-  const longevityReport = client?.longevityReport || {};
-  const coachPlan = longevityReport.coachPlan || longevityReport.geminiPlan || {};
-  const pipelineSnapshot = longevityReport.pipelineSnapshot || {};
-
+  const unifiedCards = buildUnifiedReportCards(client);
   return {
-    gideon_assessment_summary:
-      client?.coach_plan_text ||
-      coachPlan.gideon_assessment_summary ||
-      client?.notes ||
-      client?.desc ||
-      longevityReport.caseLog ||
-      'Biomechanical assessment compiled from YOLO lab telemetry and longevity blueprint dossier.',
-    right_now_adjustment:
-      client?.right_now_adjustment || coachPlan.right_now_adjustment || [],
-    two_week_protocol:
-      client?.two_week_protocol || coachPlan.two_week_protocol || [],
-    four_week_protocol:
-      client?.four_week_protocol || coachPlan.four_week_protocol || [],
-    long_term_vision:
-      client?.long_term_vision || coachPlan.long_term_vision || [],
-    two_week_activation_strategy:
-      coachPlan.two_week_activation_strategy || client?.two_week_protocol || {},
-    four_week_adaptation_strategy:
-      coachPlan.four_week_adaptation_strategy || client?.four_week_protocol || {},
-    long_term_longevity_vision:
-      coachPlan.long_term_longevity_vision || client?.long_term_protocol || {},
-    retesting_comparison_benchmarks:
-      client?.retest_benchmarks ||
-      coachPlan.retesting_comparison_benchmarks ||
-      pipelineSnapshot.scores ||
-      {},
+    unified_cards: unifiedCards.map(({ key, title, body }) => ({ key, title, body: body || '' })),
   };
 }
 
