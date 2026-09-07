@@ -85,6 +85,28 @@ export function getPanelAsset(key) {
   return file ? assessmentAsset(file) : '';
 }
 
+/** Bundled movement demos — auto-linked to assessment tests by library node id. */
+const bundledAssessmentDemos = import.meta.glob('../assets/assessments/demos/node_*.{mp4,webm,mov}', {
+  eager: true,
+  import: 'default',
+});
+
+const ASSESSMENT_DEMO_VIDEO_BY_ID = Object.fromEntries(
+  Object.entries(bundledAssessmentDemos).flatMap(([path, src]) => {
+    const match = path.match(/node_(\d+)_/i);
+    return match ? [[Number(match[1]), src]] : [];
+  })
+);
+
+/** Resolve a bundled movement demo MP4 for an assessment library id (e.g. 10 → deep squat). */
+export function getAssessmentDemoVideoById(libraryId) {
+  return ASSESSMENT_DEMO_VIDEO_BY_ID[Number(libraryId)] || null;
+}
+
+export function hasAssessmentDemoVideo(libraryId) {
+  return Boolean(getAssessmentDemoVideoById(libraryId));
+}
+
 /** Suite slot → node blueprint file (DEFAULT_GUIDE_ASSETS) */
 export const SUITE_NODE_BLUEPRINT_FILES = {
   vital_flow: {

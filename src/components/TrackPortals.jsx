@@ -11,33 +11,11 @@ import {
   resolveGuideAssetUrl,
   resolveGuideProtocolField,
 } from '../constants/guideAssets';
-import { getTrackByPackageSlot } from '../data/assessmentLibrary';
-
-/** Card module id → library package key + slot tag (ASSESSMENT_1-1 … 4-6) */
-const CARD_PACKAGE_SLOT = {
-  vf_neck: ['VITAL_FLOW', '1-1'],
-  vf_spinal: ['VITAL_FLOW', '1-2'],
-  vf_thoracic: ['VITAL_FLOW', '1-3'],
-  vf_squat: ['VITAL_FLOW', '1-4'],
-  vf_hold: ['VITAL_FLOW', '1-5'],
-  vf_shoulder: ['VITAL_FLOW', '1-6'],
-  ap_neck: ['ATHLETE PRECISION', '2-1'],
-  ap_single: ['ATHLETE PRECISION', '2-2'],
-  ap_spinal: ['ATHLETE PRECISION', '2-3'],
-  ap_shoulder: ['ATHLETE PRECISION', '2-4'],
-  ap_overhead: ['ATHLETE PRECISION', '2-5'],
-  pe_cervical: ['POSTURE & ERGONOMICS', '3-1'],
-  pe_axis: ['POSTURE & ERGONOMICS', '3-2'],
-  pe_hold: ['POSTURE & ERGONOMICS', '3-3'],
-  pe_lumbar: ['POSTURE & ERGONOMICS', '3-4'],
-  pe_shoulder: ['POSTURE & ERGONOMICS', '3-5'],
-  kp_spinal: ['KINETIC POWER INTEGRITY', '4-1'],
-  kp_neck: ['KINETIC POWER INTEGRITY', '4-2'],
-  kp_overhead: ['KINETIC POWER INTEGRITY', '4-3'],
-  kp_stance: ['KINETIC POWER INTEGRITY', '4-4'],
-  kp_shoulder: ['KINETIC POWER INTEGRITY', '4-5'],
-  kp_strike: ['KINETIC POWER INTEGRITY', '4-6'],
-};
+import {
+  buildDeckCardsForPackage,
+  getTrackForCardId,
+  PACKAGE_DECK_KEYS,
+} from '../constants/packageDeckPool';
 
 /** Resolve panel URL — coach uplink first, then Streamlit pending default graphic. */
 function getAssessmentPanelUrl(moduleId, guideAssets = DEFAULT_GUIDE_ASSETS) {
@@ -106,7 +84,10 @@ export default function TrackPortals({
   setActiveAthleteModule,
   activeCombatModule,
   setActiveCombatModule,
+  activeLibraryTrack = null,
+  setActiveLibraryTrack,
   guideAssets = DEFAULT_GUIDE_ASSETS,
+  slotBindings,
   hasSecureAccess = false,
   isTokenValidated = false,
   isCoachMode = false,
@@ -118,7 +99,6 @@ export default function TrackPortals({
 }) {
   // Per-card amber gate — track overviews stay readable; only Initialize is locked
   const [activeCardLockGate, setActiveCardLockGate] = useState(null);
-  const [activeLibraryTrack, setActiveLibraryTrack] = useState(null);
   const pendingScanRef = useRef(null);
 
   const readMasterCoachSession = () => {
@@ -137,9 +117,9 @@ export default function TrackPortals({
   // Clear card gate + library node on track change or when master access unlocks
   useEffect(() => {
     setActiveCardLockGate(null);
-    setActiveLibraryTrack(null);
+    setActiveLibraryTrack?.(null);
     pendingScanRef.current = null;
-  }, [viewState]);
+  }, [viewState, setActiveLibraryTrack]);
 
   useEffect(() => {
     if (hasAllAccess) {
@@ -148,25 +128,20 @@ export default function TrackPortals({
     }
   }, [hasAllAccess]);
 
-  /** Resolve package card → library row (packageSlots). Returns true if opened. */
+  /** Resolve package card → library row via centralized slot bindings. Returns true if opened. */
   const openLibraryTrackFromCard = (cardId) => {
-    const mapping = CARD_PACKAGE_SLOT[cardId];
-    if (!mapping) return false;
-    const [packageKey, slot] = mapping;
-    const track = getTrackByPackageSlot(packageKey, slot);
+    const track = getTrackForCardId(cardId, slotBindings);
     if (!track) {
-      console.warn(
-        `[ LIBRARY SLOT MISS: ${packageKey} / ${slot} — falling back to legacy portal ]`
-      );
+      console.warn(`[ LIBRARY SLOT MISS: card ${cardId} — falling back to legacy portal ]`);
       return false;
     }
     setActiveVitalModule(null);
     setActiveAthleteModule(null);
     setActivePostureModule(null);
     setActiveCombatModule(null);
-    setActiveLibraryTrack(track);
+    setActiveLibraryTrack?.(track);
     console.log(
-      `[ LIBRARY BIND: card ${cardId} → id ${track.id} // ${track.name} // ${packageKey}:${slot} ]`
+      `[ LIBRARY BIND: card ${cardId} → id ${track.id} // ${track.name} ]`
     );
     return true;
   };
@@ -244,7 +219,7 @@ export default function TrackPortals({
           moduleId={`lib_${activeLibraryTrack.id}`}
           athleteCode={athleteCode}
           athleteName={athleteName}
-          onNavigate={() => setActiveLibraryTrack(null)}
+          onNavigate={() => setActiveLibraryTrack?.(null)}
           onUploadPipelineSuccess={({ file }) => {
             if (typeof setUploadStatus !== 'function') return;
             const key = `lib_${activeLibraryTrack.id}`;
@@ -447,6 +422,7 @@ export default function TrackPortals({
     // Wide split-screen Posture & Ergonomics clinical evaluation sub-terminal
     return (
       <PostureErgonomicsTerminal
+        cards={buildDeckCardsForPackage(PACKAGE_DECK_KEYS.POSTURE_ERGONOMICS, slotBindings)}
         renderSystemHeader={renderSystemHeader}
         onReturnToCore={onReturnToCore}
         {...cardLockProps}
@@ -646,6 +622,7 @@ export default function TrackPortals({
     // 🟢 ORIGINAL ROUTER: 6-card Vital Flow package grid
     return (
       <VitalFlowTerminal
+        cards={buildDeckCardsForPackage(PACKAGE_DECK_KEYS.VITAL_FLOW, slotBindings)}
         renderSystemHeader={renderSystemHeader}
         onReturnToCore={onReturnToCore}
         {...cardLockProps}
@@ -895,6 +872,7 @@ export default function TrackPortals({
     // Wide split-screen Athlete Precision clinical evaluation sub-terminal
     return (
       <AthletePrecisionTerminal
+        cards={buildDeckCardsForPackage(PACKAGE_DECK_KEYS.ATHLETE_PRECISION, slotBindings)}
         renderSystemHeader={renderSystemHeader}
         onReturnToCore={onReturnToCore}
         {...cardLockProps}
@@ -1111,6 +1089,7 @@ export default function TrackPortals({
     // Wide split-screen Kinetic Power clinical evaluation sub-terminal
     return (
       <KineticPowerTerminal
+        cards={buildDeckCardsForPackage(PACKAGE_DECK_KEYS.KINETIC_POWER, slotBindings)}
         renderSystemHeader={renderSystemHeader}
         onReturnToCore={onReturnToCore}
         {...cardLockProps}

@@ -37,7 +37,7 @@ import AssessmentPipeline from './components/AssessmentPipeline';
 import YOLOLivePipeline from './components/YOLOLivePipeline';
 import PromoInterceptModal from './components/PromoInterceptModal';
 import { ANALYSIS_VIEWS } from './constants/analysisViews';
-import { DEFAULT_GUIDE_ASSETS, mergeGuideAssets } from './constants/guideAssets';
+import { DEFAULT_GUIDE_ASSETS, mergeGuideAssets, readPersistedSlotBindings, persistSlotBindings } from './constants/guideAssets';
 import {
   LAB_LS_DB,
   clearPersistedLabDatabase,
@@ -696,6 +696,7 @@ export default function App() {
   const [activeAthleteModule, setActiveAthleteModule] = useState(null);
   const [activeCombatModule, setActiveCombatModule] = useState(null);
   const [activePostureModule, setActivePostureModule] = useState(null);
+  const [activeLibraryTrack, setActiveLibraryTrack] = useState(null);
   // Full library track packet for VIEW_SINGLE_ASSESSMENT_CORE
   const [selectedAssessmentData, setSelectedAssessmentData] = useState(null);
   const [assessmentReturnView, setAssessmentReturnView] = useState('vital_flow');
@@ -715,6 +716,7 @@ export default function App() {
       return DEFAULT_GUIDE_ASSETS;
     }
   });
+  const [slotBindings, setSlotBindings] = useState(() => readPersistedSlotBindings());
 
   // Triggered when client logs in with their pin code
   const handleAccessCodeChange = (e) => {
@@ -1301,6 +1303,7 @@ export default function App() {
     setActiveAthleteModule(null);
     setActiveCombatModule(null);
     setActivePostureModule(null);
+    setActiveLibraryTrack(null);
     setActivePackageDetail(null);
     setShowThankYouGate(false);
     setIsCalibratingStream(false);
@@ -1311,7 +1314,37 @@ export default function App() {
   };
 
   // Updated Safe Navigation Escape Route
+  const handleReturnToPackageHub = () => {
+    setActiveVitalModule(null);
+    setActivePostureModule(null);
+    setActiveAthleteModule(null);
+    setActiveCombatModule(null);
+    setActiveLibraryTrack(null);
+  };
+
   const handleReturnToCore = () => {
+    const trackSuiteViews = new Set([
+      'vital_flow',
+      'athlete_precision',
+      'posture_ergonomics',
+      'mobility',
+      'kinetic_power',
+    ]);
+
+    // Inside a package assessment → pop back to that package's card grid (not home)
+    if (trackSuiteViews.has(viewState)) {
+      const insideAssessment =
+        activeVitalModule ||
+        activePostureModule ||
+        activeAthleteModule ||
+        activeCombatModule ||
+        activeLibraryTrack;
+      if (insideAssessment) {
+        handleReturnToPackageHub();
+        return;
+      }
+    }
+
     // Single assessment core → return to its originating suite index
     if (viewState === 'view_single_assessment_core') {
       setSelectedAssessmentData(null);
@@ -1409,9 +1442,8 @@ export default function App() {
     setActiveAthleteModule(null);
     setActiveCombatModule(null);
     setActivePostureModule(null);
+    setActiveLibraryTrack(null);
   };
-
-  // Clear embedded terminal alert on ESC (especially during passcode route delay)
   useEffect(() => {
     if (!terminalAlert) return;
     const onKeyDown = (e) => {
@@ -1534,21 +1566,27 @@ export default function App() {
     viewState === 'posture' ||
     viewState === 'combat';
 
-  const isDeepAssessmentView = Boolean(
-    activeVitalModule || activePostureModule || activeAthleteModule || activeCombatModule
+  const isInsidePackageAssessment = Boolean(
+    isTrackSuiteView &&
+      (activeVitalModule ||
+        activePostureModule ||
+        activeAthleteModule ||
+        activeCombatModule ||
+        activeLibraryTrack)
   );
 
-  const handleReturnToSubTerminalChannels = () => {
-    setActiveVitalModule(null);
-    setActivePostureModule(null);
-    setActiveAthleteModule(null);
-    setActiveCombatModule(null);
+  const handleCentralTelemetryEsc = () => {
+    if (isInsidePackageAssessment) {
+      handleReturnToPackageHub();
+      return;
+    }
+    handleReturnToCore();
   };
 
   const renderSystemHeader = (titleLabel = 'SECURE_OVERRIDE') => {
     return (
-      <>
-        <div className="flex flex-col items-start space-y-1.5 pl-4 pt-4 font-mono z-50 absolute top-0 left-0">
+      <div className="sticky top-0 z-50 shrink-0 border-b border-slate-900 bg-slate-950/90 backdrop-blur-md font-mono select-none">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-900/60">
           <button type="button" onClick={handleReturnToCore} className={escNavClassName}>
             [ESC] EXIT MATRIX HOME
           </button>
@@ -1565,33 +1603,24 @@ export default function App() {
             </button>
           ) : null}
           {isTrackSuiteView ? (
-            <button type="button" onClick={handleReturnToCore} className={escNavClassName}>
+            <button type="button" onClick={handleCentralTelemetryEsc} className={escNavClassName}>
               [ESC] RETURN TO CENTRAL TELEMETRY SCENE
-            </button>
-          ) : null}
-          {isDeepAssessmentView ? (
-            <button
-              type="button"
-              onClick={handleReturnToSubTerminalChannels}
-              className={escNavClassName}
-            >
-              [ESC] RETURN TO SUB-TERMINAL CHANNELS
             </button>
           ) : null}
         </div>
 
-        <div className="w-full border-b border-slate-900 bg-slate-950/80 px-6 py-4 pt-20 sm:pt-4 sm:pl-64 backdrop-blur-md sticky top-0 z-40 font-mono text-xs select-none shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-            <span className="tracking-widest text-slate-500 uppercase font-bold">
+        <div className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-2 h-2 shrink-0 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+            <span className="tracking-widest text-slate-500 uppercase font-bold truncate">
               SYS_STATUS // STABILITY_SECURE // {titleLabel}
             </span>
           </div>
-          <div className="hidden sm:block text-[10px] text-slate-600 tracking-widest uppercase font-semibold">
+          <div className="hidden sm:block text-[10px] text-slate-600 tracking-widest uppercase font-semibold shrink-0">
             // SECURE DATA ENVIRONMENT
           </div>
         </div>
-      </>
+      </div>
     );
   };
 
@@ -1745,6 +1774,10 @@ export default function App() {
         setActiveFocusField(null);
         return;
       }
+      if (activeLibraryTrack) {
+        setActiveLibraryTrack(null);
+        return;
+      }
       if (
         (viewState === 'mobility' || viewState === 'posture_ergonomics') &&
         activePostureModule
@@ -1775,6 +1808,7 @@ export default function App() {
     activeVitalModule,
     activeAthleteModule,
     activeCombatModule,
+    activeLibraryTrack,
   ]);
 
   const displayClientName = clientList[currentIdx].replace('/', '').toUpperCase();
@@ -2014,7 +2048,10 @@ export default function App() {
           setActiveAthleteModule={setActiveAthleteModule}
           activeCombatModule={activeCombatModule}
           setActiveCombatModule={setActiveCombatModule}
+          activeLibraryTrack={activeLibraryTrack}
+          setActiveLibraryTrack={setActiveLibraryTrack}
           guideAssets={guideAssets}
+          slotBindings={slotBindings}
           isCoachMode={isCoachMode}
           hasSecureAccess={
             Boolean(activeClientProfile) ||
@@ -2358,6 +2395,8 @@ export default function App() {
     displayClientName,
     guideAssets,
     setGuideAssets,
+    slotBindings,
+    setSlotBindings,
     onNavigate: handleTerminalNavigate,
     setCurrentScreen: handleTerminalNavigate,
     onOpenClientReport: handleOpenClientReport,

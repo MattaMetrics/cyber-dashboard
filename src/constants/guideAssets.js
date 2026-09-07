@@ -258,3 +258,92 @@ export function resolveGuideAssetUrl(moduleId, guideAssets = DEFAULT_GUIDE_ASSET
   const { imageUrl } = resolveGuideProtocol(moduleId, guideAssets);
   return isAssignedPanelUrl(imageUrl) ? imageUrl.trim() : null;
 }
+
+/** Re-export centralized package deck pool — slot bindings + dynamic card builder */
+export {
+  CARD_PACKAGE_SLOT,
+  PACKAGE_DECK_KEYS,
+  PACKAGE_FILTER_OPTIONS,
+  PACKAGE_BINDINGS_PANEL_EXPANDED_KEY,
+  buildDeckCardsForPackage,
+  buildDefaultSlotBindings,
+  exportSlotBindingsJSON,
+  getTrackForCardId,
+  getTrackForDeckSlot,
+  getLibraryTrackOptions,
+  getPackageDeckTheme,
+  importSlotBindingsJSON,
+  listBindableDeckSlots,
+  mergeSlotBindings,
+  persistBindingsPanelExpanded,
+  persistSlotBindings,
+  readBindingsPanelExpanded,
+  readPersistedSlotBindings,
+  PACKAGE_SLOT_BINDINGS_STORAGE_KEY,
+} from './packageDeckPool';
+
+/** Guide asset coach uplink — persistence + export helpers */
+export const GUIDE_ASSETS_STORAGE_KEY = 'MATRIX_GLOBAL_GUIDE_ASSETS';
+export const GUIDE_UPLINK_PANEL_EXPANDED_KEY = 'MATRIX_GUIDE_UPLINK_EXPANDED';
+
+/** Map guide suite keys → package deck keys for filter tabs. */
+export const GUIDE_SUITE_TO_PACKAGE = {
+  vital_flow: 'VITAL_FLOW',
+  athlete_precision: 'ATHLETE PRECISION',
+  posture_ergonomics: 'POSTURE & ERGONOMICS',
+  kinetic_integrity: 'KINETIC POWER INTEGRITY',
+};
+
+export function listGuideAssetSlots() {
+  return GUIDE_TRACK_OPTIONS.map(({ path, label }) => {
+    const { suiteKey, slotKey } = parseGuideAssetPath(path);
+    const packageKey = GUIDE_SUITE_TO_PACKAGE[suiteKey] || suiteKey;
+    return { path, label, suiteKey, slotKey, packageKey };
+  });
+}
+
+export function persistGuideAssets(assets) {
+  try {
+    window.localStorage?.setItem(GUIDE_ASSETS_STORAGE_KEY, JSON.stringify(assets));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
+export function exportGuideAssetsJSON(assets) {
+  return JSON.stringify(
+    {
+      version: 1,
+      type: 'MATRIX_GLOBAL_GUIDE_ASSETS',
+      exportedAt: new Date().toISOString(),
+      assets,
+    },
+    null,
+    2
+  );
+}
+
+export function importGuideAssetsJSON(raw) {
+  const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  const assets = parsed?.assets ?? parsed;
+  if (!assets || typeof assets !== 'object') {
+    throw new Error('Invalid guide assets file — expected { assets: { ... } }');
+  }
+  return mergeGuideAssets(assets);
+}
+
+export function readGuideUplinkPanelExpanded() {
+  try {
+    return window.localStorage?.getItem(GUIDE_UPLINK_PANEL_EXPANDED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function persistGuideUplinkPanelExpanded(expanded) {
+  try {
+    window.localStorage?.setItem(GUIDE_UPLINK_PANEL_EXPANDED_KEY, String(Boolean(expanded)));
+  } catch {
+    /* ignore */
+  }
+}

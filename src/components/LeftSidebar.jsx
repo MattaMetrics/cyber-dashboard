@@ -25,6 +25,9 @@ const TRACK_PARAMETER_DECKS = {
   },
 };
 
+/** Home menu track order (package portals). */
+const HOME_MENU_TRACK_ORDER = ['athlete', 'posture', 'alignment', 'mobility'];
+
 export default function LeftSidebar({
   onLaunchAnalysis,
   onNavigate,
@@ -41,7 +44,6 @@ export default function LeftSidebar({
   const sidebarBtnClass =
     'w-full justify-center text-center font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 hover:text-cyan-400 bg-slate-950/40 border border-slate-900 hover:border-cyan-500/30 px-3 py-2 rounded-lg transition-all cursor-pointer';
 
-  // Boot node cables on mount, and again when access unlocks
   useEffect(() => {
     setIsBootingNodes(true);
     const bootTimer = setTimeout(() => {
@@ -50,7 +52,7 @@ export default function LeftSidebar({
     return () => clearTimeout(bootTimer);
   }, [hasActiveAccess]);
 
-  const renderTrackChrome = (key, index, elbowUp) => {
+  const renderTrackChrome = (key, elbowUp) => {
     const wirePath = elbowUp
       ? 'M 6 32 H 28 L 44 16 H 72 M 72 8 L 84 16 L 72 24'
       : 'M 6 32 H 28 L 44 48 H 72 M 72 40 L 84 48 L 72 56';
@@ -110,23 +112,22 @@ export default function LeftSidebar({
     );
   };
 
+  const handleTrackClick = (key) => {
+    if (key === 'posture') {
+      if (typeof setSelectedAssessmentData === 'function') {
+        setSelectedAssessmentData(null);
+      }
+      onNavigate?.('VITAL_FLOW_DECOMPRESSION_MATRIX');
+      return;
+    }
+    onLaunchAnalysis?.(key);
+  };
+
   return (
     <div className="flex flex-col gap-4 w-72 pointer-events-auto overflow-visible p-5 bg-slate-900/30 border border-slate-900 rounded-xl min-h-[160px] backdrop-blur-md shadow-2xl transition-all">
-      <div className="text-[10px] text-cyan-400/70 font-mono font-bold uppercase tracking-widest border-b border-slate-900 pb-2 text-center w-full">
-        // SYSTEM OPERATIONAL MATRIX //
+      <div className="text-xs text-cyan-400/70 font-mono font-bold uppercase tracking-widest border-b border-slate-900 pb-2 text-center w-full">
+        SYSTEM OPERATIONAL MATRIX
       </div>
-
-      <button type="button" onClick={onUnlockMembership} className={sidebarBtnClass}>
-        [ VIEW MEMBERSHIP TIERS ]
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setCurrentScreen('VIEW_SYSTEM_METHODOLOGY_KINETICS')}
-        className={`${sidebarBtnClass} whitespace-normal leading-snug px-2.5 break-words`}
-      >
-        [ VIEW SYSTEM METHODOLOGY & KINETIC RESEARCH // ]
-      </button>
 
       {(virtualAccessUnlocked || isCoachMode) && (
         <div className="my-2 p-2 border border-cyan-500/30 bg-cyan-950/20 text-center rounded-lg animate-pulse text-[10px] font-mono tracking-widest text-cyan-400 uppercase">
@@ -136,48 +137,38 @@ export default function LeftSidebar({
         </div>
       )}
 
-      {/* 🟢 NEW DEFINITIVE BRAND TERMINAL DISCLOSURE LABEL */}
+      {HOME_MENU_TRACK_ORDER.map((key, index) => {
+        const label = ANALYSIS_VIEWS[key]?.label || key;
+        const elbowUp = index % 2 === 0;
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handleTrackClick(key)}
+            className="w-full justify-center text-center font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 hover:text-cyan-400 bg-slate-950/40 border border-slate-900 hover:border-cyan-500/30 px-3 py-2 rounded-lg transition-all cursor-pointer group active:scale-[0.98] flex flex-col gap-1 relative overflow-visible"
+          >
+            <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/5 group-hover:from-cyan-500/5 transition-all duration-300" />
+            </div>
+            <p className="relative z-10 font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 group-hover:text-cyan-400 transition-colors py-0.5">
+              {`[ ${label} ]`}
+            </p>
+            {renderTrackChrome(key, elbowUp)}
+          </button>
+        );
+      })}
+
       <button
         type="button"
-        onClick={() => {
-          if (typeof setSelectedAssessmentData === 'function') {
-            setSelectedAssessmentData(null);
-          }
-          onNavigate('VITAL_FLOW_DECOMPRESSION_MATRIX');
-        }}
-        className="w-full justify-center text-center font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 hover:text-cyan-400 bg-slate-950/40 border border-slate-900 hover:border-cyan-500/30 px-3 py-2 rounded-lg transition-all cursor-pointer group active:scale-[0.98] flex flex-col gap-1 relative overflow-visible"
+        onClick={() => setCurrentScreen('VIEW_SYSTEM_METHODOLOGY_KINETICS')}
+        className={`${sidebarBtnClass} whitespace-normal leading-snug px-2.5 break-words`}
       >
-        <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/5 group-hover:from-cyan-500/5 transition-all duration-300" />
-        </div>
-        <p className="relative z-10 font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 group-hover:text-cyan-400 transition-colors py-0.5">
-          {`> [ ${ANALYSIS_VIEWS.posture.label} ]`}
-        </p>
-        {renderTrackChrome('posture', 0, true)}
+        [ SYSTEM METHODOLOGY & KINETIC RESEARCH ]
       </button>
 
-      {/* Remaining track panels — permanently mounted; gated overlay handles unauthorized init */}
-      {Object.keys(ANALYSIS_VIEWS)
-        .filter((key) => key !== 'posture')
-        .map((key, index) => {
-          const elbowUp = index % 2 === 0;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onLaunchAnalysis?.(key)}
-              className="w-full justify-center text-center font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 hover:text-cyan-400 bg-slate-950/40 border border-slate-900 hover:border-cyan-500/30 px-3 py-2 rounded-lg transition-all cursor-pointer group active:scale-[0.98] flex flex-col gap-1 relative overflow-visible"
-            >
-              <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/5 group-hover:from-cyan-500/5 transition-all duration-300" />
-              </div>
-              <p className="relative z-10 font-mono text-[10px] tracking-widest uppercase text-cyan-400/70 group-hover:text-cyan-400 transition-colors py-0.5">
-                {`> [ ${ANALYSIS_VIEWS[key].label} ]`}
-              </p>
-              {renderTrackChrome(key, index + 1, elbowUp)}
-            </button>
-          );
-        })}
+      <button type="button" onClick={onUnlockMembership} className={sidebarBtnClass}>
+        [ VIEW MEMBERSHIP TIERS ]
+      </button>
     </div>
   );
 }

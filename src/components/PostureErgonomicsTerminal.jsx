@@ -1,123 +1,13 @@
 import React from 'react';
 import { POSTURE_ERGONOMICS_HOLOGRAM_PANEL } from '../constants/guideAssets';
+import { PACKAGE_PANEL_KEYS } from '../utils/packageHologramMedia';
+import PackageHologramAnchor from './PackageHologramAnchor';
 import SecurityLockOverlay from './SecurityLockOverlay';
 import TelemetryPipelineUplink from './TelemetryPipelineUplink';
 import TitleWithCyberSphere from './TitleWithCyberSphere';
 
-const POSTURE_ERGONOMICS_CARDS = [
-  {
-    id: 'pe_cervical',
-    tag: '// ASSESSMENT_3-1 //',
-    title: 'SEATED DESK NECK MOBILITY',
-    blocks: [
-      {
-        label: '[ BIOMECHANICAL REALITY ]',
-        text:
-          'Maps exact forward head distances, cervical spine angles, and shoulder rounding vectors directly at your workstation layout. We project an invisible geometric grid over your profile, calculating the precise centimeter displacement of your ear lobe relative to your shoulder axis.',
-      },
-      {
-        label: '[ THE UNFAIR ADVANTAGE ]',
-        text:
-          'For every inch your head drifts forward, it adds an extra 10 pounds of pressure on your spine. We isolate this leverage trap so you can optimize monitor, desk, and chair heights for effortless alignment.',
-      },
-      {
-        label: '[ THE SALES PITCH ]',
-        text:
-          "That nagging afternoon headache isn't stress—it's an unmapped postural deficit. Map your desk alignment grid and reclaim pain-free upper-back energy for the rest of your day.",
-      },
-    ],
-  },
-  {
-    id: 'pe_axis',
-    tag: '// ASSESSMENT_3-2 //',
-    title: 'POSTURE AXIS TRACKING',
-    blocks: [
-      {
-        label: '[ BIOMECHANICAL REALITY ]',
-        text:
-          'Indexes plumb-line deviation from ear through shoulder, hip, and ankle stacks in your habitual standing and seated postures. Charts anterior/posterior axis drift that desk compression quietly engraves into your skeleton.',
-      },
-      {
-        label: '[ THE UNFAIR ADVANTAGE ]',
-        text:
-          'Separates true structural lean from temporary fatigue sway, giving you a calibrated axis map before chronic mid-back and hip compensation sets in.',
-      },
-      {
-        label: '[ THE SALES PITCH ]',
-        text:
-          'Your posture axis is the silent architecture of focus and stamina. Correct the stack and your body stops burning energy just to stay upright.',
-      },
-    ],
-  },
-  {
-    id: 'pe_hold',
-    tag: '// ASSESSMENT_3-3 //',
-    title: 'SINGLE-LEG HOLD STABILITY',
-    blocks: [
-      {
-        label: '[ BIOMECHANICAL REALITY ]',
-        text:
-          'Exposes hidden left-to-right micro-instabilities and stabilizer sway frequencies under persistent load. Traces Center of Mass drift frame-by-frame to quantify ankle and glute-medius twitch rates after long sitting cycles.',
-      },
-      {
-        label: '[ THE UNFAIR ADVANTAGE ]',
-        text:
-          'Catches high-frequency, 2-millimeter micro-wobbles instantly — flagging desk-driven hip and ankle weakness before it alters daily walking mechanics.',
-      },
-      {
-        label: '[ THE SALES PITCH ]',
-        text:
-          'Balance is your biological insurance policy against joint degeneration. This test is a digital truth serum for a nervous system flattened by the chair.',
-      },
-    ],
-  },
-  {
-    id: 'pe_lumbar',
-    tag: '// ASSESSMENT_3-4 //',
-    title: 'LUMBAR SPINE & PELVIC MOVEMENT',
-    blocks: [
-      {
-        label: '[ BIOMECHANICAL REALITY ]',
-        text:
-          'Isolates lower spine compression markers, measuring pelvic tilt angles and deep lumbar flattening under prolonged sedentary loading cycles. Reveals if desk habit is causing shortened stride or uneven hip hiking when you stand.',
-      },
-      {
-        label: '[ THE UNFAIR ADVANTAGE ]',
-        text:
-          'Identifies hidden skeletal shifts and compression lines, showing exactly how sitting is reshaping your skeleton so your body works for you—not against you.',
-      },
-      {
-        label: '[ THE SALES PITCH ]',
-        text:
-          'Desk work glues the pelvis into a rigid cage. Unlock lumbar–pelvic motion and free the stride, breath, and low-back resilience your workday stole.',
-      },
-    ],
-  },
-  {
-    id: 'pe_shoulder',
-    tag: '// ASSESSMENT_3-5 //',
-    title: 'SHOULDER ROTATION DISSOCIATION',
-    blocks: [
-      {
-        label: '[ BIOMECHANICAL REALITY ]',
-        text:
-          'Quantifies upper-trunk and shoulder girdle dissociation — how cleanly the rib cage and scapulae rotate independent of the pelvis under seated axial lockout and reach vectors.',
-      },
-      {
-        label: '[ THE UNFAIR ADVANTAGE ]',
-        text:
-          'Exposes rib-cage rigidity and scapular winging that strangle breathing mechanics and force compensatory lumbar twist during every reach toward the keyboard or mouse.',
-      },
-      {
-        label: '[ THE SALES PITCH ]',
-        text:
-          'Unlock shoulder rotation dissociation and you free respiration, reach range, and pain-free overhead clearance in one corporate-ready vector.',
-      },
-    ],
-  },
-];
-
 export default function PostureErgonomicsTerminal({
+  cards = [],
   renderSystemHeader,
   onReturnToCore,
   onSelectAssessment,
@@ -138,7 +28,7 @@ export default function PostureErgonomicsTerminal({
       {renderSystemHeader?.('POSTURE_ERGONOMICS_COMPRESSION_MATRIX')}
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-start justify-center relative z-40">
-        <div className="w-full max-w-7xl mx-auto bg-slate-950/85 backdrop-blur-xl border border-emerald-500/20 rounded-xl p-6 font-mono text-xs animate-fade-in mt-6 z-40">
+        <div className="w-full max-w-7xl mx-auto bg-slate-950/85 backdrop-blur-xl border border-emerald-500/20 rounded-xl p-6 font-mono text-xs animate-fade-in z-40">
           <div className="border-b border-slate-900 pb-4 mb-2">
             <p className="text-sm font-bold tracking-widest text-emerald-400 uppercase mb-1">
               // POSTURE & ERGONOMICS // CLINICAL EVALUATION SUB-TERMINAL
@@ -152,18 +42,18 @@ export default function PostureErgonomicsTerminal({
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start max-w-7xl mx-auto pt-6 font-mono">
             <div className="lg:col-span-4 flex justify-center sticky top-6">
-              <div className="w-full bg-slate-950/40 border border-slate-900 rounded-xl p-3 flex items-center justify-center">
-                <img
-                  src={POSTURE_ERGONOMICS_HOLOGRAM_PANEL}
-                  alt="Standing holographic telemetry anchor"
-                  className="w-full h-auto object-contain rounded-xl max-h-[750px] opacity-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.12)]"
-                />
-              </div>
+              <PackageHologramAnchor
+                panelKey={PACKAGE_PANEL_KEYS.POSTURE_ERGONOMICS}
+                staticImageSrc={POSTURE_ERGONOMICS_HOLOGRAM_PANEL}
+                glowClassName="drop-shadow-[0_0_15px_rgba(16,185,129,0.12)]"
+                accentBorderClass="border-emerald-500/30"
+                accentTextClass="text-emerald-400"
+              />
             </div>
 
             <div className="lg:col-span-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 animate-fade-in">
-                {POSTURE_ERGONOMICS_CARDS.map((card) => (
+                {cards.map((card) => (
                   <div
                     key={card.id}
                     className="relative overflow-hidden p-5 bg-slate-900/30 border border-slate-900 rounded-xl flex flex-col justify-between group hover:border-emerald-500/30 transition-colors min-h-[280px] text-left"

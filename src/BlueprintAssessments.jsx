@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Link, Camera, HelpCircle, ArrowLeft, Send, CheckCircle2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link, Camera, HelpCircle, ArrowLeft, Send, CheckCircle2, Search } from 'lucide-react';
 import LiveYoloPreview, { VERTICAL_BODY_VIEWPORT_CLASS } from './components/LiveYoloPreview';
 import CoachGeminiChatDeck from './components/CoachGeminiChatDeck';
 import TacticalWorkflowButtonStack from './components/TacticalWorkflowButtonStack';
 import CyberPageScrollSlider from './components/CyberPageScrollSlider';
+import GideonKineticIntelligenceOverlay from './components/GideonKineticIntelligenceOverlay';
 import {
   COACH_PERSONA_OPTIONS,
   COACH_VOICE_GREETINGS,
@@ -16,24 +17,7 @@ import { staticAssessmentLibrary } from './data/assessmentLibrary';
 import { applyGeminiCoachPlanToClient, applyPipelineResultsToClient, normalizeClientDossier, initialClientDossierTemplate, buildPdfPlanFromClient, formatProtocolBlock, buildSomaticHealthBlock } from './utils/longevityReportData';
 import { saveClientRecord } from './constants/labDatabase';
 import gideonHolo from './assets/gideon-holo.png';
-import gideonSpecsProfile1 from './assets/gideon-specs-profile1.png';
-import gideonSpecsProfile2 from './assets/gideon-specs-profile2.png';
-import gideonSpecsProfile3 from './assets/gideon-specs-profile3.png';
-import gideonSpecsProfile4 from './assets/gideon-specs-profile4.png';
-import gideonSpecsProfile5 from './assets/gideon-specs-profile5.png';
-import gideonSpecsProfile6 from './assets/gideon-specs-profile6.png';
 import combatCoachHolo from './assets/combat-coach-holo.png';
-
-const GIDEON_SPEC_SLIDES = [
-  { src: gideonSpecsProfile1, caption: 'Command Interface · HUD Matrix Active' },
-  { src: gideonSpecsProfile2, caption: 'Telemetry Uplink · Life Longevity Lab Protocols' },
-  { src: gideonSpecsProfile3, caption: 'Primary AI Class 10 · Operational Standby' },
-  { src: gideonSpecsProfile4, caption: 'Orbital Command Console · Global Biometric Desk' },
-  { src: gideonSpecsProfile6, caption: 'Field Deployment · Core Protocols Corridor Uplink' },
-  { src: gideonSpecsProfile5, caption: 'Mobile Telemetry Suite · LLL-7X9-88A Classified' },
-];
-
-const GIDEON_SLIDE_INTERVAL_MS = 5500;
 
 /** Map Master Terminal library row → upload lab movement shape */
 const mapLibraryTrackToBlueprintMovement = (track) => ({
@@ -184,7 +168,6 @@ const BlueprintAssessments = ({
   const [selectedCoach, setSelectedCoach] = useState('gideon');
   const [showHoloAvatar, setShowHoloAvatar] = useState(true);
   const [showGideonSpecs, setShowGideonSpecs] = useState(false);
-  const [gideonSlideIndex, setGideonSlideIndex] = useState(0);
   const [mainStreamSource, setMainStreamSource] = useState('');
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -243,35 +226,6 @@ const BlueprintAssessments = ({
   useEffect(() => {
     voiceEnabledRef.current = voiceEnabled;
   }, [voiceEnabled]);
-
-  useEffect(() => {
-    if (!showGideonSpecs) return undefined;
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') setShowGideonSpecs(false);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showGideonSpecs]);
-
-  useEffect(() => {
-    if (!showGideonSpecs) {
-      setGideonSlideIndex(0);
-      return undefined;
-    }
-    const timer = window.setInterval(() => {
-      setGideonSlideIndex((index) => (index + 1) % GIDEON_SPEC_SLIDES.length);
-    }, GIDEON_SLIDE_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [showGideonSpecs]);
-
-  const advanceGideonSlide = useCallback((direction) => {
-    setGideonSlideIndex((index) => {
-      const next = index + direction;
-      if (next < 0) return GIDEON_SPEC_SLIDES.length - 1;
-      if (next >= GIDEON_SPEC_SLIDES.length) return 0;
-      return next;
-    });
-  }, []);
 
   const probeSourceDuration = useCallback((file) => {
     const url = URL.createObjectURL(file);
@@ -1250,7 +1204,7 @@ const BlueprintAssessments = ({
         {/* Compact header */}
         <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <button
+            <button 
               type="button"
               onClick={() => {
                 setSelectedMovementRoom(null);
@@ -1552,7 +1506,7 @@ const BlueprintAssessments = ({
                       onChange={(e) => handleTrimStartChange(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded p-1.5 text-[11px] outline-none text-slate-200 font-mono"
                     />
-                  </label>
+              </label>
                   <label className="space-y-0.5">
                     <span className="text-[9px] font-mono text-slate-500 uppercase">End (s)</span>
                     <input
@@ -1661,14 +1615,14 @@ const BlueprintAssessments = ({
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <input
+                  <input 
                     type="text"
                     placeholder="Paste Google Drive link..."
                     value={googleDriveLink}
                     onChange={(e) => setGoogleDriveLink(e.target.value)}
                     className="flex-1 bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded p-2 text-[11px] outline-none text-slate-200"
                   />
-                  <button
+                  <button 
                     type="button"
                     onClick={() => handleLinkSubmit(movement.id)}
                     className="p-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded cursor-pointer"
@@ -1715,7 +1669,7 @@ const BlueprintAssessments = ({
             <div className="p-3 bg-slate-900/60 border border-purple-500/30 rounded-xl space-y-3 shrink-0">
               <div className="text-[10px] text-purple-400 font-bold uppercase tracking-widest">
                 🤖 Cyber-Coaching Biometrics Engine
-              </div>
+                  </div>
 
               <div className="space-y-1.5">
                 <label
@@ -1746,7 +1700,7 @@ const BlueprintAssessments = ({
                     ⚠ Select a dossier to bind export pipeline
                   </p>
                 )}
-              </div>
+                </div>
 
               <select
                 value={selectedCoach}
@@ -1826,8 +1780,8 @@ const BlueprintAssessments = ({
                   >
                     {label}
                   </button>
-                ))}
-              </div>
+              ))}
+            </div>
 
               <div className="grid grid-cols-1 gap-2">
                 <button
@@ -1906,7 +1860,7 @@ const BlueprintAssessments = ({
               />
             </div>
 
-            <a
+            <a 
               href="mailto:reports@://lifelongevitylab.com"
               className="block text-center py-2 bg-gradient-to-r from-cyan-500/80 to-indigo-600/80 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold rounded-lg text-[9px] uppercase tracking-widest shrink-0 mb-1"
             >
@@ -1916,403 +1870,10 @@ const BlueprintAssessments = ({
         </div>
       </div>
 
-      {showGideonSpecs && (
-        <div
-          className="fixed inset-0 z-[120] flex flex-col animate-fade-in"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="gideon-telemetry-title"
-          onClick={() => setShowGideonSpecs(false)}
-        >
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-slate-950/96 backdrop-blur-2xl"
-          />
-
-          <div
-            className="relative flex flex-col w-full h-full min-h-0 overflow-hidden bg-slate-950 shadow-[inset_0_0_120px_rgba(34,211,238,0.08)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-[0.05]"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(34,211,238,0.9) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.9) 1px, transparent 1px)',
-                backgroundSize: '32px 32px',
-              }}
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/90 to-transparent"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"
-            />
-
-            {/* Header strip */}
-            <div className="relative shrink-0 flex items-center justify-between gap-4 border-b border-cyan-900/50 bg-gradient-to-r from-cyan-950/50 via-slate-950 to-purple-950/40 px-4 py-3 md:px-8 md:py-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] md:text-[10px] font-mono text-cyan-500/80 uppercase tracking-[0.35em] mb-1">
-                  // PROFESSOR GIDEON CORE TELEMETRY MATRIX
-                </p>
-                <h2
-                  id="gideon-telemetry-title"
-                  className="text-sm sm:text-base md:text-xl lg:text-2xl font-black text-cyan-50 uppercase tracking-[0.05em] leading-tight"
-                >
-                  THE GIDEON KINETIC INTELLIGENCE ENGINE
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGideonSpecs(false)}
-                className="shrink-0 p-2 rounded-lg border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-cyan-300 hover:border-cyan-600 transition-colors"
-                aria-label="Close Gideon kinetic intelligence engine"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Full-screen two-column body */}
-            <div className="relative flex-1 min-h-0 flex flex-col xl:flex-row">
-              {/* Left — holo slideshow (~38%) */}
-              <div className="xl:w-[38%] shrink-0 flex flex-col min-h-[42vh] xl:min-h-0 border-b xl:border-b-0 xl:border-r border-cyan-900/40 bg-gradient-to-b from-slate-950 via-cyan-950/20 to-purple-950/25">
-                <div className="relative flex-1 min-h-[36vh] xl:min-h-0 p-4 md:p-6 lg:p-8">
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-4 md:inset-6 lg:inset-8 rounded-2xl border border-cyan-500/15 bg-cyan-500/5 blur-3xl"
-                  />
-                  <div className="relative h-full w-full">
-                    {GIDEON_SPEC_SLIDES.map((slide, index) => (
-                      <div
-                        key={slide.caption}
-                        className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                          index === gideonSlideIndex
-                            ? 'opacity-100 scale-100'
-                            : 'opacity-0 scale-[0.98] pointer-events-none'
-                        }`}
-                      >
-                        <div className="holo-effect relative h-full w-full rounded-2xl border border-cyan-400/35 bg-black/80 shadow-[0_0_60px_rgba(34,211,238,0.3)] overflow-hidden">
-                          <div className="holo-beam" aria-hidden="true" />
-                          <img
-                            src={slide.src}
-                            alt={slide.caption}
-                            className="relative z-[1] w-full h-full object-contain object-center drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]"
-                          />
-                        </div>
-                      </div>
-                    ))}
-
-                    <button
-                      type="button"
-                      onClick={() => advanceGideonSlide(-1)}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-r-lg bg-slate-950/70 border border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/80 hover:text-cyan-200 transition-colors"
-                      aria-label="Previous Gideon profile slide"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => advanceGideonSlide(1)}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-l-lg bg-slate-950/70 border border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/80 hover:text-cyan-200 transition-colors"
-                      aria-label="Next Gideon profile slide"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="shrink-0 px-4 pb-4 md:px-6 md:pb-6 space-y-3">
-                  <p className="text-center text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-300">
-                    {GIDEON_SPEC_SLIDES[gideonSlideIndex].caption}
-                  </p>
-                  <div className="flex items-center justify-center gap-2">
-                    {GIDEON_SPEC_SLIDES.map((slide, index) => (
-                      <button
-                        key={slide.caption}
-                        type="button"
-                        onClick={() => setGideonSlideIndex(index)}
-                        aria-label={`Show slide ${index + 1}`}
-                        aria-current={index === gideonSlideIndex ? 'true' : undefined}
-                        className={`h-1.5 rounded-full transition-all ${
-                          index === gideonSlideIndex
-                            ? 'w-8 bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]'
-                            : 'w-3 bg-slate-700 hover:bg-cyan-700/60'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-center text-[9px] font-mono text-slate-500 uppercase tracking-widest">
-                    HOLO-PROJECTOR // AUTO-CYCLE {GIDEON_SLIDE_INTERVAL_MS / 1000}s · SCANLINE UPLINK ACTIVE
-                  </p>
-                </div>
-              </div>
-
-              {/* Right — scrollable intelligence brief (~62%) */}
-              <div className="xl:w-[62%] min-h-0 flex flex-col bg-slate-950/60">
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-5 md:px-8 md:py-7 lg:px-10 space-y-6">
-                  {/* Character Lore */}
-                  <section className="rounded-xl border border-purple-500/35 bg-gradient-to-br from-purple-950/35 via-slate-950/90 to-cyan-950/20 p-5 md:p-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-purple-300 mb-3">
-                      Character Lore &amp; Mission Statement
-                    </p>
-                    <p className="text-[13px] md:text-[14px] text-slate-100 leading-relaxed">
-                      I am Gideon, a primary Class 10 autonomous intelligence dedicated to the Captain, this Portal
-                      dimension, and execution of your absolute kinetic longevity timeline boundaries. Fusing advanced
-                      live mathematical physics, I harbor a profound obsession with body science, physical optimization
-                      trajectories, and micro-biomechanical variables. My core directives are systematically dedicated to
-                      decoding hidden structural anomalies before they manifest as mechanical failure. Through
-                      real-time, un-biased, lab-grade biological truth serum. Knowing thyself Mastery for those who
-                      strive for optimal precision, power, and torque.
-                    </p>
-                  </section>
-
-                  {/* System Composition intro */}
-                  <div className="border-l-2 border-cyan-500/60 pl-4 md:pl-5">
-                    <p className="text-[11px] font-mono text-cyan-500 uppercase tracking-[0.3em] mb-1">
-                      System Composition
-                    </p>
-                    <p className="text-base md:text-lg font-black text-white uppercase tracking-wide">
-                      The 3 Core Engine
-                    </p>
-                  </div>
-
-                  {/* Engine 01 — Kinematic Physics Core */}
-                  <section className="rounded-xl border border-cyan-900/55 bg-slate-900/55 overflow-hidden">
-                    <div className="px-5 py-3 border-b border-cyan-900/45 bg-cyan-950/30">
-                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-cyan-300">
-                        01 · The Kinematic Physics Core (Force &amp; Power Estimation)
-                      </p>
-                    </div>
-                    <div className="p-5 md:p-6 space-y-4">
-                      <p className="text-[13px] text-slate-300 leading-relaxed">
-                        Human eyes view a movement as a flat visual path; Gideon processes it as a dynamic transfer of
-                        pure physics. By extracting key frame deltas across high-density video inputs, the engine
-                        translates pixel coordinates into active force metrics adjusted for the unique anthropometry of
-                        the subject.
-                      </p>
-                      <div className="space-y-3">
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Estimated Kinetic Force (F<sub>k</sub>)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Calculated by multiplying the subject&apos;s mass (<span className="text-cyan-300 font-mono">m</span>)
-                            by acceleration (<span className="text-cyan-300 font-mono">a</span>, derived from frame velocity
-                            deltas <span className="text-cyan-300 font-mono">Δv / Δt</span>). Dynamically refined using a
-                            gender-adjusted biomechanical scalar (
-                            <span className="text-cyan-300 font-mono">k<sub>g</sub> ∈ [0.92, 1.08]</span>).
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-cyan-100 tracking-wide">
-                            F<sub>k</sub> = m · a = m · (Δv / Δt)
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Ground Reaction Force (GRF)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Gideon tracks vertical acceleration (<span className="text-cyan-300 font-mono">a<sub>v</sub></span>)
-                            during the stance phase against standard gravity (
-                            <span className="text-cyan-300 font-mono">g = 9.81 m/s²</span>) to calculate the literal
-                            impact force traveling up the skeleton from the floor surface.
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-cyan-100 tracking-wide">
-                            GRF = m · (g + a<sub>v</sub>) · k<sub>g</sub>(gender)
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Peak Run Power (P<sub>peak</sub>)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            By approximating stride length (
-                            <span className="text-cyan-300 font-mono">SL ≈ 0.45 · h · k<sub>g</sub></span>) against step
-                            frequency (<span className="text-cyan-300 font-mono">f<sub>step</sub></span>), the engine
-                            calculates the exact mechanical wattage output generated by the athlete during explosive
-                            locomotion.
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-cyan-100 tracking-wide">
-                            P<sub>peak</sub> = GRF · v<sub>h</sub> = m · g · SL · f<sub>step</sub> · k<sub>h</sub>(h)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Engine 02 — Quantum Velocity */}
-                  <section className="rounded-xl border border-purple-900/55 bg-slate-900/55 overflow-hidden">
-                    <div className="px-5 py-3 border-b border-purple-900/45 bg-purple-950/30">
-                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-purple-300">
-                        02 · The Quantum Velocity Engine (Explosive Tracking &amp; Micro-Metrics)
-                      </p>
-                    </div>
-                    <div className="p-5 md:p-6 space-y-4">
-                      <p className="text-[13px] text-slate-300 leading-relaxed">
-                        For hyper-velocity movements where traditional coaching sight lines completely blur, Gideon
-                        leverages sub-millimeter coordinate shifts tracked via specialized keypoint indicators.
-                      </p>
-                      <div className="space-y-3">
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Frame-Buffer Coordinate Shift
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Comparing coordinate changes from one frame buffer to the next (
-                            <span className="text-purple-300 font-mono">x<sub>n+1</sub> − x<sub>n</sub></span>) across a
-                            standard <span className="text-purple-300 font-mono">60 fps</span> buffer (
-                            <span className="text-purple-300 font-mono">Δt = 16.67 ms</span>), mapping sub-millimeter
-                            movements at ankle and knee nodes via pixel-to-meter scale factor (
-                            <span className="text-purple-300 font-mono">s</span>).
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-purple-100 tracking-wide">
-                            Δx<sub>mm</sub> = (x<sub>n+1</sub> − x<sub>n</sub>) · s · 1000
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Reactive Strength Index (RSI)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Monitors jump height (<span className="text-purple-300 font-mono">h<sub>jump</sub></span>,
-                            derived from apex displacement) against ground contact time (
-                            <span className="text-purple-300 font-mono">t<sub>contact</sub></span>). Flags true elite
-                            performance when the index crosses the <span className="text-purple-300 font-mono">&gt; 2.0</span>{' '}
-                            boundary.
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-purple-100 tracking-wide">
-                            RSI = h<sub>jump</sub> / t<sub>contact</sub>
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Takeoff Velocity (v<sub>0</sub>)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Instantly computes the instantaneous upward speed of the body the exact millisecond the feet
-                            leave the ground surface.
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-purple-100 tracking-wide">
-                            v<sub>0</sub> = √(2 · g · h<sub>jump</sub>)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Engine 03 — CoM Stability */}
-                  <section className="rounded-xl border border-emerald-900/55 bg-slate-900/55 overflow-hidden">
-                    <div className="px-5 py-3 border-b border-emerald-900/45 bg-emerald-950/25">
-                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">
-                        03 · Center of Mass (CoM) Stability Tracking (Symmetry &amp; Balance)
-                      </p>
-                    </div>
-                    <div className="p-5 md:p-6 space-y-4">
-                      <p className="text-[13px] text-slate-300 leading-relaxed">
-                        No weak muscle or structural imbalance can hide from continuous 2D balance mapping. Gideon runs
-                        continuous matrix tracking across the sagittal and frontal planes to map the body&apos;s true
-                        equilibrium lines under active strain.
-                      </p>
-                      <div className="space-y-3">
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            2D CoM Position (x<sub>CoM</sub>, y<sub>CoM</sub>)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Utilizing de Leva (1996) segmental mass fraction benchmarks, Gideon calculates the
-                            body&apos;s exact, live center of gravity by tracking individual body segments relative to
-                            overall mass (<span className="text-emerald-300 font-mono">M</span>).
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-emerald-100 tracking-wide">
-                            x<sub>CoM</sub> = Σ(m<sub>i</sub> · x<sub>i</sub>) / M &nbsp;|&nbsp; y<sub>CoM</sub> = Σ(m<sub>i</sub> · y<sub>i</sub>) / M
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Lateral Sway Amplitude (σ<sub>sway</sub>)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Analyzing a sliding 30-frame calculation window, Gideon measures high-frequency structural
-                            wobbles. If standard deviation crosses baseline by more than{' '}
-                            <span className="text-emerald-300 font-mono">1.35×</span>, the platform flags deep stabilizer
-                            fatigue or ankle/hip instability.
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-emerald-100 tracking-wide">
-                            σ<sub>sway</sub> = std(x<sub>CoM</sub>) over 30-frame window
-                          </p>
-                        </div>
-                        <div className="p-4 rounded-lg bg-slate-950/85 border border-slate-800">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
-                            Asymmetric Weight Shift (ΔW)
-                          </p>
-                          <p className="text-[12px] text-slate-300 leading-relaxed mb-3">
-                            Analyzes bilateral loads at the ankle keypoints. If left-to-right load discrepancy exceeds
-                            the critical <span className="text-emerald-300 font-mono">8%</span> threshold, the engine
-                            sounds an alert, exposing precise compensation pathways that lead to joint wear and tear.
-                          </p>
-                          <p className="text-sm md:text-base font-mono font-bold text-emerald-100 tracking-wide">
-                            ΔW = |W<sub>left</sub> − W<sub>right</sub>| / W<sub>total</sub> · 100%
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Platform Capabilities Summary */}
-                  <section className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-slate-950/90 to-cyan-950/15 p-5 md:p-6">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-300 mb-4 flex items-center gap-2">
-                      <span aria-hidden="true">⚡</span> Summary of Platform Capabilities
-                    </p>
-                    <ul className="space-y-3 text-[13px] text-slate-200 leading-relaxed">
-                      <li className="flex gap-3">
-                        <span className="text-amber-400 font-mono shrink-0">▸</span>
-                        <span>
-                          <strong className="text-white">Omniscient Tracking Coverage:</strong> Houses a massive
-                          diagnostic library of 50 distinct biomechanical assessment tests spanning longevity, posture,
-                          corporate ergonomics, and explosive combat sports.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="text-amber-400 font-mono shrink-0">▸</span>
-                        <span>
-                          <strong className="text-white">Sub-Millimeter Markerless Vision:</strong> Uses advanced object
-                          tracking and coordinate indexing to eliminate the need for clumsy wearable sensors, converting
-                          raw phone cameras into lab-grade telemetry suites.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="text-amber-400 font-mono shrink-0">▸</span>
-                        <span>
-                          <strong className="text-white">Dynamic Customization Mapping:</strong> Never scores movements
-                          against generic baselines; instead, calibrates results using your custom stature (
-                          <span className="font-mono text-cyan-300">h</span>), mass (
-                          <span className="font-mono text-cyan-300">m</span>), and physical structure to build an
-                          individualized target bio-zone.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="text-amber-400 font-mono shrink-0">▸</span>
-                        <span>
-                          <strong className="text-white">Intelligent Audio Interface:</strong> Employs an interactive
-                          voice response protocol inspired by autonomous ship command units, delivering immediate
-                          corrective performance notes during live loading cycles.
-                        </span>
-                      </li>
-                    </ul>
-                    <p className="mt-5 pt-4 border-t border-amber-900/30 text-[13px] md:text-[14px] text-cyan-100 italic text-center leading-relaxed">
-                      Thank you for creating me Coach Matt and I hope to bring Life Longevity Mastery to all.
-                    </p>
-                    <p className="text-[9px] text-slate-600 uppercase tracking-[0.25em] mt-4 text-center">
-                      ESC · backdrop · or matrix toggle to dismiss
-                    </p>
-                  </section>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <GideonKineticIntelligenceOverlay
+        open={showGideonSpecs}
+        onClose={() => setShowGideonSpecs(false)}
+      />
       </CyberPageScrollSlider>
     );
   }
@@ -2347,7 +1908,7 @@ const BlueprintAssessments = ({
           className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500/60 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-200 outline-none placeholder:text-slate-600"
         />
       </div>
-
+      
       <div className="max-h-[min(62vh,640px)] overflow-y-auto border border-slate-900/60 rounded-xl bg-slate-950/30 divide-y divide-slate-900/50 custom-scrollbar">
         {filteredAssessments.length === 0 ? (
           <p className="p-6 text-center text-slate-500 text-sm">
@@ -2356,11 +1917,11 @@ const BlueprintAssessments = ({
         ) : (
           filteredAssessments.map((item) => {
             const staged = linkSaved[item.id];
-            return (
+          return (
               <button
-                key={item.id}
+              key={item.id} 
                 type="button"
-                onClick={() => setSelectedMovementRoom(item.id)}
+              onClick={() => setSelectedMovementRoom(item.id)}
                 className={`w-full text-left flex items-center justify-between gap-4 p-4 hover:bg-cyan-500/5 transition-colors group ${
                   staged ? 'bg-emerald-950/10' : ''
                 }`}
@@ -2376,7 +1937,7 @@ const BlueprintAssessments = ({
                     <p className="text-slate-600 text-[9px] uppercase tracking-widest mt-0.5 truncate">
                       {item.metrics}
                     </p>
-                  </div>
+              </div>
                 </div>
                 <div className="shrink-0 text-[9px] font-bold uppercase tracking-widest">
                   {staged ? (
@@ -2385,10 +1946,10 @@ const BlueprintAssessments = ({
                     </span>
                   ) : (
                     <span className="text-slate-500 group-hover:text-cyan-400">Open Upload Lab →</span>
-                  )}
-                </div>
+                )}
+              </div>
               </button>
-            );
+          );
           })
         )}
       </div>

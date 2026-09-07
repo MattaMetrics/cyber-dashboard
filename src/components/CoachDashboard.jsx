@@ -16,6 +16,8 @@ import {
 import ClientDossierPremiumLayout from './ClientDossierPremiumLayout';
 import AccessCodeGenerator from './AccessCodeGenerator';
 import CoachGeminiChatDeck from './CoachGeminiChatDeck';
+import PackageDeckSlotBindingsPanel from './PackageDeckSlotBindingsPanel';
+import GuideAssetsUplinkPanel from './GuideAssetsUplinkPanel';
 import TacticalWorkflowButtonStack from './TacticalWorkflowButtonStack';
 import { AssessmentMorphScene } from './AssessmentMorphScene';
 import { DEFAULT_GUIDE_ASSETS } from '../constants/guideAssets';
@@ -319,6 +321,8 @@ export default function CoachDashboard({
   displayClientName,
   guideAssets,
   setGuideAssets,
+  slotBindings,
+  setSlotBindings,
   onNavigate,
   setCurrentScreen,
   onOpenClientReport,
@@ -1124,6 +1128,10 @@ export default function CoachDashboard({
   // SYSTEM FRAME C: Master Coach Roster & Onboarding Console Menu
   if (viewState === 'coach_menu') {
     const labMetrics = getLabEngineMetrics();
+    const rosterCount = Object.keys(localDatabase || {}).length;
+    const reportsReady = Object.values(localDatabase || {}).filter((client) =>
+      clientHasLongevityReport(client)
+    ).length;
     return (
       <div className="w-full h-full bg-[#01040a]/95 text-white font-mono flex flex-col overflow-hidden select-none backdrop-blur-xl">
         {renderSystemHeader('COACH_TERMINAL')}
@@ -1138,7 +1146,9 @@ export default function CoachDashboard({
                 Coach Intelligence Dashboard
               </h2>
               <div className="flex flex-wrap gap-4 text-[9px] font-mono tracking-widest uppercase mt-2">
-                <span className="text-cyan-400">[ ARCHIVE CAPACITY: 05 / 256 CHANNELS ]</span>
+                <span className="text-cyan-400">
+                  [ ARCHIVE CAPACITY: {String(rosterCount).padStart(2, '0')} / 256 CHANNELS ]
+                </span>
                 <span className="text-indigo-400">[ PIPELINE ENCRYPTION: SHA-256 ACTIVE ]</span>
                 <span className="flex items-center gap-1.5 text-emerald-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1148,8 +1158,8 @@ export default function CoachDashboard({
             </div>
 
             {/* Column 1: Onboard a New Client Form */}
-            <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 min-w-0">
-              <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest border-b border-slate-950 pb-2 flex items-center gap-1.5">
+            <div className="p-5 bg-slate-900/40 border border-cyan-500/20 rounded-xl space-y-4 min-w-0">
+              <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-widest border-b border-cyan-950/40 pb-2 flex items-center gap-1.5">
                 <User className="w-4 h-4" /> Onboard New Athlete Matrix
               </div>
               <form onSubmit={handleCreateNewClient} className="space-y-4 font-mono text-sm">
@@ -1201,17 +1211,23 @@ export default function CoachDashboard({
                 </button>
               </form>
 
-              <div className="mt-6 border border-slate-900 bg-slate-950/40 p-4 rounded-xl font-mono text-left space-y-2.5">
-                <p className="text-[9px] text-slate-500 font-bold tracking-wider uppercase block">
-                  // LAB OPERATIONAL LEDGER
+              <div className="mt-6 border border-cyan-900/30 bg-cyan-950/10 p-4 rounded-xl font-mono text-left space-y-2.5">
+                <p className="text-[9px] text-cyan-500/80 font-bold tracking-wider uppercase block">
+                  // LIVE ROSTER TELEMETRY
                 </p>
-                <p className="text-slate-300 text-[10px]">• ACTIVE SUBSCRIPTIONS: $2,394 / MO</p>
-                <p className="text-slate-300 text-[10px]">• HIGH-INTENSIVE TRAJECTORIES: 3 RUNNING</p>
-                <p className="text-emerald-400 text-[10px]">• SYSTEM RETENTION RATE: 98.4% CALIBRATED</p>
+                <p className="text-slate-300 text-[11px]">
+                  • ACTIVE DOSSIERS: <span className="text-cyan-300 font-bold">{rosterCount}</span>
+                </p>
+                <p className="text-slate-300 text-[11px]">
+                  • REPORTS COMPILED: <span className="text-emerald-400 font-bold">{reportsReady}</span>
+                </p>
+                <p className="text-slate-400 text-[10px]">
+                  • PENDING UPLINK: {Math.max(0, rosterCount - reportsReady)} dossier
+                  {Math.max(0, rosterCount - reportsReady) === 1 ? '' : 's'}
+                </p>
               </div>
 
-              {/* ADD THIS COMPONENT BOX DIRECTLY INTO YOUR DASHBOARD REGISTER LEFT TIER */}
-              <div className="w-full bg-[#030712] border border-slate-900 rounded-lg p-5 font-mono text-left mt-6">
+              <div className="w-full bg-[#030712] border border-cyan-900/30 rounded-lg p-5 font-mono text-left mt-6">
                 <div className="text-[#00FFFF] text-[10px] font-bold tracking-widest uppercase mb-4 flex items-center space-x-2">
                   <span>📊</span>{' '}
                   <span>// LAB ENGINE METRIC METADATA OVERVIEW</span>
@@ -1255,8 +1271,9 @@ export default function CoachDashboard({
             </div>
 
             {/* Column 2: Secure System Database Archives */}
-            <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-xl space-y-4 min-w-0 flex flex-col">
-              <div className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest border-b border-slate-950 pb-2 shrink-0">
+            <div className="p-5 bg-slate-900/40 border border-indigo-500/20 rounded-xl space-y-4 min-w-0 flex flex-col">
+              <div className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest border-b border-indigo-950/40 pb-2 shrink-0 flex items-center gap-1.5">
+                <FolderKanban className="w-4 h-4" />
                 // SECURE SYSTEM DATABASE ARCHIVES
               </div>
 
@@ -1439,7 +1456,7 @@ export default function CoachDashboard({
 
             {/* Column 3: Telemetry uplink OR Group Integrity Management */}
             {activeGroup ? (
-              <div className="p-5 bg-slate-900/40 border border-indigo-500/25 rounded-xl space-y-4 min-w-0">
+              <div className="p-5 bg-slate-900/40 border border-purple-500/25 rounded-xl space-y-4 min-w-0">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-xs font-mono font-bold text-indigo-300 tracking-widest uppercase">
@@ -1601,7 +1618,11 @@ export default function CoachDashboard({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col min-w-0 min-h-full">
+              <div className="flex flex-col min-w-0 min-h-full p-5 bg-slate-900/40 border border-purple-500/20 rounded-xl">
+                <div className="text-[11px] text-purple-400 font-bold uppercase tracking-widest border-b border-purple-950/40 pb-2 shrink-0 flex items-center gap-1.5 mb-4">
+                  <ClipboardList className="w-4 h-4" />
+                  // TELEMETRY COMMAND UPLINK
+                </div>
                 <div className="space-y-4 min-w-0 flex-1">
                 {/* Command rail — tactical buttons first, DNA matrix graphic below */}
                 <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-xl space-y-3">
@@ -1814,6 +1835,22 @@ export default function CoachDashboard({
                 </div>
               </div>
             )}
+
+            <div className="dashboard-span-all min-w-0 pt-2 border-t border-slate-900/80">
+              <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.32em] mb-4">
+                // Advanced Lab Configuration
+              </p>
+              <div className="space-y-4">
+                <PackageDeckSlotBindingsPanel
+                  slotBindings={slotBindings}
+                  setSlotBindings={setSlotBindings}
+                />
+                <GuideAssetsUplinkPanel
+                  guideAssets={guideAssets}
+                  setGuideAssets={setGuideAssets}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

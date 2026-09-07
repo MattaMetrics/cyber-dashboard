@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import CenterSphere from './CenterSphere';
 import {
   DEFAULT_PROTOCOL_FALLBACK,
   isAssignedPanelUrl,
 } from '../constants/guideAssets';
+import { getAssessmentDemoVideoById } from '../utils/assessmentAssetUrl';
 
 export default function UnifiedAssessmentLayout({
   trackName,
@@ -18,6 +19,19 @@ export default function UnifiedAssessmentLayout({
   totalSelectedTracksLength = 1,
 }) {
   const [submissionLinkUrl, setSubmissionLinkUrl] = useState('');
+
+  const libraryId = databaseRecord?.id ?? null;
+  const movementDemoSrc = useMemo(
+    () => getAssessmentDemoVideoById(libraryId),
+    [libraryId]
+  );
+  const [visualMode, setVisualMode] = useState(() =>
+    movementDemoSrc ? 'demo' : 'blueprint'
+  );
+
+  useEffect(() => {
+    setVisualMode(movementDemoSrc ? 'demo' : 'blueprint');
+  }, [movementDemoSrc, trackName, moduleId]);
 
   const box1Text =
     databaseRecord?.execution_text ||
@@ -73,7 +87,7 @@ export default function UnifiedAssessmentLayout({
   };
 
   return (
-    <div className="w-full h-screen bg-[#030712] px-6 pt-2 pb-4 font-mono text-white flex flex-col justify-between overflow-hidden">
+    <div className="w-full h-screen bg-[#030712] px-6 pt-4 pb-4 font-mono text-white flex flex-col justify-between overflow-hidden">
       {/* HEADER TIER */}
       <div className="flex justify-between items-center border-b border-slate-900 pb-1 flex-shrink-0 h-[35px]">
         <div className="text-left">
@@ -92,18 +106,62 @@ export default function UnifiedAssessmentLayout({
 
       {/* CORE WORKSPACE */}
       <div className="flex flex-col flex-1 mt-2 mb-4 overflow-hidden space-y-3 min-h-0">
-        <div className="w-full h-[48vh] border border-slate-900 bg-slate-950/20 rounded-lg p-3 flex justify-center items-center overflow-hidden flex-shrink-0">
-          {useCustomGraphic ? (
-            <img
-              src={imageSource}
-              alt="Kinetic Blueprint Telemetry"
-              className="w-auto h-full max-w-full object-contain rounded"
-            />
-          ) : (
-            <div className="w-full h-full min-h-0 rounded-md overflow-hidden border border-cyan-950/40 bg-[#030d1e]/50">
-              <CenterSphere viewState="client_profile" />
+        <div className="w-full h-[48vh] border border-slate-900 bg-slate-950/20 rounded-lg p-3 flex flex-col overflow-hidden flex-shrink-0">
+          {movementDemoSrc ? (
+            <div className="flex items-center gap-2 mb-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setVisualMode('demo')}
+                className={`px-3 py-1 rounded border text-[9px] font-bold uppercase tracking-widest transition-colors ${
+                  visualMode === 'demo'
+                    ? 'border-purple-500/50 bg-purple-950/40 text-purple-300'
+                    : 'border-slate-800 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                [ Movement Demo ]
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisualMode('blueprint')}
+                className={`px-3 py-1 rounded border text-[9px] font-bold uppercase tracking-widest transition-colors ${
+                  visualMode === 'blueprint'
+                    ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300'
+                    : 'border-slate-800 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                [ Blueprint Panel ]
+              </button>
+              {visualMode === 'demo' ? (
+                <span className="ml-auto text-[8px] text-purple-400/80 uppercase tracking-widest hidden sm:inline">
+                  Watch demo → then follow instructions below
+                </span>
+              ) : null}
             </div>
-          )}
+          ) : null}
+
+          <div className="flex-1 min-h-0 flex justify-center items-center overflow-hidden">
+            {visualMode === 'demo' && movementDemoSrc ? (
+              <video
+                key={movementDemoSrc}
+                src={movementDemoSrc}
+                className="w-full h-full object-contain rounded bg-black"
+                controls
+                playsInline
+                preload="metadata"
+                aria-label={`${trackName || 'Assessment'} movement demonstration`}
+              />
+            ) : useCustomGraphic ? (
+              <img
+                src={imageSource}
+                alt="Kinetic Blueprint Telemetry"
+                className="w-auto h-full max-w-full object-contain rounded"
+              />
+            ) : (
+              <div className="w-full h-full min-h-0 rounded-md overflow-hidden border border-cyan-950/40 bg-[#030d1e]/50">
+                <CenterSphere viewState="client_profile" />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-hidden">
